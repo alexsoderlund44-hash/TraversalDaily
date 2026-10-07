@@ -10,10 +10,12 @@ FONTS = {
 TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – every puzzle, forever'}
 DESC = "The daily travel puzzle. One start city, one destination, one budget. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world."
 LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"The daily travel puzzle. One start city, one destination, one budget. Plan the smartest route across trains, buses, ferries and flights, then see how you rank.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
-NAV = [('index','Home'),('play','Play today'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
+NAV = [('index','Home'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
 MARK = '<svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg>'
 
 def shell(design, page, body, scripts, prefix, css):
+    body = body.replace('@HOW@', HOW_MODAL)
+    icons = '<div class="td-icons"><button id="td-help" aria-label="How to play" title="How to play">?</button><button id="td-stats" aria-label="Your stats" title="Your stats"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2" y="10" width="4" height="8" fill="currentColor"/><rect x="8" y="4" width="4" height="14" fill="currentColor"/><rect x="14" y="7" width="4" height="11" fill="currentColor"/></svg></button></div>' if page == 'play' else ''
     nav = ''.join(f'<a href="{p}.html" class="{"on " if p==page else ""}{"plus" if p=="plus" else ""}">{n}</a>' for p,n in NAV) + '<a href="index.html#how">How to play</a>'
     canon = '<link rel="canonical" href="https://traversledaily.com/">' if (page=='index' and prefix=='') else ''
     return f'''<!doctype html>
@@ -30,14 +32,29 @@ def shell(design, page, body, scripts, prefix, css):
 </head><body class="p-{page}" data-page="{page}">
 <header class="td-head"><div class="td-wrap">
   <a class="td-brand" href="index.html" aria-label="TraversleDaily home">{MARK}<span>Traversle<b>Daily</b></span></a>
-  <button class="td-burger" id="td-burger" aria-label="Menu" aria-expanded="false" aria-controls="td-menu"><span></span><span></span><span></span></button>
+  {icons}<button class="td-burger" id="td-burger" aria-label="Menu" aria-expanded="false" aria-controls="td-menu"><span></span><span></span><span></span></button>
   <nav class="td-menu" id="td-menu" aria-label="Sections" hidden>{nav}</nav>
 </div></header>
 {body}
 <footer class="td-foot"><div class="td-wrap"><span>TraversleDaily · a new travel puzzle every day</span><span>Map data: Natural Earth. Your runs stay in this browser.</span></div></footer>
 <script src="{prefix}data/cities.js"></script>{scripts.replace('@/', prefix)}
-<script>(function(){{var b=document.getElementById('td-burger'),m=document.getElementById('td-menu');function set(o){{m.hidden=!o;b.setAttribute('aria-expanded',o);b.classList.toggle('open',o);document.body.classList.toggle('td-menu-open',o);}}b.onclick=function(e){{e.stopPropagation();set(m.hidden);}};m.addEventListener('click',function(e){{if(e.target.closest('a'))set(false);}});document.addEventListener('click',function(e){{if(!m.hidden&&!m.contains(e.target))set(false);}});document.addEventListener('keydown',function(e){{if(e.key==='Escape'&&!m.hidden)set(false);}});}})();</script>
+<script>(function(){{var b=document.getElementById('td-burger'),m=document.getElementById('td-menu');function set(o){{m.hidden=!o;b.setAttribute('aria-expanded',o);b.classList.toggle('open',o);document.body.classList.toggle('td-menu-open',o);}}b.onclick=function(e){{e.stopPropagation();set(m.hidden);}};m.addEventListener('click',function(e){{if(e.target.closest('a'))set(false);}});document.addEventListener('click',function(e){{if(!m.hidden&&!m.contains(e.target))set(false);}});document.addEventListener('keydown',function(e){{if(e.key==='Escape'&&!m.hidden)set(false);}});
+var how=document.getElementById('hm-howmodal');if(how){{window.tdHow=function(o){{how.hidden=!o;document.body.classList.toggle('td-modal-open',o);if(!o&&location.hash==='#how')history.replaceState(null,'',location.pathname+location.search);}};['hm-how','hm-how-close','hm-how-ok','td-help'].forEach(function(id){{var el=document.getElementById(id);if(el)el.onclick=function(){{tdHow(id==='hm-how'||id==='td-help');}};}});how.onclick=function(e){{if(e.target===how)tdHow(false);}};document.addEventListener('keydown',function(e){{if(e.key==='Escape'&&!how.hidden)tdHow(false);}});window.addEventListener('hashchange',function(){{if(location.hash==='#how')tdHow(true);}});if(location.hash==='#how')tdHow(true);}}}})();</script>
 </body></html>'''
+
+HOW_MODAL = '''<div class="td-modal" id="hm-howmodal" hidden><div class="td-modal-card" role="dialog" aria-modal="true" aria-label="How to play">
+    <button class="td-modal-x" id="hm-how-close" aria-label="Close">✕</button>
+    <p class="kicker">How to play</p>
+    <h2>One route a day. One attempt.</h2>
+    <ol class="how-steps">
+      <li><b>Check the mission.</b> A budget, a deadline and one twist. The clock starts when you do.</li>
+      <li><b>Build the route.</b> Tap a city, pick how you get there, repeat. Anything that breaks the mission is greyed out.</li>
+      <li><b>Find the deals.</b> Three legs are secretly cheap. Two of them are on the planner's route. You only see a deal when you look.</li>
+      <li><b>Submit and compare.</b> The planner's route appears next to yours. Earn a rating, bank the XP, keep the streak.</li>
+    </ol>
+    <p class="how-score">Your score: <b>money spent</b>, <b>time taken</b> and <b>how fast you decided</b>. Your first run is the one that counts. Practice as often as you like.</p>
+    <button class="btn primary" id="hm-how-ok">Got it</button>
+  </div></div>'''
 
 # ----- shared page bodies (design-neutral markup; themes do the rest) -----
 HOME = '''
@@ -53,19 +70,7 @@ HOME = '''
     <p class="meta" id="hm-meta"></p>
   </section>
   <div class="hm-links"><button class="lnk" id="hm-how">How to play</button><a class="lnk" href="archive.html">Past puzzles</a><a class="lnk plus" href="plus.html">✦ Traversle +</a></div>
-  <div class="td-modal" id="hm-howmodal" hidden><div class="td-modal-card" role="dialog" aria-modal="true" aria-label="How to play">
-    <button class="td-modal-x" id="hm-how-close" aria-label="Close">✕</button>
-    <p class="kicker">How to play</p>
-    <h2>One route a day. One attempt.</h2>
-    <ol class="how-steps">
-      <li><b>Check the mission.</b> A budget, a deadline and one twist. The clock starts when you do.</li>
-      <li><b>Build the route.</b> Tap a city, pick how you get there, repeat. Anything that breaks the mission is greyed out.</li>
-      <li><b>Find the deals.</b> Three legs are secretly cheap. Two of them are on the planner's route. You only see a deal when you look.</li>
-      <li><b>Submit and compare.</b> The planner's route appears next to yours. Earn a rating, bank the XP, keep the streak.</li>
-    </ol>
-    <p class="how-score">Your score: <b>money spent</b>, <b>time taken</b> and <b>how fast you decided</b>. Your first run is the one that counts. Practice as often as you like.</p>
-    <button class="btn primary" id="hm-how-ok">Got it</button>
-  </div></div>
+  @HOW@
 </main>'''
 HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script>'
 
@@ -94,15 +99,17 @@ PLAY = '''
       <div class="tv-gauge clock"><span class="lab">Deciding</span><b id="tv-timer">0s</b><small id="tv-pace"></small></div>
     </div>
     <div class="tv-twist" id="tv-twist"></div>
+    <div class="tv-counts" id="tv-counts"></div>
     <div class="tv-estimate" id="tv-est" hidden><span>Score estimate</span><b>—</b><div class="bar"><i style="width:0"></i></div></div>
     <ol class="tv-stops" id="tv-stops"></ol>
     <div class="tv-picker" id="tv-picker"></div>
-    <footer class="tv-plan-foot"><button class="btn ghost" id="tv-undo">Undo leg</button><button class="btn ghost" id="tv-clear">Clear</button><button class="btn primary" id="tv-submit" disabled>Submit journey</button></footer>
+    <footer class="tv-plan-foot"><button class="btn ghost" id="tv-undo" title="Remove the last leg">Undo</button><button class="btn ghost" id="tv-hint" title="Reveal a hidden deal. Adds 45 seconds to your clock.">Hint</button><button class="btn primary" id="tv-submit" disabled>Submit journey</button></footer>
   </aside>
   <div class="tv-modal" id="tv-modal" hidden></div>
   <section id="tv-result" class="tv-result" hidden></section>
   <section id="tv-board" class="tv-board" hidden></section>
   <p class="tv-source" id="tv-source"></p>
+  @HOW@
 </main>'''
 PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/traverse-ui.js"></script>'
 

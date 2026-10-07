@@ -530,3 +530,24 @@ body.td-modal-open{overflow:hidden}
 .hm-pitch{margin:0;color:var(--cream-2);font-size:1rem;line-height:1.6}
 .td-home-min{gap:22px}
 .td-home-min .hm-card{margin-top:4px}
+
+/* ---------------- header icons, counters, hints, stats modal ---------------- */
+.td-icons{margin-left:auto;display:flex;gap:6px}
+.td-icons + .td-burger{margin-left:0}
+.td-icons button{width:42px;height:42px;display:grid;place-items:center;background:none;border:1px solid var(--line-2);border-radius:4px;color:var(--gold-2);font:600 1.1rem var(--disp);cursor:pointer}
+.td-icons button:hover{background:rgba(201,162,78,.1)}
+.tv-counts{display:flex;gap:14px;flex-wrap:wrap;padding:7px 18px;border-bottom:1px solid var(--line);font-size:.74rem;color:var(--cream-3)}
+.tv-counts b{color:var(--cream);font-weight:700}
+.tv-plan-foot .btn{padding:11px 14px}
+.tv-modal-card.stats .st-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin:0 0 16px}
+.tv-modal-card.stats .st-grid div{background:rgba(10,18,32,.55);padding:12px 10px;text-align:center}
+.tv-modal-card.stats .st-grid b{display:block;font:500 1.9rem var(--disp);color:var(--gold-2);line-height:1.1}
+.tv-modal-card.stats .st-grid span{display:block;font:700 .6rem var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--cream-3);margin-top:3px}
+.tv-modal-card.stats .st-lab{margin:0 0 6px;font:700 .64rem var(--ui);letter-spacing:.16em;text-transform:uppercase;color:var(--cream-3)}
+.st-dist .row{display:grid;grid-template-columns:120px 1fr 32px;gap:10px;align-items:center;margin:5px 0;font-size:.86rem;color:var(--cream-2)}
+.st-dist .row .bar{height:16px;background:rgba(242,233,216,.06)}.st-dist .row .bar i{display:block;height:100%;background:var(--ink-3);border-right:2px solid var(--line-2)}
+.st-dist .row.me .bar i{background:var(--gold);border-color:var(--gold-3)}.st-dist .row.me span,.st-dist .row.me b{color:var(--gold-2)}
+.st-dist .row b{text-align:right;font-variant-numeric:tabular-nums}
+.tv-modal-card.stats .actions{align-items:center}
+.st-next{margin-left:auto;font-size:.82rem;color:var(--cream-3)}.st-next b{color:var(--cream)}
+@media(max-width:560px){.tv-modal-card.stats .st-grid{grid-template-columns:repeat(2,1fr)}.st-dist .row{grid-template-columns:96px 1fr 28px}}

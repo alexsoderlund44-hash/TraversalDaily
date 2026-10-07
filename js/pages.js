@@ -63,12 +63,6 @@
     if (R[ch.key]) { g('hm-play').textContent = 'See your result'; g('hm-sub').innerHTML = `${R[ch.key].tier ? R[ch.key].tier + ' · ' : ''}you scored <b>${R[ch.key].score.toLocaleString()}</b> today`; }
     else if (streak) g('hm-sub').textContent = `🔥 ${streak}-day streak. Keep it alive.`;
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }
-    const how = g('hm-howmodal'), open = o => { how.hidden = !o; document.body.classList.toggle('td-modal-open', o); if (!o && location.hash === '#how') history.replaceState(null, '', location.pathname); };
-    g('hm-how').onclick = () => open(true); g('hm-how-close').onclick = () => open(false); g('hm-how-ok').onclick = () => open(false);
-    how.onclick = e => { if (e.target === how) open(false); };
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !how.hidden) open(false); });
-    window.addEventListener('hashchange', () => { if (location.hash === '#how') open(true); });
-    if (location.hash === '#how') open(true);
   }
   if (page === 'achievements') {
     $('#ach-summary').textContent = `${unlocked} of ${ACH.length} unlocked`;

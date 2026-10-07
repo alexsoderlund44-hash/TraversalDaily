@@ -17,6 +17,7 @@
 
   /* ---------- state ---------- */
   let route = [], pendingTo = null, t0 = 0, timer = null, playing = false, found = new Set(), showPar = false;
+  const UNDOS = 3, HINTS = 2, HINT_SECS = 45; let undos = UNDOS, hints = HINTS;
   const at = () => route.length ? T.byId[route[route.length - 1].to] : ch.from;
   const atDest = () => at().id === ch.to.id;
   const totals = () => route.reduce((a, r) => ({ cost: a.cost + r.leg.cost, hours: a.hours + r.leg.hours }), { cost: 0, hours: 0 });
@@ -218,10 +219,12 @@
     const [pt, pc] = pace(); const pe = $('#tv-pace'); pe.textContent = pt; pe.className = pc;
     const ts = twState(), done = tw.done(ts);
     $('#tv-twist').innerHTML = tw.id === 'open' ? `<span>${tw.icon} ${T.esc(tw.name)}</span><small>${T.esc(tw.desc)}</small>` : `<span>${tw.icon} ${T.esc(tw.name)}</span><small class="${done ? 'good' : ''}">${T.esc(tw.status(ts))}</small>`;
+    $('#tv-counts').innerHTML = `<span><b>${route.length}</b> leg${route.length === 1 ? '' : 's'}</span><span><b>${undos}</b> undo${undos === 1 ? '' : 's'} left</span><span><b>${hints}</b> hint${hints === 1 ? '' : 's'} left</span><span>🏷️ <b>${found.size}</b>/${M.deals} found</span>`;
+    $('#tv-hint').disabled = !hints || found.size >= M.deals || atDest();
     const est = atDest() ? T.score(tt.cost, tt.hours, elapsed(), M) : null;
     $('#tv-est').hidden = est === null; $('#tv-est b').textContent = est === null ? '—' : est.toLocaleString(); $('#tv-est .bar i').style.width = (est === null ? 0 : est / 100) + '%';
     $('#tv-plan-sub').textContent = atDest() ? (done ? 'You made it. Submit, or undo a leg and try another idea.' : 'You made it, but the twist isn\'t met: ' + tw.status(ts) + '.') : `You're in ${cur.name}.`;
-    $('#tv-submit').disabled = !(atDest() && done); $('#tv-undo').disabled = !route.length;
+    $('#tv-submit').disabled = !(atDest() && done); $('#tv-undo').disabled = !route.length || !undos;
 
     let h = `<li class="start"><span class="dot"></span><div class="stop">${T.place(ch.from)}<small>start</small></div>`;
     route.forEach((r, i) => {
@@ -232,7 +235,7 @@
     if (!atDest()) h += `</li><li class="dest ghost"><span class="dot"></span><div class="stop">${T.place(ch.to)}<small>destination</small></div></li>`;
     else h += '</li>';
     $('#tv-stops').innerHTML = h;
-    $('#tv-stops').querySelectorAll('.x').forEach(b => (b.onclick = () => { route.splice(+b.dataset.i); pendingTo = null; refresh(); }));
+    $('#tv-stops').querySelectorAll('.x').forEach(b => (b.onclick = () => undo()));
     renderPicker();
   }
 
@@ -279,7 +282,7 @@
 
   /* ---------- flow ---------- */
   function start() {
-    route = []; pendingTo = null; playing = true; found = new Set(); showPar = false;
+    route = []; pendingTo = null; playing = true; found = new Set(); showPar = false; undos = UNDOS; hints = HINTS;
     renderBrief();
     $('#tv-gate').hidden = true; $('#tv-result').hidden = true; $('#tv-board').hidden = true; $('#tv-plan').hidden = false;
     $('#tv-plan').classList.toggle('collapsed', window.innerWidth <= 900);
@@ -289,14 +292,28 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   $('#tv-start').onclick = start;
-  $('#tv-undo').onclick = () => { route.pop(); pendingTo = null; refresh(); };
-  $('#tv-clear').onclick = () => { route = []; pendingTo = null; refresh(); fitRoute(); };
+  function undo() {
+    if (!route.length) return;
+    if (!undos) return toast('No undos left. Commit to the route.');
+    undos--; route.pop(); pendingTo = null; refresh();
+    if (!undos) toast('That was your last undo.');
+  }
+  $('#tv-undo').onclick = undo;
+  $('#tv-hint').onclick = () => {
+    if (!hints || !playing) return;
+    const hidden = M.dealKeys.filter(k => !found.has(k)); if (!hidden.length) return toast('You have found every deal.');
+    const k = hidden[Math.floor(T.rng(T.hash(ch.seed + '|hint|' + hints))() * hidden.length)];
+    const [pair, modeId] = k.split('|'), [fa, tb] = pair.split('-'); const a = T.byId[fa], b = T.byId[tb], m = T.MODES[modeId];
+    hints--; t0 -= HINT_SECS * 1000; found.add(k); renderBrief(); refresh();
+    toast(`🏷️ Hint: ${m.name} from ${a.name} to ${b.name} is on sale. +${HINT_SECS}s on your clock.`);
+    fitTo([a, b], 2.4);
+  };
   $('#tv-submit').onclick = () => {
     if (!atDest() || !tw.done(twState())) return;
     const secs = elapsed(); clearInterval(timer); playing = false;
     const tt = totals(); const sc = T.score(tt.cost, tt.hours, secs, M), tr = T.tier(sc, M);
     const res = { score: sc, tier: tr.name, cost: Math.round(tt.cost), hours: tt.hours, secs: Math.round(secs * 10) / 10, route: route.map(r => ({ to: r.to, mode: r.leg.mode, cost: r.leg.cost, hours: r.leg.hours, deal: r.leg.deal || 0 })),
-      deals: { found: found.size, total: M.deals, used: route.filter(r => r.leg.deal).length }, par: { cost: M.par.cost, hours: M.par.hours, legs: M.par.legs }, parMatch: tt.cost <= M.par.cost + 1 && tt.hours <= M.par.hours + 0.05, twist: tw.id, at: Date.now() };
+      deals: { found: found.size, total: M.deals, used: route.filter(r => r.leg.deal).length }, hints: HINTS - hints, undos: UNDOS - undos, par: { cost: M.par.cost, hours: M.par.hours, legs: M.par.legs }, parMatch: tt.cost <= M.par.cost + 1 && tt.hours <= M.par.hours + 0.05, twist: tw.id, at: Date.now() };
     if (!practice) {
       st = T.load(); st.results = st.results || {};
       const before = T.progression(st.results);
@@ -333,15 +350,41 @@
       <ol class="legs">${legs}<li class="total"><span class="n"></span><span class="ic">Σ</span><span class="where">Total<small>${tw.icon} ${T.esc(tw.name)}</small></span><span class="num">${T.money(res.cost)}</span><span class="num">${T.dur(res.hours)}</span></li></ol>
       <div class="vs">${vsPar}</div>
       ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+${xpGain} XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
-      <div class="actions"><button class="btn primary" id="tv-modal-share">Copy result</button><button class="btn ghost" id="tv-modal-map">See the planner's route</button><button class="btn ghost" id="tv-modal-again">Practice again</button></div>
+      <div class="actions"><button class="btn primary" id="tv-modal-share">Copy result</button><button class="btn ghost" id="tv-modal-map">See the planner's route</button><button class="btn ghost" id="tv-modal-stats">Stats</button><button class="btn ghost" id="tv-modal-again">Practice again</button></div>
     </div>`;
     $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
     $('#tv-modal-close').onclick = closeModal; $('#tv-modal-map').onclick = closeModal;
     $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
     $('#tv-modal-again').onclick = () => { closeModal(); start(); };
+    $('#tv-modal-stats').onclick = showStats;
     $('#tv-modal-share').onclick = () => $('#tv-share').click();
   }
   function closeModal() { $('#tv-modal').hidden = true; document.body.classList.remove('tv-modal-open'); fitRoute(); }
+
+  /* personal stats pop-up (the thing people screenshot) */
+  function showStats() {
+    const R = (T.load().results) || {}; const keys = Object.keys(R).filter(k => /^\d{4}-/.test(k)).sort(); const runs = keys.map(k => R[k]);
+    const dayOf = k => Math.round((Date.parse(k) - T.EPOCH) / 86400000) + 1;
+    let cur = 0, max = 0, prev = null, run = 0; keys.forEach(k => { const d = dayOf(k); run = (prev !== null && d === prev + 1) ? run + 1 : 1; prev = d; max = Math.max(max, run); });
+    { let d = today; if (!R[T.dayKey(d)]) d--; while (d >= 1 && R[T.dayKey(d)]) { cur++; d--; } }
+    const tiers = ['Perfect', 'Expert', 'Navigator', 'Wayfarer', 'Arrived'], counts = tiers.map(t => runs.filter(r => (r.tier || 'Arrived') === t).length), mx = Math.max(1, ...counts);
+    const avg = runs.length ? Math.round(runs.reduce((a, r) => a + r.score, 0) / runs.length) : 0, best = runs.length ? Math.max(...runs.map(r => r.score)) : 0;
+    const prog = T.progression(R);
+    const todayRes = R[T.dayKey(today)];
+    $('#tv-modal').innerHTML = `<div class="tv-modal-card stats" role="dialog" aria-modal="true" aria-label="Your stats">
+      <button class="tv-modal-x" id="tv-modal-close" aria-label="Close">✕</button>
+      <p class="kicker">Your stats</p>
+      <div class="st-grid"><div><b>${runs.length}</b><span>played</span></div><div><b>${runs.length ? Math.round(100 * runs.filter(r => r.tier === 'Perfect' || r.tier === 'Expert').length / runs.length) : 0}%</b><span>expert or better</span></div><div><b>${cur}</b><span>streak</span></div><div><b>${max}</b><span>best streak</span></div><div><b>${best ? best.toLocaleString() : '—'}</b><span>best score</span></div><div><b>${avg ? avg.toLocaleString() : '—'}</b><span>average</span></div></div>
+      <p class="st-lab">Ratings</p>
+      <div class="st-dist">${tiers.map((t, i) => `<div class="row${todayRes && (todayRes.tier || 'Arrived') === t ? ' me' : ''}"><span>${T.TIERS[i][2]} ${t}</span><div class="bar"><i style="width:${Math.max(4, 100 * counts[i] / mx)}%"></i></div><b>${counts[i]}</b></div>`).join('')}</div>
+      <div class="level"><span>Level ${prog.level} · ${prog.title}</span><div class="bar"><i style="width:${prog.next ? Math.round(100 * prog.into / prog.span) : 100}%"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>
+      <div class="actions">${todayRes ? '<button class="btn primary" id="tv-stats-share">Share today</button>' : ''}<a class="btn ghost" href="stats.html">Full stats</a><span class="st-next">Next puzzle in <b>${resetIn()}</b></span></div>
+    </div>`;
+    $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
+    $('#tv-modal-close').onclick = closeModal; $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
+    const sh = $('#tv-stats-share'); if (sh) sh.onclick = () => { const b = $('#tv-share'); if (b) b.click(); else toast('Play today first'); };
+  }
+  { const b = $('#td-stats'); if (b) b.onclick = showStats; }
 
   function showResult(res, isPractice, xpGain, quiet) {
     $('#tv-plan').hidden = true; pendingTo = null; showPar = true;
@@ -386,7 +429,9 @@
     $('#tv-par-toggle').onclick = () => { showPar = !showPar; $('#tv-par-toggle').textContent = showPar ? 'hide on map' : 'show on map'; drawMap(); fitRoute(); };
     $('#tv-share').onclick = () => {
       const modes = res.route.map(r => T.MODES[r.mode].icon).join('');
-      const txt = `TraversleDaily ${ch.n ? '#' + ch.n : 'expedition'} ${T.placeText(ch.from)} → ${T.placeText(ch.to)}\n${modes} ${res.route.length} legs · 🏷️ ${res.deals ? res.deals.found : 0}/${M.deals} · ${tw.icon} ${tw.name}\n${tr.icon} ${tr.name} · ${res.score.toLocaleString()} · #${rk.rank.toLocaleString()} of ${rk.of.toLocaleString()}\n💰 ${T.money(res.cost)}/${T.money(M.budget)} ⏱️ ${T.dur(res.hours)}/${T.dur(M.deadline)} ⚡ ${T.secsF(res.secs)}\n${location.origin}${location.pathname}`;
+      const pm = res.cost <= M.par.cost + 1 && res.hours <= M.par.hours + 0.05;
+      const vs = pm ? '🎯 Planner\'s route' : `vs planner ${res.cost > M.par.cost ? '+' + T.money(res.cost - M.par.cost) : '✓'} · ${res.hours > M.par.hours + 0.05 ? '+' + T.dur(res.hours - M.par.hours) : '✓'}`;
+      const txt = `TraversleDaily ${ch.n ? '#' + ch.n : 'expedition'} ${ch.from.name} → ${ch.to.name}\n${modes} ${res.route.length} legs · 🏷️ ${res.deals ? res.deals.found : 0}/${M.deals} · ${tw.icon} ${tw.name}\n${tr.icon} ${tr.name} ${res.score.toLocaleString()} · #${rk.rank.toLocaleString()} of ${rk.of.toLocaleString()}\n${vs} · ⚡ ${T.secsF(res.secs)}\n${location.origin}${location.pathname}`;
       (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copied'), () => { prompt('Copy your result:', txt); });
     };
     showBoard(mode === 'today' ? (st.results[ch.key] || res) : res);
@@ -417,5 +462,8 @@
   /* ---------- initial ---------- */
   drawMap();
   if (official) { $('#tv-gate').hidden = true; showResult(official, false, 0, true); }
-  else setTimeout(() => fitTo([ch.from, ch.to], 1.6), 50);
+  else {
+    setTimeout(() => fitTo([ch.from, ch.to], 1.6), 50);
+    try { const how = $('#hm-howmodal'); if (how && !localStorage.getItem('traverse.seen')) { how.hidden = false; document.body.classList.add('td-modal-open'); localStorage.setItem('traverse.seen', '1'); } } catch (e) {}
+  }
 })();

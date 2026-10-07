@@ -9,7 +9,7 @@ FONTS = {
 }
 TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – every puzzle, forever'}
 DESC = "The daily travel puzzle. One start city, one destination, one budget. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world."
-LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"The daily travel puzzle. One start city, one destination, one budget. Plan the smartest route across trains, buses, ferries and flights, then see how you rank.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
+LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"The daily travel puzzle. One start city, one destination, one budget. Plan the smartest route across trains, buses, ferries and flights, then compare it with the planner.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
 NAV = [('index','Home'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
 MARK = '<svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg>'
 
@@ -47,7 +47,7 @@ HOW_MODAL = '''<div class="td-modal" id="hm-howmodal" hidden></div>'''
 # ----- shared page bodies (design-neutral markup; themes do the rest) -----
 HOME = '''
 <main class="td-home-min">
-  <header class="hm-head"><h1 class="hm-h1" id="hm-h1">The daily travel puzzle. Plan the smartest route across the world.</h1><p class="hm-pitch">Chain trains, buses, ferries and flights. Beat the budget. Beat the clock. See how you rank.</p></header>
+  <header class="hm-head"><h1 class="hm-h1" id="hm-h1">The daily travel puzzle. Plan the smartest route across the world.</h1><p class="hm-pitch">Chain trains, buses, ferries and flights. Beat the budget, beat the clock, and beat the planner.</p></header>
   <section class="hm-card">
     <p class="eyebrow" id="hm-day"></p>
     <div class="route" id="hm-route"></div>
@@ -60,7 +60,7 @@ HOME = '''
   <div class="hm-links"><button class="lnk" id="hm-how">How to play</button><a class="lnk" href="archive.html">Past puzzles</a><a class="lnk plus" href="plus.html">✦ Traversle +</a></div>
   @HOW@
 </main>'''
-HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script>'
+HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script>'
 
 PLAY = '''
 <main class="tv">
@@ -100,13 +100,15 @@ PLAY = '''
   <p class="tv-source" id="tv-source"></p>
   @HOW@
 </main>'''
-PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/traverse-ui.js"></script>'
+PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/traverse-ui.js"></script>'
 
 ACH = '''
 <main class="td-page">
   <header class="page-head"><h1>Achievements</h1><p id="ach-summary"></p></header>
   <div class="lvl-wrap" id="ach-level"></div>
   <section class="ach-grid" id="ach-grid"></section>
+  <h2 class="ach-h">Secret badges</h2>
+  <section class="ach-grid" id="ach-secret"></section>
 </main>'''
 STATS = '''
 <main class="td-page">
@@ -115,11 +117,14 @@ STATS = '''
   <section class="stat-tiles">
     <div class="tile"><span>Days played</span><b id="st-played">0</b></div>
     <div class="tile"><span>Current streak</span><b id="st-streak">0</b></div>
+    <div class="tile"><span>Best streak</span><b id="st-max">0</b></div>
     <div class="tile"><span>Best score</span><b id="st-best">—</b></div>
-    <div class="tile"><span>Average score</span><b id="st-avg">—</b></div>
     <div class="tile"><span>Planner's routes found</span><b id="st-par">0</b></div>
     <div class="tile"><span>Deals found</span><b id="st-deals">0</b></div>
     <div class="tile"><span>Legs travelled</span><b id="st-legs">0</b></div>
+    <div class="tile"><span>Distance</span><b id="st-km">0 km</b></div>
+    <div class="tile"><span>Countries</span><b id="st-countries">0</b></div>
+    <div class="tile"><span>Average score</span><b id="st-avg">—</b></div>
     <div class="tile"><span>Favourite transport</span><b id="st-mode">—</b></div>
   </section>
   <section class="two">
@@ -134,7 +139,17 @@ PROFILE = '''
     <div class="avatar" id="pf-initials">T</div>
     <div class="who"><b id="pf-display">Traveller</b><span>Travelling since <em id="pf-since">today</em></span><span class="pf-plus" id="pf-plus"></span></div>
     <div class="lvl-wrap" id="pf-level"></div>
-    <div class="facts"><div><b id="pf-played">0</b><span>days played</span></div><div><b id="pf-streak">0</b><span>day streak</span></div><div><b id="pf-best">—</b><span>best score</span></div><div><b id="pf-badges">0</b><span>badges</span></div></div>
+    <div class="facts">
+      <div><b id="pf-streak">0</b><span>day streak</span></div><div><b id="pf-max">0</b><span>best streak</span></div>
+      <div><b id="pf-best">—</b><span id="pf-best-sub">best game</span></div><div><b id="pf-avg">—</b><span>average</span></div>
+      <div><b id="pf-played">0</b><span>days played</span></div><div><b id="pf-par">0</b><span>planner matches</span></div>
+      <div><b id="pf-km">0</b><span>km travelled</span></div><div><b id="pf-badges">0</b><span><a href="achievements.html">badges</a></span></div>
+    </div>
+  </section>
+  <section class="card pf-cal-card"><h2>Last 20 weeks</h2><div class="pf-cal" id="pf-cal"></div>
+    <p class="pf-legend"><span><i class="t1"></i>Arrived</span><span><i class="t2"></i>Wayfarer</span><span><i class="t3"></i>Navigator</span><span><i class="t4"></i>Expert</span><span><i class="t5"></i>Perfect</span></p></section>
+  <section class="card"><h2>Passport</h2><p class="muted" id="pf-pp-count"></p><div class="pf-continents" id="pf-continents"></div><div class="pf-stamps" id="pf-passport"></div></section>
+  <section class="card"><h2>Name</h2>
     <label class="field"><span>Display name</span><input id="pf-name" type="text" maxlength="24" placeholder="How should we call you?"></label>
     <div class="row"><button class="btn primary" id="pf-save">Save name</button><span class="saved" id="pf-saved" hidden>Saved</span></div>
   </section>
@@ -157,13 +172,13 @@ PLUS = '''
   </section>
   <p class="pl-note" id="pl-soon" hidden>Payments open soon. Until then, today's puzzle and the last seven days are free.</p>
   <section class="faq" aria-label="Questions">
-    <details><summary>What stays free?</summary><p>Today's puzzle, your score and rank, streaks and achievements. The last seven days of past puzzles too. Always.</p></details>
+    <details><summary>What stays free?</summary><p>Today's puzzle, your score, streaks, stats and achievements. The last seven days of past puzzles too. Always.</p></details>
     <details><summary>What does Traversle + unlock?</summary><p>Every past puzzle, with the planner's route reveal. Archive stats on your profile. The founder badge on lifetime.</p></details>
     <details><summary>Monthly or lifetime?</summary><p>Monthly is $2.99, cancel any time. Lifetime is $20 once and never renews. It pays for itself in seven months.</p></details>
     <details><summary>Where is my membership stored?</summary><p>In this browser for now. Accounts that sync across devices are coming, and your membership carries over.</p></details>
   </section>
 </main>'''
-PAGES_JS = '<script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script>'
+PAGES_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script>'
 PAGES = (('index',HOME,HOME_JS),('play',PLAY,PLAY_JS),('archive',ARCHIVE,PAGES_JS),('achievements',ACH,PAGES_JS),('stats',STATS,PAGES_JS),('profile',PROFILE,PAGES_JS),('plus',PLUS,PAGES_JS))
 
 for page, body, js in PAGES:

@@ -1,4 +1,4 @@
-/* TraversleDaily play UI: quiet map, mission gauges, stop picker, deals, the planner's route, result and ranking. */
+/* TraversleDaily play UI: quiet map, mission gauges, stop picker, deals, the planner's route, the result and your week. */
 (function () {
   'use strict';
   const T = window.Traverse, $ = s => document.querySelector(s);
@@ -8,7 +8,6 @@
   else if (params.get('day') && +params.get('day') >= 1 && +params.get('day') < today) { ch = T.challenge(+params.get('day')); mode = 'archive'; }
   else ch = T.challenge(today);
   const M = T.mission(ch), tw = ch.twist;
-  const fld = T.field(ch, M);
   const LIVE = T.liveFor(ch.seed);
   let st = T.load(); st.results = st.results || {};
   if (params.get('reset') === '1' && mode === 'today') { delete st.results[ch.key]; T.save(st); history.replaceState(null, '', location.pathname); }
@@ -60,7 +59,8 @@
       <p class="meta"><span>💰 <b>${T.money(M.budget)}</b></span><span>⏱️ <b>${T.dur(M.deadline)}</b></span>${twistPill()}<span class="deals" title="Secret fares found">🎟️ ${dealDots()}</span></p>`;
   }
   renderBrief();
-  $('#tv-gate-day').textContent = title + ' · ' + dayLabel;
+  const rhythm = ch.n ? T.rhythmOf(ch.n) : null;
+  $('#tv-gate-day').textContent = title + ' · ' + dayLabel + (rhythm && rhythm.twist.id === tw.id ? ' · ' + tw.name + ' ' + rhythm.day : '');
   $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} <span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></span><span class="arr">→</span><span class="city">${T.flagImg(ch.to, 40)} <span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></span>`;
   $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km. No direct route. Get there under budget and before the deadline.`;
   $('#tv-gate-mission').innerHTML = `
@@ -78,8 +78,8 @@
     $('#tv-gate-rules').hidden = true; $('#tv-start').hidden = true; $('#tv-gate-note').hidden = true;
   }
   $('#tv-source').textContent = LIVE
-    ? `Flights: average of real one-way economy fares for ${LIVE.depart}, fetched ${new Date(LIVE.fetched).toUTCString().slice(5, 22)} UTC. Ground and sea legs: modelled from distance and calibrated to those fares. Rankings are simulated.`
-    : 'No live fares for this puzzle, so flights are modelled from distance. Rankings are simulated.';
+    ? `Flights: average of real one-way economy fares for ${LIVE.depart}, fetched ${new Date(LIVE.fetched).toUTCString().slice(5, 22)} UTC. Ground and sea legs: modelled from distance and calibrated to those fares.`
+    : 'No live fares for this puzzle, so flights are modelled from distance.';
 
   /* ---------- map ---------- */
   const svg = d3.select('#tv-svg');
@@ -352,14 +352,14 @@
     if (!atDest() || !tw.done(twState())) return;
     const secs = elapsed(); clearInterval(timer); playing = false;
     const tt = totals(); const sc = T.score(tt.cost, tt.hours, secs, M), tr = T.tier(sc, M);
-    const res = { score: sc, tier: tr.name, cost: Math.round(tt.cost), hours: tt.hours, secs: Math.round(secs * 10) / 10, route: route.map(r => ({ to: r.to, mode: r.leg.mode, cost: r.leg.cost, hours: r.leg.hours, deal: r.leg.deal || 0 })),
+    const res = { from: ch.from.id, score: sc, tier: tr.name, cost: Math.round(tt.cost), hours: tt.hours, secs: Math.round(secs * 10) / 10, route: route.map(r => ({ to: r.to, mode: r.leg.mode, cost: r.leg.cost, hours: r.leg.hours, deal: r.leg.deal || 0 })),
       deals: { found: found.size, total: M.deals, used: route.filter(r => r.leg.deal).length }, hints: HINTS - hints, undos: UNDOS - undos, par: { cost: M.par.cost, hours: M.par.hours, legs: M.par.legs }, parMatch: tt.cost <= M.par.cost + 1 && tt.hours <= M.par.hours + 0.05, twist: tw.id, at: Date.now() };
     if (!practice) {
       st = T.load(); st.results = st.results || {};
-      const before = T.progression(st.results);
+      const before = T.progression(st.results), prior = Object.assign({}, st.results);
       if (!st.results[ch.key]) { st.results[ch.key] = res; T.save(st); }
       practice = true;
-      showResult(res, false, T.progression(st.results).xp - before.xp);
+      showResult(res, false, T.progression(st.results).xp - before.xp, false, T.newlyEarned(prior, st.results));
     } else showResult(res, true, 0);
   };
 
@@ -378,8 +378,8 @@
     return { cls: 'lose', h: '🧭 The planner wins this one', t: dc > 0.5 ? `You were ${T.money(dc)} more expensive${dh > 0.05 ? ' and ' + T.dur(dh) + ' slower' : ''}.` : dh > 0.05 ? `You were ${T.dur(dh)} slower.` : 'A whisker behind on the balance of money and time.' };
   }
   const routeCol = (title, rt, cost, hours, cls) => `<div class="col ${cls}"><h5>${title}</h5><ol>${[ch.from, ...rt.map(r => T.byId[r.to])].map((c, i) => (i ? `<li class="lg"><span class="ar">↓</span><span>${T.MODES[rt[i - 1].mode].icon} ${T.MODES[rt[i - 1].mode].name}${rt[i - 1].deal ? ' 🎟️' : ''}</span><small>${T.money(rt[i - 1].cost)} · ${T.dur(rt[i - 1].hours)}</small></li>` : '') + `<li class="st${i === 0 ? ' s' : i === rt.length ? ' d' : ''}">${T.esc(c.name)}</li>`).join('')}</ol><div class="tot"><b>${T.money(cost)}</b><span>${T.dur(hours)}</span><span>${rt.length} legs</span></div></div>`;
-  function buildSummary(res, isPractice, xpGain) {
-    const rk = T.rankOf(res.score, fld), pct = Math.max(1, Math.round(100 * rk.rank / rk.of)), tr = T.tier(res.score, M), f = factors(res), v = verdict(res);
+  function buildSummary(res, isPractice, xpGain, earned) {
+    const tr = T.tier(res.score, M), ofPar = Math.round(100 * res.score / Math.max(1, M.par.score)), f = factors(res), v = verdict(res);
     const prog = T.progression(T.load().results || {}), lvlPct = prog.next ? Math.round(100 * prog.into / prog.span) : 100;
     const parRoute = M.par.path.map(e => ({ to: e.to, mode: e.mode, cost: e.cost, hours: e.hours, deal: e.deal }));
     const found = res.deals ? res.deals.found : 0, parDeals = M.par.path.filter(e => e.deal).length;
@@ -394,8 +394,9 @@
         <p class="lab">Your journey</p>
         <div class="chain">${chain}</div>
         <div class="rs-stats"><div><b>${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.route.length}</b><span>legs</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>deals</span></div><div class="sc"><b>${res.score.toLocaleString()}</b><span>score</span></div></div>
-        <div class="rs-rating ${tr.name.toLowerCase()}"><span class="ic">${tr.icon}</span><div><b>${tr.name}</b><small>${isPractice ? 'would rank' : 'rank'} #${rk.rank.toLocaleString()} of ${rk.of.toLocaleString()} · top ${pct}%</small></div></div>
+        <div class="rs-rating ${tr.name.toLowerCase()}"><span class="ic">${tr.icon}</span><div><b>${tr.name}</b><small>${ofPar}% of the planner's score (${M.par.score.toLocaleString()})${isPractice ? ' · practice' : ''}</small></div></div>
       </section>
+      ${earned && earned.length ? `<section class="rs-badges"><p class="lab">New badge${earned.length === 1 ? '' : 's'}</p><div>${earned.map(a => `<a href="achievements.html" class="nb${a.tier ? ' t-' + a.tier.toLowerCase() : ''}"><span>${a.ic}</span><b>${T.esc(a.name)}</b><small>${a.tier || (a.secret ? 'Secret badge' : 'Unlocked')}</small></a>`).join('')}</div></section>` : ''}
       <section class="rs-perf"><p class="lab">Your performance</p>
         ${perf('Cost', T.money(res.cost), T.money(M.cheapest), res.cost <= M.cheapest + 1, '+' + T.money(res.cost - M.cheapest))}
         ${perf('Time', T.dur(res.hours), T.dur(M.fastest), res.hours <= M.fastest + 0.05, '+' + T.dur(res.hours - M.fastest))}
@@ -433,8 +434,8 @@
     const copy = () => (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Result copied. Paste it anywhere.'), () => prompt('Copy your result:', txt));
     if (navigator.share) navigator.share({ text: txt }).catch(e => { if (!e || e.name !== 'AbortError') copy(); }); else copy();
   }
-  function showModal(res, isPractice, xpGain) {
-    $('#tv-modal').innerHTML = `<div class="tv-modal-card rs" role="dialog" aria-modal="true" aria-label="Expedition report"><button class="tv-modal-x" id="tv-modal-close" aria-label="Close">✕</button>${buildSummary(res, isPractice, xpGain)}</div>`;
+  function showModal(res, isPractice, xpGain, earned) {
+    $('#tv-modal').innerHTML = `<div class="tv-modal-card rs" role="dialog" aria-modal="true" aria-label="Expedition report"><button class="tv-modal-x" id="tv-modal-close" aria-label="Close">✕</button>${buildSummary(res, isPractice, xpGain, earned)}</div>`;
     $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
     $('#tv-modal-close').onclick = closeModal;
     $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
@@ -453,12 +454,9 @@
 
   /* personal stats pop-up (the thing people screenshot) */
   function showStats() {
-    const R = (T.load().results) || {}; const keys = Object.keys(R).filter(k => /^\d{4}-/.test(k)).sort(); const runs = keys.map(k => R[k]);
-    const dayOf = k => Math.round((Date.parse(k) - T.EPOCH) / 86400000) + 1;
-    let cur = 0, max = 0, prev = null, run = 0; keys.forEach(k => { const d = dayOf(k); run = (prev !== null && d === prev + 1) ? run + 1 : 1; prev = d; max = Math.max(max, run); });
-    { let d = today; if (!R[T.dayKey(d)]) d--; while (d >= 1 && R[T.dayKey(d)]) { cur++; d--; } }
-    const tiers = ['Perfect', 'Expert', 'Navigator', 'Wayfarer', 'Arrived'], counts = tiers.map(t => runs.filter(r => (r.tier || 'Arrived') === t).length), mx = Math.max(1, ...counts);
-    const avg = runs.length ? Math.round(runs.reduce((a, r) => a + r.score, 0) / runs.length) : 0, best = runs.length ? Math.max(...runs.map(r => r.score)) : 0;
+    const R = (T.load().results) || {}, S = T.stats(R, today), runs = S.runs;
+    const tiers = ['Perfect', 'Expert', 'Navigator', 'Wayfarer', 'Arrived'], counts = tiers.map(t => S.tiers[t] || 0), mx = Math.max(1, ...counts);
+    const cur = S.streak, max = S.maxStreak, avg = S.avg, best = S.best ? S.best.score : 0;
     const prog = T.progression(R);
     const todayRes = R[T.dayKey(today)];
     $('#tv-modal').innerHTML = `<div class="tv-modal-card stats" role="dialog" aria-modal="true" aria-label="Your stats">
@@ -476,36 +474,25 @@
   }
   { const b = $('#td-stats'); if (b) b.onclick = showStats; }
 
-  function showResult(res, isPractice, xpGain, quiet) {
+  function showResult(res, isPractice, xpGain, quiet, earned) {
     $('#tv-plan').hidden = true; pendingTo = null; selOpt = null; showPar = true; drawn = false;
     route = res.route.map((r, i) => ({ from: i ? res.route[i - 1].to : ch.from.id, to: r.to, leg: { mode: r.mode, cost: r.cost, hours: r.hours, icon: T.MODES[r.mode].icon, deal: r.deal } }));
     drawMap();
-    $('#tv-result').innerHTML = `<div class="rs">${buildSummary(res, isPractice, xpGain)}<p class="rs-maptoggle"><button class="lnk" id="tv-par-toggle">Hide the planner's route on the map</button></p></div>`;
+    $('#tv-result').innerHTML = `<div class="rs">${buildSummary(res, isPractice, xpGain, earned)}<p class="rs-maptoggle"><button class="lnk" id="tv-par-toggle">Hide the planner's route on the map</button></p></div>`;
     $('#tv-result').hidden = false;
     wireSummary($('#tv-result'), res);
     $('#tv-par-toggle').onclick = () => { showPar = !showPar; $('#tv-par-toggle').textContent = (showPar ? 'Hide' : 'Show') + " the planner's route on the map"; drawMap(); fitRoute(); };
-    showBoard(mode === 'today' ? (st.results[ch.key] || res) : res);
-    if (!quiet) showModal(res, isPractice, xpGain); else setTimeout(animateRoutes, 150);
+    st = T.load(); st.results = st.results || {}; showBoard();
+    if (!quiet) showModal(res, isPractice, xpGain, earned); else setTimeout(animateRoutes, 150);
   }
 
-  function showBoard(mine) {
-    const rk = T.rankOf(mine.score, fld), r = T.rng(T.hash('names-' + ch.seed));
-    const FIRST = ['Mara', 'Jonas', 'Aiko', 'Diego', 'Nia', 'Luca', 'Priya', 'Sam', 'Elif', 'Tomás', 'Zara', 'Kai', 'Ines', 'Noor', 'Ravi', 'Sofie', 'Owen', 'Lena', 'Yusuf', 'Hana'];
-    const FLAGS = ['🇺🇸', '🇬🇧', '🇩🇪', '🇯🇵', '🇧🇷', '🇮🇳', '🇫🇷', '🇪🇸', '🇨🇦', '🇦🇺', '🇰🇷', '🇲🇽', '🇳🇱', '🇸🇪', '🇹🇷', '🇳🇬', '🇮🇹', '🇵🇱', '🇦🇷', '🇿🇦'];
-    const name = () => FIRST[Math.floor(r() * FIRST.length)] + ' ' + String.fromCharCode(65 + Math.floor(r() * 26)) + '. ' + FLAGS[Math.floor(r() * FLAGS.length)];
-    const all = fld.slice(0, 5).map((s, i) => ({ rank: i + 1, name: name(), score: s })).concat([{ rank: rk.rank, name: 'You', score: mine.score, me: true }]);
-    if (rk.rank > 7) { all.push({ rank: rk.rank - 1, name: name(), score: fld[rk.rank - 2] }); all.push({ rank: rk.rank + 1, name: name(), score: fld[rk.rank - 1] }); }
-    const seen = new Set(), rows = []; all.sort((a, b) => a.rank - b.rank || (a.me ? -1 : 1)).forEach(x => { if (!seen.has(x.rank) || x.me) { seen.add(x.rank); rows.push(x); } });
-    const bins = new Array(20).fill(0); fld.forEach(s => bins[Math.min(19, Math.floor(s / 500))]++);
-    const myBin = Math.min(19, Math.floor(mine.score / 500)), mx = Math.max(...bins);
-    const played = Object.keys(st.results || {});
-    const days = []; for (let i = 6; i >= 0; i--) { const n = today - i; if (n < 1) continue; const key = T.dayKey(n); days.push(`<a class="d ${st.results[key] ? 'p' : ''}" href="play.html${n === today ? '' : '?day=' + n}" title="${key}${st.results[key] ? ' · ' + st.results[key].score.toLocaleString() : ''}">#${n}</a>`); }
-    $('#tv-board').innerHTML = `<div class="card"><h3>${ch.n ? 'Today\'s field' : 'Expedition field'}</h3><p class="sub">${rk.of.toLocaleString()} journeys on ${ch.n ? 'puzzle #' + ch.n : 'this expedition'}. Simulated ranking. ${mode === 'today' ? 'Your first run of the day counts.' : ''}</p>
-      <table><thead><tr><th>#</th><th>Traveller</th><th class="r">Score</th></tr></thead><tbody>
-      ${rows.map(x => `<tr${x.me ? ' class="me"' : ''}><td>${x.rank.toLocaleString()}</td><td>${x.name}</td><td class="r">${x.score.toLocaleString()}</td></tr>`).join('')}</tbody></table>
-      <div class="dist">${bins.map((b, i) => `<i class="${i === myBin ? 'me' : ''}" style="height:${Math.max(3, 100 * b / mx)}%" title="${(i * 500).toLocaleString()}–${(i * 500 + 499).toLocaleString()}: ${b}"></i>`).join('')}</div>
-      <div class="axis"><span>0</span><span>Score distribution</span><span>10,000</span></div>
-      <div class="tv-hist">${days.join('')}<span style="font-size:.8rem;color:var(--cream-3);margin-left:6px">${played.length} day${played.length === 1 ? '' : 's'} played · tap a day to replay it</span></div></div>`;
+  /* your week: the last seven puzzles, played or not, with links to replay them */
+  function showBoard() {
+    const R = st.results || {}, S = T.stats(R, today);
+    const days = []; for (let i = 6; i >= 0; i--) { const n = today - i; if (n < 1) continue; const key = T.dayKey(n), r = R[key]; days.push(`<a class="d ${r ? 'p' : ''}" href="play.html${n === today ? '' : '?day=' + n}" title="${key}${r ? ' · ' + r.score.toLocaleString() : ''}">#${n}<small>${r ? r.score.toLocaleString() : '—'}</small></a>`); }
+    $('#tv-board').innerHTML = `<div class="card"><h3>Your week</h3><p class="sub">🔥 ${S.streak}-day streak · best ${S.maxStreak} · ${S.played} day${S.played === 1 ? '' : 's'} played. Tap a day to replay it.</p>
+      <div class="tv-hist">${days.join('')}</div>
+      <p class="sub"><a href="profile.html">Your profile</a> · <a href="achievements.html">Badges</a> · <a href="archive.html">Past puzzles</a></p></div>`;
     $('#tv-board').hidden = false;
   }
 

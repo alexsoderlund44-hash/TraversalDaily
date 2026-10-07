@@ -138,21 +138,51 @@
   }
 
   /* ---------- the day's challenge ---------- */
-  function challenge(n) { return build('d' + n, 'traverse-day-' + n, n); }
-  function challengeRandom(tag) { const t = String(tag || Math.random().toString(36).slice(2, 8)); return build('r' + t, 'traverse-random-' + t, 0, t); }
-  const CH = {};
-  function build(seed, hashKey, n, tag) {
+  /* weekly rhythm: each weekday (UTC date of the puzzle) has its own twist, so "Rail pass Tuesday" becomes a habit */
+  const RHYTHM = ['overland', 'open', 'rail', 'oneflight', 'threemodes', 'ferry', 'nofly']; // Sunday first, like getUTCDay()
+  const DAYNAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const rhythmOf = n => { const wd = new Date(dayKey(n)).getUTCDay(); return { twist: twistById[RHYTHM[wd]], day: DAYNAMES[wd] }; };
+  // a quick check that a city pair can host a twist at all (the mission search has the final say)
+  const fits = (tw, a, b) => tw === 'nofly' ? (sameLand(a, b) && !crossesMed(a, b)) || (a.coastal && b.coastal)
+    : tw === 'rail' ? a.rail && b.rail && sameLand(a, b) : tw === 'ferry' ? a.coastal || b.coastal : true;
+  /* daily schedule (data/schedule.js, written by tools/build-schedule.js): a start, destination and twist per day,
+     each checked ahead of time to have a planner's route of three or more legs that keeps the day's twist */
+  // in Node (the schedule builder, the live-fares routine) pick the schedule up from disk so every tool sees the same days
+  if (!window.TRAVERSE_SCHEDULE && typeof require === 'function' && typeof __dirname === 'string') { try { require(__dirname + '/../data/schedule.js'); } catch (e) {} }
+  const scheduled = n => { const S = window.TRAVERSE_SCHEDULE; return S && S.epoch === dayKey(1) && S.days[n] ? S.days[n] : null; };
+  function challenge(n, salt) {
+    const s = salt === undefined ? scheduled(n) : null;
+    if (s) return build('d' + n, '', n, null, { from: byId[s[0]], to: byId[s[1]], twist: twistById[s[2]] });
+    return build('d' + n, 'traverse-day-' + n + (salt ? '-' + salt : ''), n, null, { twist: rhythmOf(n).twist });
+  }
+  // random expeditions: try a few city pairs (deterministic from the tag) until one has a real multi-leg puzzle
+  function challengeRandom(tag) {
+    const t = String(tag || Math.random().toString(36).slice(2, 8)), seed = 'r' + t;
     if (CH[seed]) return CH[seed];
-    const r = rng(hash(hashKey));
-    let a, b, tries = 0;
-    do { a = C[Math.floor(r() * C.length)]; b = C[Math.floor(r() * C.length)]; tries++; }
-    while ((a.id === b.id || km(a, b) < 1000 || km(a, b) > 4200 || a.hub + b.hub < 2) && tries < 400);
+    for (let k = 0; k < 4; k++) {
+      const ch = build(seed, 'traverse-random-' + t + (k ? '-' + k : ''), 0, t);
+      if (k === 3 || mission(ch).par.legs >= 3) return ch;
+      forget(seed);
+    }
+  }
+  const CH = {};
+  function build(seed, hashKey, n, tag, fixed) {
+    if (CH[seed]) return CH[seed];
+    fixed = fixed || {};
+    const r = rng(hash(hashKey || seed));
+    let a = fixed.from, b = fixed.to, tries = 0;
+    if (!a || !b) {
+      do { a = C[Math.floor(r() * C.length)]; b = C[Math.floor(r() * C.length)]; tries++; }
+      while ((a.id === b.id || km(a, b) < 1000 || km(a, b) > 4200 || a.hub + b.hub < 2 || (fixed.twist && tries < 300 && !fits(fixed.twist.id, a, b))) && tries < 400);
+    }
     BLOCKED[seed] = [a.id, b.id].sort().join('-');
-    const twist = TWISTS[Math.floor(r() * TWISTS.length)];
+    const twist = fixed.twist || TWISTS[Math.floor(r() * TWISTS.length)];
     TWIST[seed] = twist.id;
     const ch = { n, key: n ? dayKey(n) : 'random-' + tag, seed, from: a, to: b, twistId: twist.id, twist, random: !n };
     return (CH[seed] = ch);
   }
+
+  function forget(seed) { [CH, BLOCKED, DEALS, TWIST, MIS, CAL].forEach(o => delete o[seed]); }
 
   /* ---------- route search: every sensible route, kept as a Pareto frontier of (cost, hours) ---------- */
   function corridor(ch) { // cities worth considering: not a huge detour off the straight line
@@ -223,7 +253,7 @@
     };
     let routes = search();
     if (routes.length < 3) { cities = C; g = null; routes = search(); }
-    if (routes.length < 2 && ch.twistId !== 'open') { ch.twist = twistById.open; ch.twistId = 'open'; TWIST[ch.seed] = 'open'; cities = corridor(ch); g = null; routes = search(); }
+    if (routes.length < 2 && ch.twistId !== 'open') { ch.twist = twistById.open; ch.twistId = 'open'; TWIST[ch.seed] = 'open'; cities = corridor(ch); g = null; routes = search(); if (routes.length < 3) { cities = C; g = null; routes = search(); } }
     const sc0 = (x, cheap, fast) => routeScore(x.cost, x.hours, cheap, fast);
     const cheap = Math.min(...routes.map(x => x.cost)), fast = Math.min(...routes.map(x => x.hours));
     const sorted = routes.slice().sort((x, y) => sc0(y, cheap, fast) - sc0(x, cheap, fast));
@@ -307,20 +337,89 @@
     return { xp, level: li + 1, title: LEVELS[li][1], next: next ? next[0] : null, nextTitle: next ? next[1] : null, into: xp - LEVELS[li][0], span: next ? next[0] - LEVELS[li][0] : 1 };
   }
 
-  /* ---------- simulated global field (no backend) ---------- */
-  function field(ch, M) {
-    const r = rng(hash('field-' + ch.seed)); const n = 1800 + Math.floor(r() * 2400);
-    const scores = [];
-    for (let i = 0; i < n; i++) {
-      const skill = r();
-      const cost = M.cheapest * (1.02 + (1 - skill) * (0.15 + r() * 1.4));
-      const hrs = M.fastest * (1.02 + (1 - skill) * (0.1 + r() * 1.6));
-      const secs = 25 + (1 - skill) * 220 * r() + r() * 60;
-      scores.push(score(cost, hrs, secs, M));
-    }
-    return scores.sort((x, y) => y - x);
+  /* ---------- player stats: one source for the profile, stats page, achievements and the stats pop-up ---------- */
+  const CONTINENT = {};
+  [['Africa', 'Egypt Tunisia Algeria Morocco Nigeria Ghana Senegal Kenya Ethiopia Tanzania'], ['North America', 'USA Canada Mexico Cuba Panama'],
+   ['South America', 'Colombia Peru Chile Argentina Brazil'], ['Oceania', 'Australia New Zealand'],
+   ['Asia', 'Georgia Azerbaijan Armenia Israel Jordan Lebanon UAE Qatar Iran Oman India Pakistan Thailand Vietnam Malaysia Singapore Indonesia Philippines China Japan Taiwan']
+  ].forEach(([k, v]) => v.split(' ').forEach(c => (CONTINENT[c] = k)));
+  Object.assign(CONTINENT, { 'South Africa': 'Africa', 'Saudi Arabia': 'Asia', 'Sri Lanka': 'Asia', 'Hong Kong': 'Asia', 'South Korea': 'Asia' });
+  const continentOf = c => CONTINENT[c.country] || 'Europe';
+  const COUNTRIES = Array.from(new Set(C.map(c => c.country)));
+  const CONTINENTS = ['Europe', 'Asia', 'Africa', 'North America', 'South America', 'Oceania'];
+  const dayOfKey = k => Math.round((Date.parse(k) - EPOCH) / DAY_MS) + 1;
+  function stats(results, now) {
+    results = results || {}; const today = now || dayNumber();
+    const keys = Object.keys(results).filter(k => /^\d{4}-/.test(k)).sort(), runs = keys.map(k => results[k]);
+    let maxStreak = 0, run = 0, prev = null, gapReturn = false;
+    keys.forEach(k => { const d = dayOfKey(k); if (prev !== null && d - prev > 7) gapReturn = true; run = (prev !== null && d === prev + 1) ? run + 1 : 1; prev = d; maxStreak = Math.max(maxStreak, run); });
+    let streak = 0; { let d = today; if (!results[dayKey(d)]) d--; while (d >= 1 && results[dayKey(d)]) { streak++; d--; } }
+    const countries = new Set(), continents = new Set(), modeCount = {}; let kmTot = 0, legs = 0, spent = 0, hours = 0, best = null;
+    keys.forEach(k => {
+      const r = results[k], start = byId[r.from] || challenge(dayOfKey(k)).from; let at = start;
+      countries.add(start.country); continents.add(continentOf(start));
+      r.route.forEach(l => { const c = byId[l.to]; if (!c) return; kmTot += km(at, c); at = c; countries.add(c.country); continents.add(continentOf(c)); modeCount[l.mode] = (modeCount[l.mode] || 0) + 1; });
+      legs += r.route.length; spent += r.cost; hours += r.hours;
+      if (!best || r.score > best.score) best = { score: r.score, key: k, n: dayOfKey(k), tier: r.tier };
+    });
+    const tiers = {}; TIERS.forEach(t => (tiers[t[1]] = 0)); runs.forEach(r => (tiers[r.tier || 'Arrived'] = (tiers[r.tier || 'Arrived'] || 0) + 1));
+    const hourOf = r => r.at ? new Date(r.at).getHours() : 12;
+    return {
+      keys, runs, played: runs.length, streak, maxStreak, best, avg: runs.length ? Math.round(runs.reduce((a, r) => a + r.score, 0) / runs.length) : 0,
+      tiers, expert: tiers.Perfect + tiers.Expert, perfect: tiers.Perfect,
+      parDays: runs.filter(r => r.parMatch).length, dealDays: runs.filter(r => r.deals && r.deals.total && r.deals.found === r.deals.total).length,
+      dealsFound: runs.reduce((a, r) => a + (r.deals ? r.deals.found : 0), 0),
+      countries, continents, km: Math.round(kmTot), legs, spent, hours, modeCount,
+      twists: new Set(runs.map(r => r.twist).filter(Boolean)), noFly: runs.filter(r => !r.route.some(l => l.mode === 'plane')).length,
+      ferryLegs: modeCount.ferry || 0, quick: runs.filter(r => r.secs < 45).length, maxLegs: runs.reduce((a, r) => Math.max(a, r.route.length), 0),
+      thrifty: runs.filter(r => r.cost < 100).length, level: progression(results).level,
+      early: runs.some(r => hourOf(r) < 7), late: runs.some(r => hourOf(r) >= 23),
+      flawless: runs.some(r => r.tier === 'Perfect' && !r.hints && !r.undos), quickPar: runs.some(r => r.parMatch && r.secs < 60), gapReturn,
+    };
   }
-  const rankOf = (s, fld) => { let i = 0; while (i < fld.length && fld[i] > s) i++; return { rank: i + 1, of: fld.length + 1 }; };
+
+  /* ---------- achievements: tiered (bronze, silver, gold) so there is always a next goal, plus a few secret ones ---------- */
+  const TIER_NAMES = ['Bronze', 'Silver', 'Gold'];
+  const ACH = [
+    { id: 'first', ic: '🧭', name: 'First Departure', what: 'Submit your first journey', v: s => s.played, t: [1] },
+    { id: 'streak', ic: '🔥', name: 'On a Roll', what: 'Play {n} days in a row', v: s => s.maxStreak, t: [7, 30, 100] },
+    { id: 'played', ic: '🎒', name: 'Seasoned', what: 'Play {n} days', v: s => s.played, t: [10, 50, 200] },
+    { id: 'par', ic: '🎯', name: "Planner's Match", what: "Find the planner's route {n}", v: s => s.parDays, t: [1, 10, 50], times: true },
+    { id: 'deals', ic: '🏷️', name: 'Deal Hunter', what: 'Find every hidden deal in a day {n}', v: s => s.dealDays, t: [1, 10, 50], times: true },
+    { id: 'perfect', ic: '🏆', name: 'Perfect Day', what: 'Earn a Perfect rating {n}', v: s => s.perfect, t: [1, 5, 25], times: true },
+    { id: 'expert', ic: '🥇', name: 'Consistent', what: 'Rate Expert or better on {n} days', v: s => s.expert, t: [3, 15, 60] },
+    { id: 'passport', ic: '🛂', name: 'Passport', what: 'Pass through {n} countries', v: s => s.countries.size, t: [10, 25, 50] },
+    { id: 'continents', ic: '🌍', name: 'Continental', what: 'Travel on {n} continents', v: s => s.continents.size, t: [2, 4, 6] },
+    { id: 'distance', ic: '🛰️', name: 'Long Haul', what: 'Travel {n} km in total', v: s => s.km, t: [10000, 40075, 384400], note: ['', 'once round the Earth', 'as far as the Moon'] },
+    { id: 'twists', ic: '🎲', name: 'Rule Bender', what: 'Play {n} different twists', v: s => s.twists.size, t: [3, 5, 7] },
+    { id: 'modes', ic: '🚆', name: 'Mixed Company', what: 'Use {n} kinds of transport', v: s => Object.keys(s.modeCount).length, t: [3, 5, 7] },
+    { id: 'noplane', ic: '🚌', name: 'Grounded', what: 'Finish {n} without flying', v: s => s.noFly, t: [1, 10, 30], journeys: true },
+    { id: 'ferry', ic: '🚢', name: 'Sea Legs', what: 'Take {n} ferries', v: s => s.ferryLegs, t: [1, 10, 30] },
+    { id: 'quick', ic: '⚡', name: 'Snap Decision', what: 'Submit in under 45 seconds {n}', v: s => s.quick, t: [1, 10, 30], times: true },
+    { id: 'scenic', ic: '🗺️', name: 'The Scenic Route', what: 'Finish a journey with {n} legs', v: s => s.maxLegs, t: [4, 5, 6] },
+    { id: 'thrifty', ic: '💰', name: 'Thrifty', what: 'Finish {n} for under $100', v: s => s.thrifty, t: [1, 10, 30], journeys: true },
+    { id: 'level', ic: '🧳', name: 'Climbing', what: 'Reach level {n}', v: s => s.level, t: [3, 5, 8] },
+    { id: 'flawless', ic: '💎', name: 'Flawless', what: 'A Perfect rating with no hints and no undos', v: s => +s.flawless, t: [1], secret: true },
+    { id: 'quickpar', ic: '🚀', name: 'Back of an Envelope', what: "Find the planner's route in under a minute", v: s => +s.quickPar, t: [1], secret: true },
+    { id: 'early', ic: '🌅', name: 'Early Bird', what: 'Submit a journey before 7 am', v: s => +s.early, t: [1], secret: true },
+    { id: 'late', ic: '🌙', name: 'Last Train', what: 'Submit a journey after 11 pm', v: s => +s.late, t: [1], secret: true },
+    { id: 'return', ic: '🔁', name: 'Back on the Road', what: 'Come back after more than a week away', v: s => +s.gapReturn, t: [1], secret: true },
+  ];
+  const goalText = (a, n) => { const num = n.toLocaleString('en-US'); return a.what.replace('{n}', a.times ? (n === 1 ? 'once' : num + ' times') : a.journeys ? (n === 1 ? 'a journey' : num + ' journeys') : num); };
+  function achievements(results, now) {
+    const s = stats(results, now);
+    return ACH.map(a => {
+      const v = a.v(s), level = a.t.filter(x => v >= x).length, next = a.t[level];
+      return { id: a.id, ic: a.ic, name: a.name, secret: !!a.secret, value: v, level, max: a.t.length, done: level === a.t.length,
+        tier: a.t.length > 1 && level ? TIER_NAMES[level - 1] : '', goal: next !== undefined ? goalText(a, next) : goalText(a, a.t[a.t.length - 1]),
+        target: next !== undefined ? next : a.t[a.t.length - 1], note: a.note && next !== undefined ? a.note[level] : '' };
+    });
+  }
+  /* badges or tiers earned by a new result (for the "unlocked" line on the expedition report) */
+  function newlyEarned(before, after) {
+    const b = {}; achievements(before).forEach(a => (b[a.id] = a.level));
+    return achievements(after).filter(a => a.level > (b[a.id] || 0));
+  }
 
   /* ---------- storage ---------- */
   const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } };
@@ -351,5 +450,5 @@
   const secsF = s => s < 60 ? Math.round(s) + 's' : Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's';
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, untilReset, EPOCH, challenge, challengeRandom, mission, score, tier, TIERS, progression, LEVELS, field, rankOf, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
+  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, untilReset, EPOCH, challenge, challengeRandom, mission, benchmarks: mission, score, tier, TIERS, progression, LEVELS, stats, achievements, newlyEarned, COUNTRIES, CONTINENTS, continentOf, rhythmOf, forget, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
 })();

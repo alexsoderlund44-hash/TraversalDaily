@@ -9,7 +9,17 @@ Live at the repo root: `index.html` (home), `play.html`, `achievements.html`, `s
 1. **Cities and legs.** ~130 cities. For each pair, `legs()` lists every direct option (flight, train, bus, ferry, rideshare, car, bike, walk) with a cost and hours, seeded from the day so everyone sees the same prices. Flights use the day's live fare snapshot (`data/live/latest.js`, fetched by the daily routine) where available; everything else is modelled from distance and calibrated to those fares.
 2. **Mission.** `mission()` searches every sensible route (a Pareto frontier of cost × hours, up to six legs) under the day's **twist** (Open road, Grounded, One ticket, Sea legs, Rail pass, Overland arrival, Mix it up). It picks an **intended route** with three or more legs that mixes transport, hides **deals** (two on that route, one decoy) so it undercuts the best two-leg hop, then sets the **budget** just above it and a **deadline** with some slack. Over 30 test days, 27 force a route of three legs or more.
 3. **Score.** Money and time are measured against the best feasible routes, blended with decision speed. Ratings: Perfect, Expert, Navigator, Wayfarer, Arrived, relative to the planner's route score.
-4. **Progression.** XP per official day (score, streak, rating, all deals found), levels from Backpacker to Legend, 16 achievements. Past week of puzzles replayable from the archive (`play.html?day=N`); random expeditions (`play.html?seed=…`) for unlimited practice.
+4. **Progression.** XP per official day (score, streak, rating, all deals found), levels from Backpacker to Legend, 18 tiered achievements (bronze, silver, gold) plus 5 secret ones. Past week of puzzles replayable from the archive (`play.html?day=N`); random expeditions (`play.html?seed=…`) for unlimited practice.
+
+## The daily schedule
+
+Each weekday has its own twist: Sunday Overland arrival, Monday Open road, Tuesday Rail pass, Wednesday One ticket, Thursday Mix it up, Friday Sea legs, Saturday Grounded. `data/schedule.js` holds the start, destination and twist for each day, written by `node tools/build-schedule.js [days]` (default 730). It keeps a city pair only if the planner's route has three or more legs, the weekday's twist survives the mission search and at least three routes fit; otherwise it tries the next pair for that day. Re-run it after changing `EPOCH`, the cities or the twists. Days past the end of the file fall back to the same generator, unchecked.
+
+To launch with a ready archive, set `EPOCH` in `js/traverse.js` one or two weeks before launch day and rebuild the schedule.
+
+## Player profile and stats
+
+`Traverse.stats(results)` is the single source for the profile, stats page, stats pop-up and achievements: streak and best streak, best game, average, planner matches, distance travelled, and a passport of the countries and continents your routes passed through. The profile adds a 20-week calendar coloured by rating.
 
 ## TraversleDaily Plus (paid archive)
 

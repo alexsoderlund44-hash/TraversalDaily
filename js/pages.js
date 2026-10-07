@@ -3,8 +3,6 @@
   'use strict';
   const T = window.Traverse, $ = s => document.querySelector(s);
   const st = T.load(); const R = st.results || {};
-  const days = Object.keys(R).filter(k => /^\d{4}-/.test(k)).sort();
-  const runs = days.map(k => R[k]);
   const today = T.dayNumber();
   const prof = (() => { try { return JSON.parse(localStorage.getItem('traverse.profile')) || {}; } catch (e) { return {}; } })();
   const saveProf = p => { try { localStorage.setItem('traverse.profile', JSON.stringify(p)); } catch (e) {} };
@@ -12,39 +10,12 @@
   const dayOf = k => Math.round((Date.parse(k) - T.EPOCH) / 86400000) + 1;
   const fmtDay = k => new Date(k).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-  const streak = (() => { let n = 0, d = today; if (!R[T.dayKey(d)]) d--; while (d >= 1 && R[T.dayKey(d)]) { n++; d--; } return n; })();
-  const best = runs.length ? Math.max(...runs.map(r => r.score)) : 0;
-  const avg = runs.length ? Math.round(runs.reduce((a, r) => a + r.score, 0) / runs.length) : 0;
-  const modeCount = {}; runs.forEach(r => r.route.forEach(l => (modeCount[l.mode] = (modeCount[l.mode] || 0) + 1)));
+  const S = T.stats(R, today), runs = S.runs, days = S.keys;
+  const { streak, maxStreak, avg, modeCount, legs, spent, hours } = S, best = S.best ? S.best.score : 0;
   const favMode = Object.entries(modeCount).sort((a, b) => b[1] - a[1])[0];
-  const legs = runs.reduce((a, r) => a + r.route.length, 0);
-  const spent = runs.reduce((a, r) => a + r.cost, 0), hours = runs.reduce((a, r) => a + r.hours, 0);
-  const modesUsed = Object.keys(modeCount);
   const prog = T.progression(R);
-  const tiers = runs.map(r => r.tier || '');
-  const twistsPlayed = new Set(runs.map(r => r.twist).filter(Boolean)).size;
-  const parDays = runs.filter(r => r.parMatch).length;
-  const dealDays = runs.filter(r => r.deals && r.deals.total && r.deals.found === r.deals.total).length;
-
-  const ACH = [
-    ['first', '🧭', 'First Departure', 'Submit your first journey.', runs.length >= 1, runs.length, 1],
-    ['par', '🎯', "Planner's Match", "Find the planner's route on any day.", parDays >= 1, parDays, 1],
-    ['deals', '🏷️', 'Deal Hunter', 'Find every hidden deal in a single day.', dealDays >= 1, dealDays, 1],
-    ['perfect', '🏆', 'Perfect Day', 'Earn a Perfect rating.', tiers.includes('Perfect'), tiers.filter(t => t === 'Perfect').length, 1],
-    ['expert3', '🥇', 'Consistent', 'Rate Expert or better on three days.', tiers.filter(t => t === 'Perfect' || t === 'Expert').length >= 3, tiers.filter(t => t === 'Perfect' || t === 'Expert').length, 3],
-    ['streak3', '🔥', 'Three in a Row', 'Play three days running.', streak >= 3, streak, 3],
-    ['streak7', '📅', 'A Full Week', 'Play seven days running.', streak >= 7, streak, 7],
-    ['twists', '🎲', 'Rule Bender', 'Play four different twists.', twistsPlayed >= 4, twistsPlayed, 4],
-    ['multimodal', '🚆', 'Mixed Company', 'Use four different transport types across your journeys.', modesUsed.length >= 4, modesUsed.length, 4],
-    ['noplane', '🚌', 'Grounded', 'Finish a journey without flying.', runs.some(r => !r.route.some(l => l.mode === 'plane')), runs.filter(r => !r.route.some(l => l.mode === 'plane')).length, 1],
-    ['ferry', '🚢', 'Sea Legs', 'Take a ferry on any journey.', !!modeCount.ferry, modeCount.ferry || 0, 1],
-    ['quick', '⚡', 'Snap Decision', 'Submit in under 45 seconds.', runs.some(r => r.secs < 45), runs.filter(r => r.secs < 45).length, 1],
-    ['scenic', '🗺️', 'The Scenic Route', 'Finish a journey with five or more legs.', runs.some(r => r.route.length >= 5), Math.max(0, ...runs.map(r => r.route.length)), 5],
-    ['level3', '🧳', 'Navigator', 'Reach level 3.', prog.level >= 3, prog.level, 3],
-    ['ten', '🎒', 'Seasoned', 'Play ten days.', runs.length >= 10, runs.length, 10],
-    ['thrifty', '💰', 'Thrifty', 'Finish a journey for under $100.', runs.some(r => r.cost < 100), runs.filter(r => r.cost < 100).length, 1],
-  ];
-  const unlocked = ACH.filter(a => a[4]).length;
+  const ACH = T.achievements(R, today);
+  const unlocked = ACH.filter(a => a.level).length, tiersEarned = ACH.reduce((n, a) => n + a.level, 0), tiersAll = ACH.reduce((n, a) => n + a.max, 0);
   const levelHTML = () => { const pct = prog.next ? Math.round(100 * prog.into / prog.span) : 100; return `<div class="lvl"><div class="lvl-row"><b>Level ${prog.level} · ${prog.title}</b><span>${prog.xp.toLocaleString()} XP${prog.next ? ' · ' + (prog.next - prog.xp).toLocaleString() + ' to ' + prog.nextTitle : ''}</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`; };
 
   const page = document.body.dataset.page;
@@ -58,6 +29,7 @@
     g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> on a budget?`; g('hm-h1').classList.add('live');
     const mis = M => `<div class="mi"><span class="ic">💰</span><b>${M ? T.money(M.budget) : '…'}</b><span>budget</span></div><div class="mi"><span class="ic">⏱️</span><b>${M ? T.dur(M.deadline) : '…'}</b><span>deadline</span></div><div class="mi" title="${T.esc(ch.twist.desc)}"><span class="ic">${ch.twist.icon}</span><b>${T.esc(ch.twist.name)}</b><span>twist</span></div><div class="mi"><span class="ic">🏷️</span><b>${M ? M.deals : 3}</b><span>hidden deals</span></div>`;
     g('hm-mission').innerHTML = mis(null);
+    const rh = T.rhythmOf(ch.n); if (rh.twist.id === ch.twistId) g('hm-day').textContent += ' · ' + rh.twist.name + ' ' + rh.day;
     setTimeout(() => { const M = T.mission(ch); g('hm-mission').innerHTML = mis(M); g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> for under <em>${T.money(M.budget)}</em>?`; }, 30);
     const meta = () => g('hm-meta').innerHTML = `<span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>next puzzle in <b>${resetIn()}</b></span>`; meta(); setInterval(meta, 30000);
     if (R[ch.key]) { g('hm-play').textContent = 'See your result'; g('hm-sub').innerHTML = `${R[ch.key].tier ? R[ch.key].tier + ' · ' : ''}you scored <b>${R[ch.key].score.toLocaleString()}</b> today`; }
@@ -65,15 +37,23 @@
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }
   }
   if (page === 'achievements') {
-    $('#ach-summary').textContent = `${unlocked} of ${ACH.length} unlocked`;
+    $('#ach-summary').textContent = `${unlocked} of ${ACH.length} badges · ${tiersEarned} of ${tiersAll} tiers earned`;
     const lv = $('#ach-level'); if (lv) lv.innerHTML = levelHTML();
-    $('#ach-grid').innerHTML = ACH.map(([id, ic, n, d, ok, v, g]) => `<div class="ach${ok ? ' on' : ''}"><span class="ic">${ic}</span><b>${n}</b><p>${d}</p><div class="prog"><i style="width:${Math.min(100, 100 * v / g)}%"></i></div><small>${ok ? 'Unlocked' : (typeof v === 'number' ? Math.min(v, g).toLocaleString() + ' / ' + g.toLocaleString() : '')}</small></div>`).join('');
+    const card = a => {
+      const hide = a.secret && !a.level, pct = a.done ? 100 : Math.min(100, 100 * a.value / a.target);
+      const pips = a.max > 1 ? `<span class="pips">${['bronze', 'silver', 'gold'].map((t, i) => `<i class="${t}${i < a.level ? ' on' : ''}" title="${t}"></i>`).join('')}</span>` : '';
+      return `<div class="ach${a.level ? ' on' : ''}${a.tier ? ' t-' + a.tier.toLowerCase() : ''}${hide ? ' secret' : ''}"><span class="ic">${hide ? '❔' : a.ic}</span><b>${hide ? 'Secret badge' : T.esc(a.name)}</b>${pips}
+        <p>${hide ? 'Keep travelling to discover it.' : a.done ? T.esc(a.goal) + '.' : 'Next: ' + T.esc(a.goal) + (a.note ? ' (' + a.note + ')' : '') + '.'}</p>
+        ${hide ? '' : `<div class="prog"><i style="width:${pct}%"></i></div><small>${a.done ? (a.tier ? a.tier + ' · complete' : 'Unlocked') : Math.min(a.value, a.target).toLocaleString() + ' / ' + a.target.toLocaleString()}${!a.done && a.tier ? ' · ' + a.tier + ' earned' : ''}</small>`}</div>`;
+    };
+    $('#ach-grid').innerHTML = ACH.filter(a => !a.secret).map(card).join('');
+    const sec = $('#ach-secret'); if (sec) sec.innerHTML = ACH.filter(a => a.secret).map(card).join('');
   }
   if (page === 'stats') {
     const f = (sel, v) => { const e = $(sel); if (e) e.textContent = v; };
     f('#st-played', runs.length); f('#st-streak', streak); f('#st-best', best ? best.toLocaleString() : '—'); f('#st-avg', avg ? avg.toLocaleString() : '—');
     f('#st-legs', legs); f('#st-spent', T.money(spent)); f('#st-hours', T.dur(hours)); f('#st-mode', favMode ? T.MODES[favMode[0]].icon + ' ' + T.MODES[favMode[0]].name : '—');
-    f('#st-par', parDays); f('#st-deals', runs.reduce((a, r) => a + (r.deals ? r.deals.found : 0), 0));
+    f('#st-par', S.parDays); f('#st-deals', S.dealsFound); f('#st-max', maxStreak); f('#st-km', S.km.toLocaleString() + ' km'); f('#st-countries', S.countries.size + ' / ' + T.COUNTRIES.length);
     const lv = $('#st-level'); if (lv) lv.innerHTML = levelHTML();
     const hist = $('#st-history');
     if (hist) hist.innerHTML = runs.length ? days.slice().reverse().map(k => { const r = R[k]; const n = dayOf(k); const ch = T.challenge(n); return `<tr><td><a href="play.html${n === today ? '' : '?day=' + n}">#${n}</a><small>${k}</small></td><td>${T.esc(ch.from.name)} → ${T.esc(ch.to.name)}<small>${ch.twist.icon} ${T.esc(ch.twist.name)}</small></td><td>${r.route.map(l => T.MODES[l.mode].icon).join(' ')}</td><td class="r">${T.money(r.cost)}</td><td class="r">${T.dur(r.hours)}</td><td class="r">${T.secsF(r.secs)}</td><td class="r"><b>${r.score.toLocaleString()}</b><small>${r.tier || ''}${r.parMatch ? ' · 🎯' : ''}</small></td></tr>`; }).join('') : '<tr><td colspan="7" class="empty">No journeys yet. Play today\'s puzzle to start your log.</td></tr>';
@@ -85,8 +65,39 @@
     const refresh = () => { $('#pf-initials').textContent = nameOf().trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase(); $('#pf-display').textContent = nameOf(); };
     refresh();
     $('#pf-save').onclick = () => { prof.name = inp.value.trim().slice(0, 24); saveProf(prof); refresh(); const t = $('#pf-saved'); t.hidden = false; setTimeout(() => (t.hidden = true), 1500); };
-    $('#pf-played').textContent = runs.length; $('#pf-streak').textContent = streak; $('#pf-best').textContent = best ? best.toLocaleString() : '—'; $('#pf-badges').textContent = unlocked + ' / ' + ACH.length;
-    $('#pf-since').textContent = days.length ? new Date(days[0]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : 'today';
+    const setT = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+    setT('#pf-played', runs.length); setT('#pf-streak', streak); setT('#pf-max', maxStreak); setT('#pf-avg', avg ? avg.toLocaleString() : '—');
+    setT('#pf-badges', unlocked + ' / ' + ACH.length); setT('#pf-par', S.parDays); setT('#pf-km', S.km.toLocaleString());
+    const bestEl = $('#pf-best');
+    if (bestEl) bestEl.innerHTML = S.best ? `<a href="play.html${S.best.n === today ? '' : '?day=' + S.best.n}">${S.best.score.toLocaleString()}</a>` : '—';
+    setT('#pf-best-sub', S.best ? `best · #${S.best.n} ${S.best.tier || ''}` : 'best game');
+    setT('#pf-since', days.length ? new Date(days[0]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : 'today');
+    /* calendar: the last 20 weeks, one square per day, coloured by rating */
+    const cal = $('#pf-cal');
+    if (cal) {
+      const WEEKS = 20, tierCls = { Perfect: 't5', Expert: 't4', Navigator: 't3', Wayfarer: 't2', Arrived: 't1' };
+      const weekEnd = today + (6 - new Date(T.dayKey(today)).getUTCDay()); // fill to the end of this week (weeks run Sunday to Saturday)
+      let h = '';
+      for (let w = WEEKS - 1; w >= 0; w--) {
+        h += '<div class="wk">';
+        for (let d = 6; d >= 0; d--) {
+          const n = weekEnd - w * 7 - d, key = T.dayKey(n), r = n >= 1 && n <= today ? R[key] : null;
+          const cls = n > today || n < 1 ? 'x' : r ? tierCls[r.tier] || 't1' : '';
+          h += `<i class="${cls}${n === today ? ' now' : ''}" title="${n >= 1 && n <= today ? key + (r ? ' · ' + r.score.toLocaleString() + ' · ' + (r.tier || '') : ' · not played') : ''}"></i>`;
+        }
+        h += '</div>';
+      }
+      cal.innerHTML = h;
+    }
+    /* passport: every country a submitted route passed through */
+    const pp = $('#pf-passport');
+    if (pp) {
+      setT('#pf-pp-count', `${S.countries.size} of ${T.COUNTRIES.length} countries · ${S.continents.size} of ${T.CONTINENTS.length} continents`);
+      const flagOf = name => T.C.find(c => c.country === name);
+      pp.innerHTML = S.countries.size ? Array.from(S.countries).sort().map((cn, i) => `<span class="stamp" style="--r:${((i * 7) % 9) - 4}deg">${T.flagImg(flagOf(cn))}${T.esc(cn)}</span>`).join('')
+        : '<p class="empty">Every country your routes pass through gets a stamp here.</p>';
+      const ct = $('#pf-continents'); if (ct) ct.innerHTML = T.CONTINENTS.map(c => `<span class="${S.continents.has(c) ? 'on' : ''}">${c}</span>`).join('');
+    }
     $('#pf-level').innerHTML = levelHTML();
     $('#pf-reset-today').onclick = () => { const key = T.dayKey(today); if (!R[key]) { alert('No official run saved for today yet.'); return; } if (confirm("Reset today's puzzle? Your official score for today will be erased so you can play it again.")) { delete st.results[key]; T.save(st); location.href = 'play.html'; } };
     $('#pf-reset').onclick = () => { if (confirm('Erase every saved journey, badge and your name from this browser? This cannot be undone.')) { try { localStorage.removeItem('traverse.v1'); localStorage.removeItem('traverse.profile'); } catch (e) {} location.reload(); } };

@@ -44,14 +44,14 @@
   const twistPill = () => `<span class="twist" title="${T.esc(tw.desc)}">${tw.icon} ${T.esc(tw.name)}</span>`;
   function renderBrief() {
     $('#tv-brief').innerHTML = `<p class="k">${title} · ${dayLabel}</p>
-      <div class="route"><span class="pin s"></span><b>${T.flagImg(ch.from)} ${T.esc(ch.from.name)}<small>${T.esc(ch.from.country)}</small></b>
+      <div class="route"><span class="pin s"></span><b>${T.flagImg(ch.from)} ${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></b>
       <span class="ln"></span><span></span>
-      <span class="pin d"></span><b>${T.flagImg(ch.to)} ${T.esc(ch.to.name)}<small>${T.esc(ch.to.country)}</small></b></div>
+      <span class="pin d"></span><b>${T.flagImg(ch.to)} ${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></b></div>
       <p class="meta"><span>💰 <b>${T.money(M.budget)}</b></span><span>⏱️ <b>${T.dur(M.deadline)}</b></span>${twistPill()}<span title="Hidden fare deals discovered">🏷️ <b>${found.size}</b>/${M.deals}</span></p>`;
   }
   renderBrief();
   $('#tv-gate-day').textContent = title + ' · ' + dayLabel;
-  $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} ${T.esc(ch.from.name)}<small>${T.esc(ch.from.country)}</small></span><span class="arr">→</span><span class="city">${T.flagImg(ch.to, 40)} ${T.esc(ch.to.name)}<small>${T.esc(ch.to.country)}</small></span>`;
+  $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} <span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></span><span class="arr">→</span><span class="city">${T.flagImg(ch.to, 40)} <span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></span>`;
   $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km apart and nothing goes there directly. Get there under budget, before the deadline, and find the route the planner had in mind.`;
   $('#tv-gate-mission').innerHTML = `
     <div class="mi"><span class="ic">💰</span><b>${T.money(M.budget)}</b><span>budget</span></div>

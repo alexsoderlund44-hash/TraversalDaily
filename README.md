@@ -1,22 +1,20 @@
 # TraversleDaily
 
-The daily travel strategy game. Every day at 00:00 UTC every player gets the same start city and destination and must plan the best journey across the world: cheapest, fastest, and decided quickly.
+**The daily travel strategy game.** Every UTC day, everyone on Earth gets the same start city, the same destination and the same mission: a budget, a deadline and one twist. Nothing goes there directly, and the obvious two-leg hop never fits the budget. Chain buses, trains, ferries, rideshares and flights, find the three hidden fare deals, and get closer to the planner's route than anyone else.
 
-Static site, no build step:
+Live at the repo root: `index.html` (home), `play.html`, `achievements.html`, `stats.html`, `profile.html`. Static site, no build step: vanilla JS, d3 + topojson (vendored), Natural Earth topology.
 
-    cd traverse-daily && python3 -m http.server   # open http://localhost:8000
+## How a day is built (`js/traverse.js`)
 
-## Layout
-- `index.html` – the game (map, planning dashboard, result, simulated field)
-- `js/traverse.js` – engine: seeded daily challenge, transport legs, Dijkstra benchmarks, hidden score
-- `js/traverse-ui.js` – d3 map, on-map transport picker, dashboard, result
-- `data/cities.js` – ~130 cities (coords, hub tier, coastal, rail, IATA)
-- `data/live/latest.js` – today's **live flight-fare snapshot** (averaged one-way fares per route); `data/live/<date>.js` archive
-- `tools/build-live.js` – turns a raw fares file into the snapshot
-- `data/world.js`, `vendor/` – Natural Earth topology, d3, topojson
+1. **Cities and legs.** ~130 cities. For each pair, `legs()` lists every direct option (flight, train, bus, ferry, rideshare, car, bike, walk) with a cost and hours, seeded from the day so everyone sees the same prices. Flights use the day's live fare snapshot (`data/live/latest.js`, fetched by the daily routine) where available; everything else is modelled from distance and calibrated to those fares.
+2. **Mission.** `mission()` searches every sensible route (a Pareto frontier of cost × hours, up to six legs) under the day's **twist** (Open road, Grounded, One ticket, Sea legs, Rail pass, Overland arrival, Mix it up). It picks an **intended route** with three or more legs that mixes transport, hides **deals** (two on that route, one decoy) so it undercuts the best two-leg hop, then sets the **budget** just above it and a **deadline** with some slack. Over 30 test days, 27 force a route of three legs or more.
+3. **Score.** Money and time are measured against the best feasible routes, blended with decision speed. Ratings: Perfect, Expert, Navigator, Wayfarer, Arrived, relative to the planner's route score.
+4. **Progression.** XP per official day (score, streak, rating, all deals found), levels from Backpacker to Legend, 16 achievements. Past week of puzzles replayable from the archive (`play.html?day=N`); random expeditions (`play.html?seed=…`) for unlimited practice.
 
 ## Live fares
-A daily routine fetches real one-way economy fares for start → hubs → destination, averages the returned itineraries per route, and commits the snapshot. Modelled legs (train, bus, ferry, car) are calibrated to the day's fares so the two agree. Rankings are simulated client-side; there is no backend.
 
-## Competitive integrity
-One official score per UTC day, locked in `localStorage` under `traverse.v1`. Later runs are labelled practice.
+`tools/build-live.js` averages raw SlickTrip results into `data/live/<date>.js` and `latest.js`. A daily routine fetches fares for the next day's start, hubs and destination.
+
+## Design
+
+The site uses the **Night Atlas** theme (`css/atlas.css`): ink navy, brass hairlines, Cormorant Garamond + Nunito Sans. The alternative **Field Journal** direction lives in `designs/journal/`. Pages are generated from shared bodies by `tools/build-designs.py`.

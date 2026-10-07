@@ -5,7 +5,7 @@
   const byId = {}; C.forEach(c => (byId[c.id] = c));
   const STORE = 'traverse.v1';
   const DAY_MS = 86400000;
-  const EPOCH = Date.UTC(2026, 0, 1); // day #1 = 1 Jan 2026 UTC
+  const EPOCH = Date.UTC(2026, 9, 7); // day #1 = 7 Oct 2026 UTC (launch day)
 
   const dayNumber = (t = Date.now()) => Math.floor((t - EPOCH) / DAY_MS) + 1;
   const dayKey = n => new Date(EPOCH + (n - 1) * DAY_MS).toISOString().slice(0, 10);
@@ -49,6 +49,7 @@
     train: { icon: '🚆', name: 'Train', color: '#39C6B0', speed: 150, over: 0.5, fixed: 12, perKm: 0.09 },
     bus:   { icon: '🚌', name: 'Bus', color: '#8FB4FF',   speed: 72,  over: 0.4, fixed: 6,  perKm: 0.045 },
     ferry: { icon: '🚢', name: 'Ferry', color: '#7BE0FF', speed: 38,  over: 1.2, fixed: 20, perKm: 0.08 },
+    ride:  { icon: '🚘', name: 'Rideshare', color: '#C98BFF', speed: 78, over: 0.6, fixed: 8, perKm: 0.065 },
     car:   { icon: '🚗', name: 'Car', color: '#FF8C6B',   speed: 85,  over: 0.2, fixed: 40, perKm: 0.13 },
     bike:  { icon: '🚲', name: 'Bicycle', color: '#C9D6C0', speed: 18, over: 0, fixed: 0, perKm: 0.012 },
     walk:  { icon: '🚶', name: 'Walking', color: '#C9D6C0', speed: 4.5, over: 0, fixed: 0, perKm: 0.03 },
@@ -83,10 +84,11 @@
     const med = v => { if (!v.length) return 1; v = v.slice().sort((p, q) => p - q); return v[Math.floor(v.length / 2)]; };
     return (CAL[seed] = { cost: med(rc), hours: med(rh) });
   }
-  const BLOCKED = {}; // seed -> 'x-y' pair with no direct flight (keeps every day a routing puzzle)
+  const BLOCKED = {}; // seed -> 'x-y' pair with no direct link at all (every day needs at least one stop)
   function legs(a, b, daySeed) {
     if (a.id === b.id) return [];
     const noFly = BLOCKED[daySeed] === [a.id, b.id].sort().join('-');
+    if (noFly) return []; // never a direct link between the day's start and destination: at least one stop is always required
     const d = km(a, b), r = rng(hash(daySeed + '|' + [a.id, b.id].sort().join('-')));
     const out = [];
     const jitter = () => 0.8 + r() * 0.45;
@@ -107,7 +109,8 @@
         const m = MODES.train, hs = (a.hub + b.hub >= 3 && d < 900) ? 1.5 : 1; // high-speed corridors
         add('train', (m.fixed + d * m.perKm * (hs > 1 ? 1.25 : 1)) * jitter(), m.over + d / (m.speed * hs) + (d > 700 ? 1.5 : 0), hs > 1 ? 'high-speed' : null);
       }
-      if (d < 1000) { const m = MODES.bus; add('bus', (m.fixed + d * m.perKm) * jitter(), m.over + d / m.speed + (d > 500 ? 1 : 0)); }
+      if (d < 1300) { const m = MODES.bus; add('bus', (m.fixed + d * m.perKm) * jitter(), m.over + d / m.speed + (d > 500 ? 1 : 0)); }
+      if (d < 900) { const m = MODES.ride; add('ride', (m.fixed + d * m.perKm) * jitter(), m.over + d / m.speed + (d > 400 ? 0.5 : 0), 'shared ride'); }
       if (d < 1200) { const m = MODES.car; add('car', (m.fixed + d * m.perKm) * jitter(), m.over + d / m.speed + Math.floor(d / 600) * 0.75, 'rental'); }
       if (d < 180) { const m = MODES.bike; add('bike', m.fixed + d * m.perKm, d / m.speed); }
       if (d < 45) { const m = MODES.walk; add('walk', d * m.perKm, d / m.speed); }
@@ -126,7 +129,7 @@
     do {
       a = C[Math.floor(r() * C.length)]; b = C[Math.floor(r() * C.length)];
       tries++;
-    } while ((a.id === b.id || km(a, b) < 1500 || km(a, b) > 9500 || a.hub + b.hub < 2) && tries < 200);
+    } while ((a.id === b.id || km(a, b) < 700 || km(a, b) > 4200 || a.hub + b.hub < 2) && tries < 400);
     BLOCKED['d' + n] = [a.id, b.id].sort().join('-');
     return { n, key: dayKey(n), seed: 'd' + n, from: a, to: b };
   }

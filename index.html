@@ -35,14 +35,8 @@
       <button id="tv-zfit" aria-label="Fit route" title="Fit the route">⤢</button>
     </div>
 
-    <!-- legend -->
-    <div class="tv-legend" id="tv-legend"></div>
-
     <!-- hover tooltip -->
     <div class="tv-tip" id="tv-tip" hidden></div>
-
-    <!-- city popover: transport picker -->
-    <div class="tv-pop" id="tv-pop" hidden></div>
 
     <!-- intro overlay -->
     <div class="tv-gate" id="tv-gate">
@@ -51,8 +45,8 @@
         <h1 id="tv-gate-title"></h1>
         <p class="tv-gate-sub" id="tv-gate-sub"></p>
         <ul class="tv-gate-rules">
-          <li>Tap cities on the map to plot stops. Pick how you travel each leg.</li>
-          <li>Flights use today's real average fares. Land and sea are modelled.</li>
+          <li>Add stops one at a time, then pick how you travel each leg: bus, train, rideshare, ferry, car or flight.</li>
+          <li>Flights use today's real average fares. Land and sea legs are modelled and calibrated to them.</li>
           <li>Money, hours and how fast you decide all count. One official run per day.</li>
         </ul>
         <button class="tv-cta" id="tv-start">Start the clock</button>
@@ -80,6 +74,7 @@
     <div class="tv-estimate" id="tv-est"><span>Score estimate</span><b>—</b><div class="bar"><i style="width:0"></i></div></div>
 
     <ol class="tv-stops" id="tv-stops"></ol>
+    <div class="tv-picker" id="tv-picker"></div>
 
     <div class="tv-split" id="tv-split"></div>
 

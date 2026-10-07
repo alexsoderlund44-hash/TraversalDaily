@@ -1,277 +1,274 @@
 window.TRAVERSE_LIVE = {
  "date": "2026-10-07",
- "from": "ams",
- "to": "lax",
+ "from": "spl",
+ "to": "war",
  "depart": "2026-10-21",
  "source": "SlickTrip live fares, one-way economy, 1 traveller, averaged over the cheapest itineraries returned",
- "fetched": "2026-10-07T14:46:36.361Z",
+ "fetched": "2026-10-07T15:29:49.102Z",
  "routes": {
-  "ams-dub": {
-   "cost": 188,
-   "hours": 3.1666666666666665,
+  "spl-mun": {
+   "cost": 243,
+   "hours": 13.166666666666666,
    "n": 12,
-   "min": 121,
+   "min": 116,
    "nonstop": {
-    "cost": 121,
-    "hours": 1.6666666666666667
-   }
-  },
-  "ams-lon": {
-   "cost": 192,
-   "hours": 2.25,
-   "n": 12,
-   "min": 159,
-   "nonstop": {
-    "cost": 159,
+    "cost": 208,
     "hours": 1.4166666666666667
    }
   },
-  "ams-sfo": {
-   "cost": 914,
-   "hours": 24.5,
+  "spl-ber": {
+   "cost": 178,
+   "hours": 7.916666666666667,
    "n": 12,
-   "min": 669,
+   "min": 112,
    "nonstop": {
-    "cost": 1181,
-    "hours": 10.916666666666666
+    "cost": 112,
+    "hours": 1.8333333333333333
    }
   },
-  "ams-chi": {
-   "cost": 1115,
-   "hours": 15.166666666666666,
+  "spl-rom": {
+   "cost": 216,
+   "hours": 11.25,
    "n": 12,
-   "min": 534,
+   "min": 47,
    "nonstop": {
-    "cost": 1177,
-    "hours": 8.5
-   }
-  },
-  "ams-tor": {
-   "cost": 1357,
-   "hours": 15.5,
-   "n": 12,
-   "min": 742,
-   "nonstop": {
-    "cost": 1481,
-    "hours": 7.916666666666667
-   }
-  },
-  "ams-par": {
-   "cost": 288,
-   "hours": 6.166666666666667,
-   "n": 12,
-   "min": 234,
-   "nonstop": {
-    "cost": 251,
-    "hours": 1.4166666666666667
-   }
-  },
-  "ams-cop": {
-   "cost": 256,
-   "hours": 6.75,
-   "n": 12,
-   "min": 171,
-   "nonstop": {
-    "cost": 171,
-    "hours": 1.3333333333333333
-   }
-  },
-  "ams-fra": {
-   "cost": 220,
-   "hours": 2.4166666666666665,
-   "n": 12,
-   "min": 193,
-   "nonstop": {
-    "cost": 193,
+    "cost": 47,
     "hours": 1.0833333333333333
    }
   },
-  "ams-nyc": {
-   "cost": 803,
-   "hours": 20.916666666666668,
+  "spl-zur": {
+   "cost": 254,
+   "hours": 12.166666666666666,
    "n": 12,
-   "min": 444,
+   "min": 124,
    "nonstop": {
-    "cost": 1152,
-    "hours": 8.416666666666666
+    "cost": 262,
+    "hours": 1.6666666666666667
    }
   },
-  "ams-ber": {
-   "cost": 289,
-   "hours": 6.25,
+  "spl-fra": {
+   "cost": 249,
+   "hours": 14.583333333333334,
    "n": 12,
-   "min": 205,
+   "min": 121,
    "nonstop": {
-    "cost": 272,
-    "hours": 1.3333333333333333
+    "cost": 237,
+    "hours": 1.8333333333333333
    }
   },
-  "ams-dal": {
-   "cost": 1202,
-   "hours": 18.25,
+  "spl-cop": {
+   "cost": 224,
+   "hours": 11,
    "n": 12,
-   "min": 886,
+   "min": 127,
    "nonstop": null
   },
-  "ams-sto": {
-   "cost": 223,
-   "hours": 7.25,
+  "spl-bru": {
+   "cost": 251,
+   "hours": 17.083333333333332,
    "n": 12,
-   "min": 128,
+   "min": 147,
+   "nonstop": null
+  },
+  "spl-ams": {
+   "cost": 246,
+   "hours": 13.25,
+   "n": 12,
+   "min": 121,
    "nonstop": {
-    "cost": 128,
+    "cost": 213,
+    "hours": 2.4166666666666665
+   }
+  },
+  "spl-ist": {
+   "cost": 273,
+   "hours": 17.583333333333332,
+   "n": 12,
+   "min": 144,
+   "nonstop": {
+    "cost": 237,
     "hours": 2
    }
   },
-  "ams-zur": {
-   "cost": 249,
-   "hours": 4.416666666666667,
+  "spl-ath": {
+   "cost": 258,
+   "hours": 13.833333333333334,
    "n": 12,
-   "min": 209,
+   "min": 133,
+   "nonstop": null
+  },
+  "spl-sto": {
+   "cost": 222,
+   "hours": 13.583333333333334,
+   "n": 12,
+   "min": 119,
    "nonstop": {
-    "cost": 222,
-    "hours": 1.4166666666666667
+    "cost": 119,
+    "hours": 2.6666666666666665
    }
   },
-  "ams-atl": {
-   "cost": 1173,
-   "hours": 19.833333333333332,
+  "spl-par": {
+   "cost": 230,
+   "hours": 11.75,
    "n": 12,
-   "min": 534,
+   "min": 121,
    "nonstop": {
-    "cost": 1457,
-    "hours": 9.75
+    "cost": 291,
+    "hours": 2.3333333333333335
    }
   },
-  "dub-lax": {
-   "cost": 810,
-   "hours": 20.5,
+  "spl-lon": {
+   "cost": 210,
+   "hours": 10.75,
    "n": 12,
-   "min": 656,
-   "nonstop": {
-    "cost": 1184,
-    "hours": 11
-   }
+   "min": 105,
+   "nonstop": null
   },
-  "lon-lax": {
-   "cost": 926,
-   "hours": 24.666666666666668,
+  "spl-bcn": {
+   "cost": 230,
+   "hours": 13.5,
    "n": 12,
-   "min": 697,
-   "nonstop": {
-    "cost": 1353,
-    "hours": 11.25
-   }
+   "min": 127,
+   "nonstop": null
   },
-  "sfo-lax": {
-   "cost": 190,
-   "hours": 11.333333333333334,
+  "mun-war": {
+   "cost": 279,
+   "hours": 6.666666666666667,
    "n": 12,
-   "min": 94,
+   "min": 195,
    "nonstop": {
-    "cost": 94,
+    "cost": 195,
     "hours": 1.5833333333333333
    }
   },
-  "chi-lax": {
-   "cost": 211,
-   "hours": 7.166666666666667,
+  "ber-war": {
+   "cost": 344,
+   "hours": 7,
    "n": 12,
-   "min": 169,
+   "min": 179,
    "nonstop": {
-    "cost": 170,
-    "hours": 4.583333333333333
+    "cost": 179,
+    "hours": 1.1666666666666667
    }
   },
-  "tor-lax": {
-   "cost": 320,
-   "hours": 13,
+  "rom-war": {
+   "cost": 200,
+   "hours": 9.833333333333334,
    "n": 12,
-   "min": 254,
+   "min": 79,
    "nonstop": {
-    "cost": 398,
-    "hours": 5.333333333333333
+    "cost": 79,
+    "hours": 2.4166666666666665
    }
   },
-  "par-lax": {
-   "cost": 1065,
-   "hours": 22.833333333333332,
-   "n": 12,
-   "min": 738,
-   "nonstop": {
-    "cost": 1287,
-    "hours": 11.75
-   }
-  },
-  "cop-lax": {
-   "cost": 1032,
-   "hours": 23.833333333333332,
-   "n": 12,
-   "min": 850,
-   "nonstop": {
-    "cost": 1443,
-    "hours": 11.583333333333334
-   }
-  },
-  "fra-lax": {
-   "cost": 1047,
-   "hours": 25.75,
-   "n": 12,
-   "min": 688,
-   "nonstop": {
-    "cost": 2164,
-    "hours": 11.5
-   }
-  },
-  "nyc-lax": {
-   "cost": 277,
+  "zur-war": {
+   "cost": 448,
    "hours": 8.583333333333334,
    "n": 12,
-   "min": 219,
+   "min": 240,
    "nonstop": {
-    "cost": 259,
-    "hours": 6.083333333333333
+    "cost": 240,
+    "hours": 1.9166666666666667
    }
   },
-  "ber-lax": {
-   "cost": 1101,
-   "hours": 29.833333333333332,
+  "fra-war": {
+   "cost": 217,
+   "hours": 9.5,
    "n": 12,
-   "min": 680,
-   "nonstop": null
-  },
-  "dal-lax": {
-   "cost": 238,
-   "hours": 7.333333333333333,
-   "n": 12,
-   "min": 148,
+   "min": 165,
    "nonstop": {
-    "cost": 199,
-    "hours": 3.3333333333333335
+    "cost": 165,
+    "hours": 1.6666666666666667
    }
   },
-  "sto-lax": {
-   "cost": 1037,
-   "hours": 18.083333333333332,
+  "cop-war": {
+   "cost": 179,
+   "hours": 8.083333333333334,
    "n": 12,
-   "min": 994,
-   "nonstop": null
-  },
-  "zur-lax": {
-   "cost": 892,
-   "hours": 27,
-   "n": 12,
-   "min": 698,
-   "nonstop": null
-  },
-  "atl-lax": {
-   "cost": 267,
-   "hours": 8.5,
-   "n": 12,
-   "min": 169,
+   "min": 66,
    "nonstop": {
-    "cost": 214,
-    "hours": 4.916666666666667
+    "cost": 66,
+    "hours": 1.4166666666666667
+   }
+  },
+  "bru-war": {
+   "cost": 233,
+   "hours": 9.5,
+   "n": 12,
+   "min": 196,
+   "nonstop": {
+    "cost": 205,
+    "hours": 1.9166666666666667
+   }
+  },
+  "ams-war": {
+   "cost": 294,
+   "hours": 7.416666666666667,
+   "n": 12,
+   "min": 224,
+   "nonstop": {
+    "cost": 271,
+    "hours": 1.8333333333333333
+   }
+  },
+  "ist-war": {
+   "cost": 290,
+   "hours": 13.25,
+   "n": 12,
+   "min": 224,
+   "nonstop": {
+    "cost": 224,
+    "hours": 2.5
+   }
+  },
+  "ath-war": {
+   "cost": 255,
+   "hours": 9.666666666666666,
+   "n": 12,
+   "min": 131,
+   "nonstop": {
+    "cost": 131,
+    "hours": 2.5833333333333335
+   }
+  },
+  "sto-war": {
+   "cost": 220,
+   "hours": 9.916666666666666,
+   "n": 12,
+   "min": 123,
+   "nonstop": {
+    "cost": 310,
+    "hours": 1.6666666666666667
+   }
+  },
+  "par-war": {
+   "cost": 305,
+   "hours": 10,
+   "n": 12,
+   "min": 180,
+   "nonstop": {
+    "cost": 371,
+    "hours": 2.25
+   }
+  },
+  "lon-war": {
+   "cost": 214,
+   "hours": 10.75,
+   "n": 12,
+   "min": 198,
+   "nonstop": {
+    "cost": 225,
+    "hours": 2.4166666666666665
+   }
+  },
+  "bcn-war": {
+   "cost": 188,
+   "hours": 8.666666666666666,
+   "n": 12,
+   "min": 74,
+   "nonstop": {
+    "cost": 74,
+    "hours": 2.75
    }
   }
  }

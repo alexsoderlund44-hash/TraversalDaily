@@ -324,6 +324,17 @@
   const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } };
   const save = s => { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} };
 
+  /* ---------- TraversleDaily Plus: the paid archive ----------
+     The last FREE_DAYS puzzles are free to replay; older ones need Plus. Membership is stored in this browser.
+     Until payments are wired to a backend, Plus is unlocked with an access code (hashed below, never stored in clear). */
+  const FREE_DAYS = 7;
+  const PLUS_STORE = 'traverse.plus';
+  const CODES = [1882371269, 811914483, 1619956732]; // hash('TRAVERSLE-FOUNDER'), hash('EXPLORER-2026'), hash('NAVIGATOR-PASS')
+  const plus = () => { try { const p = JSON.parse(localStorage.getItem(PLUS_STORE)); return p && p.active ? p : { active: false }; } catch (e) { return { active: false }; } };
+  const setPlus = p => { try { localStorage.setItem(PLUS_STORE, JSON.stringify(p)); } catch (e) {} };
+  const redeem = code => { const h = hash(String(code || '').trim().toUpperCase()); if (!CODES.includes(h)) return false; setPlus({ active: true, since: Date.now(), via: 'code' }); return true; };
+  const dayLocked = n => n < dayNumber() - FREE_DAYS && !plus().active;
+
   /* ---------- names & flags (flag emoji → ISO code → image, so it works on every device) ---------- */
   const iso = c => { const cp = Array.from(c.flag).map(ch => ch.codePointAt(0) - 0x1F1E6 + 65); return cp.length === 2 ? String.fromCharCode(cp[0], cp[1]).toLowerCase() : ''; };
   const flagImg = (c, h) => { const code = iso(c); return code ? `<img class="fl" src="https://flagcdn.com/h${h >= 40 ? 40 : 20}/${code}.png" alt="" onerror="this.style.display='none'" width="${Math.round((h || 20) * 1.4)}" height="${h || 20}" loading="lazy">` : ''; };
@@ -336,5 +347,5 @@
   const secsF = s => s < 60 ? Math.round(s) + 's' : Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's';
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, EPOCH, challenge, challengeRandom, mission, score, tier, TIERS, progression, LEVELS, field, rankOf, load, save, money, dur, secsF, esc, rng, hash };
+  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, EPOCH, challenge, challengeRandom, mission, score, tier, TIERS, progression, LEVELS, field, rankOf, load, save, FREE_DAYS, plus, setPlus, redeem, dayLocked, money, dur, secsF, esc, rng, hash };
 })();

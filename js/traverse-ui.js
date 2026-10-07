@@ -61,7 +61,11 @@
     <li>Two of the hidden deals sit on the planner's route. Hover cities or open a stop to reveal its fares.</li>
     <li>Money, hours and how fast you decide all count. ${mode === 'today' ? 'One official run per day.' : 'This is a practice expedition.'}</li>`;
   $('#tv-gate-note').textContent = mode === 'random' ? 'Practice run with a random start and destination. It is not scored.' : mode === 'archive' ? 'Archive puzzle. Practice only, your official score stays with the day you played.' : practice ? 'You already have an official score for today. This run is practice.' : 'The decision clock starts when you press the button.';
-  { const n = $('#td-nav-score'); if (n) n.style.display = official ? '' : 'none'; }
+  const locked = mode === 'archive' && T.dayLocked(ch.n);
+  if (locked) {
+    $('#tv-gate-mission').innerHTML = `<div class="tv-lock"><span class="ic">🔒</span><b>This puzzle is in the Plus archive</b><p>The last ${T.FREE_DAYS} days are free to replay. Every puzzle since day one, plus future archive features, comes with TraversleDaily Plus.</p><a class="btn primary" href="plus.html">See TraversleDaily Plus</a> <a class="btn ghost" href="archive.html">Back to the archive</a></div>`;
+    $('#tv-gate-rules').hidden = true; $('#tv-start').hidden = true; $('#tv-gate-note').hidden = true;
+  }
   $('#tv-source').textContent = LIVE
     ? `Flight prices and times are averages of real one-way economy fares for departures on ${LIVE.depart}, fetched ${new Date(LIVE.fetched).toUTCString().slice(5, 22)} UTC. Trains, buses, rideshares, ferries and cars are modelled from distance and calibrated to the day's fares. Rankings are simulated.`
     : 'No live fare snapshot for this puzzle, so flights are modelled from distance. Rankings are simulated.';
@@ -77,17 +81,21 @@
   const gCountry = g.append('g');
   gCountry.selectAll('text').data(feats.filter(f => path.area(f) > 60)).join('text').attr('class', 'tv-cname')
     .attr('transform', f => { const c = path.centroid(f); return `translate(${c[0]},${c[1]})`; }).text(f => (f.properties.name || '').toUpperCase()).style('display', 'none');
-  const gPar = g.append('g'), gLinks = g.append('g'), gBadges = g.append('g'), gCities = g.append('g'), gLabels = g.append('g');
+  const gPar = g.append('g'), gLinks = g.append('g'), gBadges = g.append('g'), gHits = g.append('g'), gCities = g.append('g'), gLabels = g.append('g');
   const pos = c => proj([c.lon, c.lat]);
   const tip = $('#tv-tip'), stage = $('#tv-stage');
   g.append('g').attr('class', 'tv-pulse-g').attr('transform', `translate(${pos(ch.to)[0]},${pos(ch.to)[1]})`).append('circle').attr('class', 'tv-pulse');
   gCities.selectAll('circle').data(T.C).join('circle')
     .attr('class', 'tv-city').attr('r', c => 2 + c.hub * 0.5)
-    .attr('cx', c => pos(c)[0]).attr('cy', c => pos(c)[1])
-    .on('click', (e, c) => { e.stopPropagation(); pick(c); })
-    .on('mouseenter', (e, c) => showTip(c)).on('mousemove', e => moveTip(e)).on('mouseleave', hideTip);
-  gLabels.selectAll('text').data(T.C).join('text').attr('class', c => 'tv-label' + (c.hub >= 2 ? '' : ' minor'))
-    .attr('x', c => pos(c)[0] + 5).attr('y', c => pos(c)[1] + 3.2).text(c => c.name);
+    .attr('cx', c => pos(c)[0]).attr('cy', c => pos(c)[1]).style('pointer-events', 'none');
+  // generous hit targets so cities are easy to tap, with the label part of the target too
+  const wire = sel => sel.on('click', (e, c) => { e.stopPropagation(); hideTip(); pick(c); })
+    .on('mouseenter', (e, c) => { if (e.pointerType !== 'touch') showTip(c, e); }).on('mousemove', e => moveTip(e)).on('mouseleave', hideTip)
+    .on('touchstart', (e, c) => { e.stopPropagation(); showTip(c, e.touches[0]); }, { passive: true });
+  wire(gHits.selectAll('circle').data(T.C).join('circle').attr('class', 'tv-hit').attr('r', 9).attr('cx', c => pos(c)[0]).attr('cy', c => pos(c)[1]));
+  wire(gLabels.selectAll('text').data(T.C).join('text').attr('class', c => 'tv-label' + (c.hub >= 2 ? '' : ' minor'))
+    .attr('x', c => pos(c)[0] + 5).attr('y', c => pos(c)[1] + 3.2).text(c => c.name));
+  svg.on('click', hideTip);
 
   let k = 1;
   const strokeW = d => (d.cls === 'ghost' ? 1 : d.cls === 'flow' ? 1.2 : d.cls === 'par' ? 1.6 : 2.2) / k;
@@ -95,6 +103,7 @@
     g.attr('transform', e.transform); k = e.transform.k; const s = k;
     drawMap();
     gLabels.selectAll('text').style('font-size', (9.5 / s) + 'px').attr('x', c => pos(c)[0] + 5 / s).attr('y', c => pos(c)[1] + 3.2 / s);
+    gHits.selectAll('circle').attr('r', 9 / s);
     gCountry.selectAll('text').style('display', k >= 2.6 ? null : 'none').style('font-size', (7 / s * 1.2) + 'px');
     gBadges.selectAll('g').attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / s})`);
     g.select('.tv-pulse-g').attr('transform', `translate(${pos(ch.to)[0]},${pos(ch.to)[1]}) scale(${1 / s})`); g.select('.tv-pulse').style('stroke-width', 1);
@@ -117,6 +126,7 @@
   $('#tv-zin').onclick = () => svg.transition().call(zoom.scaleBy, 1.6);
   $('#tv-zout').onclick = () => svg.transition().call(zoom.scaleBy, 1 / 1.6);
   $('#tv-zfit').onclick = () => fitRoute();
+  document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === '+' || e.key === '=') $('#tv-zin').click(); else if (e.key === '-') $('#tv-zout').click(); else if (e.key === 'Escape') { if (!$('#tv-modal').hidden) closeModal(); else if (pendingTo) { pendingTo = null; refresh(); } } });
   function fitTo(points, pad) {
     const xs = points.map(p => pos(p)[0]), ys = points.map(p => pos(p)[1]);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
@@ -133,8 +143,11 @@
 
   function drawMap() {
     const cur = at(), on = onRouteIds(), par = parIds();
+    const live = playing && !atDest();
+    const reach = live ? new Set(T.C.filter(c => !on.has(c.id) && c.id !== cur.id && usable(cur, c).length).map(c => c.id)) : null;
     gCities.selectAll('circle').attr('class', c => 'tv-city'
-      + (c.id === cur.id && playing && !atDest() ? ' cur' : c.id === ch.from.id ? ' start' : c.id === ch.to.id ? ' dest' : on.has(c.id) ? ' on' : pendingTo && c.id === pendingTo.id ? ' pend' : par.has(c.id) ? ' par' : ''));
+      + (c.id === cur.id && live ? ' cur' : c.id === ch.from.id ? ' start' : c.id === ch.to.id ? ' dest' : on.has(c.id) ? ' on' : pendingTo && c.id === pendingTo.id ? ' pend' : par.has(c.id) ? ' par' : reach ? (reach.has(c.id) ? ' reach' : ' far') : ''));
+    gLabels.selectAll('text').classed('far', c => !!reach && !reach.has(c.id) && c.id !== ch.to.id && c.id !== ch.from.id && !on.has(c.id));
     gCities.selectAll('circle').attr('r', c => (2 + c.hub * 0.5 + (c.id === cur.id && playing && !atDest() ? 1.5 : c.id === ch.from.id || c.id === ch.to.id || on.has(c.id) || par.has(c.id) ? 1 : 0)) / k).style('stroke-width', c => ((c.id === cur.id && playing && !atDest()) ? 8 : (pendingTo && c.id === pendingTo.id) ? 6 : 1) / k);
     layoutLabels();
     const plinks = showPar ? M.par.path.map(e => ({ cls: 'par', d: arc(T.byId[e.from], T.byId[e.to]) })) : [];
@@ -152,14 +165,15 @@
   }
 
   /* ---------- tooltip: hovering a city reveals its fares (and any hidden deal) ---------- */
-  function showTip(c) {
+  function showTip(c, ev) {
     const cur = at(), on = onRouteIds();
+    if (ev && ev.clientX !== undefined) moveTip(ev);
     let modes = '';
     if (playing && !atDest() && !on.has(c.id)) {
       const ls = T.legs(cur, c, ch.seed); noteDeals(cur, c, ls);
       modes = ls.length ? `<div class="modes">${ls.map(l => { const b = blocked(l, c); return `<span class="${b ? 'off' : ''}${l.deal ? ' deal' : ''}">${l.icon} <em>${T.money(l.cost)}</em>${l.deal ? ' 🏷️' : ''}</span>`; }).join('')}</div>` : `<div class="modes"><span>no direct link from ${T.esc(cur.name)}</span></div>`;
     }
-    tip.innerHTML = `<b>${T.flagImg(c)} ${T.esc(c.name)}</b><small>${T.esc(c.country)}${c.id === ch.from.id ? ' · start' : c.id === ch.to.id ? ' · destination' : ''}</small>${modes}`;
+    tip.innerHTML = `<b>${T.flagImg(c)} ${T.esc(c.name)}</b><small>${T.esc(c.country)}${c.id === ch.from.id ? ' · start' : c.id === ch.to.id ? ' · destination' : ''}</small>${modes}${playing && !atDest() && !on.has(c.id) && c.id !== cur.id ? '<small class="hint">tap to add as a stop</small>' : ''}`;
     tip.hidden = false;
   }
   function moveTip(e) { const r = stage.getBoundingClientRect(); tip.style.left = (e.clientX - r.left) + 'px'; tip.style.top = (e.clientY - r.top) + 'px'; }
@@ -291,7 +305,44 @@
     } else showResult(res, true, 0);
   };
 
-  function showResult(res, isPractice, xpGain) {
+  /* the summary that pops up the moment you submit */
+  function showModal(res, isPractice, xpGain) {
+    const rk = T.rankOf(res.score, fld), pct = Math.max(1, Math.round(100 * rk.rank / rk.of)), tr = T.tier(res.score, M);
+    const prog = T.progression(T.load().results || {});
+    const grade = (v, best, good, ok) => v <= best * good ? 'good' : v <= best * ok ? 'ok' : 'poor';
+    const gLabel = { good: 'Excellent', ok: 'Decent', poor: 'Costly' };
+    const mG = grade(res.cost, M.par.cost, 1.08, 1.3), tG = grade(res.hours, M.par.hours, 1.08, 1.3), dG = res.secs <= 60 ? 'good' : res.secs <= 150 ? 'ok' : 'poor';
+    const dial = (lab, val, sub, g, pctFill, txt) => `<div class="dial ${g}"><span class="lab">${lab}</span><b>${val}</b><small>${sub}</small><div class="bar"><i style="width:${Math.max(4, Math.min(100, pctFill))}%"></i></div><em>${txt}</em></div>`;
+    const legs = res.route.map((r, i) => { const a = i ? T.byId[res.route[i - 1].to] : ch.from, b = T.byId[r.to], m = T.MODES[r.mode]; return `<li><span class="n">${i + 1}</span><span class="ic">${m.icon}</span><span class="where">${T.esc(a.name)} <i>→</i> ${T.esc(b.name)}<small>${m.name}${r.deal ? ` · <em class="deal">deal −${Math.round(r.deal * 100)}%</em>` : ''}</small></span><span class="num">${T.money(r.cost)}</span><span class="num">${T.dur(r.hours)}</span></li>`; }).join('');
+    const parMatch = res.parMatch || (res.cost <= M.par.cost + 1 && res.hours <= M.par.hours + 0.05);
+    const vsPar = parMatch ? `<span class="good">✓ You matched the planner's route</span>` : `<span>Planner: ${T.money(M.par.cost)} · ${T.dur(M.par.hours)} · ${M.par.legs} legs</span><span class="${res.cost > M.par.cost ? 'bad' : 'good'}">${res.cost > M.par.cost ? '+' + T.money(res.cost - M.par.cost) : 'cheaper'}</span><span class="${res.hours > M.par.hours ? 'bad' : 'good'}">${res.hours > M.par.hours + 0.05 ? '+' + T.dur(res.hours - M.par.hours) : 'as fast or faster'}</span>`;
+    const lvlPct = prog.next ? Math.round(100 * prog.into / prog.span) : 100;
+    $('#tv-modal').innerHTML = `<div class="tv-modal-card" role="dialog" aria-modal="true" aria-label="Journey summary">
+      <button class="tv-modal-x" id="tv-modal-close" aria-label="Close">✕</button>
+      <p class="kicker">${isPractice ? (mode === 'today' ? 'Practice run · not scored' : mode === 'archive' ? 'Archive practice · not scored' : 'Random expedition · not scored') : 'Official result · ' + ch.key}</p>
+      <div class="top">
+        <div class="tier"><span class="ic">${tr.icon}</span><b>${tr.name}</b><small>${title} · ${T.esc(ch.from.name)} → ${T.esc(ch.to.name)}</small></div>
+        <div class="pts"><b>${res.score.toLocaleString()}</b><small>Traversle score</small><span>${isPractice ? 'would rank' : 'rank'} <b>#${rk.rank.toLocaleString()}</b> of ${rk.of.toLocaleString()} · top ${pct}%</span></div>
+      </div>
+      <div class="dials">
+        ${dial('Money', T.money(res.cost), 'of ' + T.money(M.budget) + ' budget', mG, 100 * res.cost / M.budget, gLabel[mG])}
+        ${dial('Time', T.dur(res.hours), 'of ' + T.dur(M.deadline) + ' deadline', tG, 100 * res.hours / M.deadline, gLabel[tG])}
+        ${dial('Decision', T.secsF(res.secs), res.route.length + ' legs · ' + (res.deals ? res.deals.found : 0) + '/' + M.deals + ' deals found', dG, Math.min(100, 100 * res.secs / 240), dG === 'good' ? 'Quick' : dG === 'ok' ? 'Steady' : 'Slow')}
+      </div>
+      <ol class="legs">${legs}<li class="total"><span class="n"></span><span class="ic">Σ</span><span class="where">Total<small>${tw.icon} ${T.esc(tw.name)}</small></span><span class="num">${T.money(res.cost)}</span><span class="num">${T.dur(res.hours)}</span></li></ol>
+      <div class="vs">${vsPar}</div>
+      ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+${xpGain} XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
+      <div class="actions"><button class="btn primary" id="tv-modal-share">Copy result</button><button class="btn ghost" id="tv-modal-map">See the planner's route</button><button class="btn ghost" id="tv-modal-again">Practice again</button></div>
+    </div>`;
+    $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
+    $('#tv-modal-close').onclick = closeModal; $('#tv-modal-map').onclick = closeModal;
+    $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
+    $('#tv-modal-again').onclick = () => { closeModal(); start(); };
+    $('#tv-modal-share').onclick = () => $('#tv-share').click();
+  }
+  function closeModal() { $('#tv-modal').hidden = true; document.body.classList.remove('tv-modal-open'); fitRoute(); }
+
+  function showResult(res, isPractice, xpGain, quiet) {
     $('#tv-plan').hidden = true; pendingTo = null; showPar = true;
     route = res.route.map((r, i) => ({ from: i ? res.route[i - 1].to : ch.from.id, to: r.to, leg: { mode: r.mode, cost: r.cost, hours: r.hours, icon: T.MODES[r.mode].icon, deal: r.deal } }));
     drawMap(); fitRoute();
@@ -338,7 +389,7 @@
       (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copied'), () => { prompt('Copy your result:', txt); });
     };
     showBoard(mode === 'today' ? (st.results[ch.key] || res) : res);
-    $('#tv-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!quiet) showModal(res, isPractice, xpGain);
   }
 
   function showBoard(mine) {
@@ -364,6 +415,6 @@
 
   /* ---------- initial ---------- */
   drawMap();
-  if (official) { $('#tv-gate').hidden = true; showResult(official, false, 0); }
+  if (official) { $('#tv-gate').hidden = true; showResult(official, false, 0, true); }
   else setTimeout(() => fitTo([ch.from, ch.to], 1.6), 50);
 })();

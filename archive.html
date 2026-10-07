@@ -1,32 +1,26 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Profile – TraversleDaily</title>
+<title>Archive – TraversleDaily</title>
 <meta name="description" content="TraversleDaily: one start city, one destination, every day. Beat the budget and the deadline, find the hidden deals, and out-plan the world.">
-<meta property="og:title" content="Profile – TraversleDaily"><meta property="og:type" content="website"><meta property="og:description" content="Same start, same destination, for everyone on Earth today. Plan the smartest journey under budget and before the deadline.">
+<meta property="og:title" content="Archive – TraversleDaily"><meta property="og:type" content="website"><meta property="og:description" content="Same start, same destination, for everyone on Earth today. Plan the smartest journey under budget and before the deadline.">
 <meta name="theme-color" content="#0A1220">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/atlas.css">
-</head><body class="p-profile" data-page="profile">
+</head><body class="p-archive" data-page="archive">
 <header class="td-head"><div class="td-wrap">
   <a class="td-brand" href="index.html" aria-label="TraversleDaily home"><svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg><span>Traversle<b>Daily</b></span></a>
-  <nav class="td-nav" aria-label="Sections"><a href="index.html" class="">Home</a><a href="play.html" class="">Play</a><a href="archive.html" class="">Archive</a><a href="achievements.html" class="">Achievements</a><a href="stats.html" class="">Stats</a><a href="profile.html" class="on ">Profile</a><a href="plus.html" class="plus">Plus</a></nav>
+  <nav class="td-nav" aria-label="Sections"><a href="index.html" class="">Home</a><a href="play.html" class="">Play</a><a href="archive.html" class="on ">Archive</a><a href="achievements.html" class="">Achievements</a><a href="stats.html" class="">Stats</a><a href="profile.html" class="">Profile</a><a href="plus.html" class="plus">Plus</a></nav>
   <button class="td-burger" id="td-burger" aria-label="Menu" aria-expanded="false">☰</button>
 </div></header>
 
-<main class="td-page narrow">
-  <header class="page-head"><h1>Profile</h1><p>Saved in this browser. Accounts and cloud sync are coming.</p></header>
-  <section class="card profile">
-    <div class="avatar" id="pf-initials">T</div>
-    <div class="who"><b id="pf-display">Traveller</b><span>Travelling since <em id="pf-since">today</em></span><span class="pf-plus" id="pf-plus"></span></div>
-    <div class="lvl-wrap" id="pf-level"></div>
-    <div class="facts"><div><b id="pf-played">0</b><span>days played</span></div><div><b id="pf-streak">0</b><span>day streak</span></div><div><b id="pf-best">—</b><span>best score</span></div><div><b id="pf-badges">0</b><span>badges</span></div></div>
-    <label class="field"><span>Display name</span><input id="pf-name" type="text" maxlength="24" placeholder="How should we call you?"></label>
-    <div class="row"><button class="btn primary" id="pf-save">Save name</button><span class="saved" id="pf-saved" hidden>Saved</span></div>
-  </section>
-  <section class="card danger"><h2>Reset</h2><p>Erase every journey, badge and your name from this browser.</p><button class="btn ghost" id="pf-reset">Erase my data</button></section>
+<main class="td-page">
+  <header class="page-head"><h1>The archive</h1><p id="ar-summary"></p></header>
+  <div class="ar-tools"><input type="search" id="ar-q" placeholder="Search a city, country or twist…" autocomplete="off"><a class="btn ghost" href="play.html">Today's puzzle</a></div>
+  <div id="ar-list"></div>
+  <section class="plus-strip"><div><h2>Every puzzle since day one</h2><p>The last seven days are free to replay. TraversleDaily Plus opens the whole archive, forever.</p></div><a class="btn primary" href="plus.html">See Plus</a></section>
 </main>
 <footer class="td-foot"><div class="td-wrap"><span>TraversleDaily</span><span>Map data from Natural Earth via world-atlas. Your runs are saved in this browser.</span></div></footer>
 <script src="data/cities.js"></script><script src="data/live/latest.js"></script><script src="js/traverse.js"></script><script src="js/pages.js"></script>

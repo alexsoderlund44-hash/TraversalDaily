@@ -48,6 +48,8 @@
   const levelHTML = () => { const pct = prog.next ? Math.round(100 * prog.into / prog.span) : 100; return `<div class="lvl"><div class="lvl-row"><b>Level ${prog.level} · ${prog.title}</b><span>${prog.xp.toLocaleString()} XP${prog.next ? ' · ' + (prog.next - prog.xp).toLocaleString() + ' to ' + prog.nextTitle : ''}</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`; };
 
   const page = document.body.dataset.page;
+  const plus = T.plus();
+  const archiveRow = n => { const key = T.dayKey(n), c = T.challenge(n), r = R[key], lock = T.dayLocked(n); return `<a class="arow${lock ? ' locked' : ''}" href="${lock ? 'plus.html' : 'play.html?day=' + n}"><span class="n">#${n}<small>${fmtDay(key)}</small></span><span class="rt">${T.flagImg(c.from)} ${T.esc(c.from.name)} <i>→</i> ${T.flagImg(c.to)} ${T.esc(c.to.name)}<small>${c.twist.icon} ${T.esc(c.twist.name)}</small></span><span class="sc">${r ? `<b>${r.score.toLocaleString()}</b><small>${r.tier || 'played'}</small>` : '<small>not played</small>'}</span><span class="go">${lock ? '🔒 Plus' : r ? 'Replay' : 'Play'}</span></a>`; };
   if (page === 'index') {
     const g = i => document.getElementById(i), ch = T.challenge(today);
     const resetIn = () => { const ms = (today * 86400000 + T.EPOCH) - Date.now(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };
@@ -60,9 +62,9 @@
     if (R[ch.key]) { g('hm-play').textContent = 'See your result'; g('hm-sub').innerHTML = `${R[ch.key].tier ? R[ch.key].tier + ' · ' : ''}you scored <b>${R[ch.key].score.toLocaleString()}</b> today`; }
     else if (streak) g('hm-sub').textContent = `🔥 ${streak}-day streak. Play today to keep it.`;
     // archive: the last week of puzzles, replayable as practice
-    const rows = []; for (let n = today - 1; n >= Math.max(1, today - 7); n--) { const key = T.dayKey(n), c = T.challenge(n), r = R[key]; rows.push(`<a class="arow" href="play.html?day=${n}"><span class="n">#${n}<small>${fmtDay(key)}</small></span><span class="rt">${T.flagImg(c.from)} ${T.esc(c.from.name)} <i>→</i> ${T.flagImg(c.to)} ${T.esc(c.to.name)}<small>${c.twist.icon} ${T.esc(c.twist.name)}</small></span><span class="sc">${r ? `<b>${r.score.toLocaleString()}</b><small>${r.tier || 'played'}</small>` : '<small>not played</small>'}</span><span class="go">${r ? 'Replay' : 'Play'}</span></a>`); }
+    const rows = []; for (let n = today - 1; n >= Math.max(1, today - 5); n--) rows.push(archiveRow(n));
     g('hm-archive').innerHTML = rows.length ? rows.join('') : '<p class="empty">Today is puzzle #1. Past puzzles will collect here, replayable as practice.</p>';
-    g('hm-archive-note').textContent = today > 8 ? 'The last seven days are free to replay. The full archive is coming with TraversleDaily Plus.' : 'Past puzzles are free to replay as practice. The full archive is coming with TraversleDaily Plus.';
+    g('hm-archive-note').textContent = plus.active ? 'You have Plus: every puzzle since day one is open.' : `The last ${T.FREE_DAYS} days are free to replay. The full archive is part of TraversleDaily Plus.`;
     g('hm-random').href = 'play.html?seed=' + Math.random().toString(36).slice(2, 8);
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }
   }
@@ -92,4 +94,39 @@
     $('#pf-level').innerHTML = levelHTML();
     $('#pf-reset').onclick = () => { if (confirm('Erase every saved journey, badge and your name from this browser? This cannot be undone.')) { try { localStorage.removeItem('traverse.v1'); localStorage.removeItem('traverse.profile'); } catch (e) {} location.reload(); } };
   }
+})();
+
+(function () {
+  'use strict';
+  const T = window.Traverse, $ = s => document.querySelector(s), page = document.body.dataset.page;
+  if (page !== 'archive' && page !== 'plus' && page !== 'profile') return;
+  const st = T.load(), R = st.results || {}, today = T.dayNumber(), plus = T.plus();
+  const fmtDay = k => new Date(k).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const plusBadge = () => plus.active ? `<span class="plus-on">✦ Plus member${plus.since ? ' since ' + new Date(plus.since).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>` : '';
+  if (page === 'archive') {
+    const q = $('#ar-q'); let filter = '';
+    const render = () => {
+      const groups = {}; let shown = 0, locked = 0;
+      for (let n = today - 1; n >= 1; n--) {
+        const key = T.dayKey(n), c = T.challenge(n), r = R[key], lock = T.dayLocked(n);
+        if (filter && !(c.from.name + ' ' + c.to.name + ' ' + c.from.country + ' ' + c.to.country + ' ' + c.twist.name).toLowerCase().includes(filter)) continue;
+        const month = new Date(key).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+        (groups[month] = groups[month] || []).push(`<a class="arow${lock ? ' locked' : ''}" href="${lock ? 'plus.html' : 'play.html?day=' + n}"><span class="n">#${n}<small>${fmtDay(key)}</small></span><span class="rt">${T.flagImg(c.from)} ${T.esc(c.from.name)} <i>→</i> ${T.flagImg(c.to)} ${T.esc(c.to.name)}<small>${c.twist.icon} ${T.esc(c.twist.name)} · ${Math.round(T.km(c.from, c.to)).toLocaleString()} km</small></span><span class="sc">${r ? `<b>${r.score.toLocaleString()}</b><small>${r.tier || 'played'}</small>` : '<small>not played</small>'}</span><span class="go">${lock ? '🔒 Plus' : r ? 'Replay' : 'Play'}</span></a>`);
+        shown++; if (lock) locked++;
+      }
+      $('#ar-list').innerHTML = shown ? Object.entries(groups).map(([m, rows]) => `<h2 class="ar-month">${m}</h2><div class="alist">${rows.join('')}</div>`).join('') : `<div class="alist"><p class="empty">${today <= 1 ? 'Today is puzzle #1. From tomorrow, every past puzzle collects here.' : 'No puzzles match that search.'}</p></div>`;
+      $('#ar-summary').innerHTML = `${Math.max(0, today - 1)} past puzzle${today === 2 ? '' : 's'} · ${Object.keys(R).length} played${plus.active ? ' · ' + plusBadge() : locked ? ` · <a href="plus.html">${locked} locked, unlock with Plus</a>` : ''}`;
+    };
+    if (q) q.oninput = () => { filter = q.value.trim().toLowerCase(); render(); };
+    render();
+  }
+  if (page === 'plus') {
+    const stat = $('#pl-status');
+    const show = () => { stat.innerHTML = plus.active ? `<div class="plus-active"><span class="ic">✦</span><b>You're a Plus member.</b><p>Every puzzle since day one is open in the <a href="archive.html">archive</a>. Thank you for backing the game.</p></div>` : ''; document.querySelectorAll('.price .btn').forEach(b => { if (plus.active) { b.textContent = 'Active'; b.classList.add('disabled'); } }); };
+    show();
+    const form = $('#pl-redeem');
+    form.onsubmit = e => { e.preventDefault(); const ok = T.redeem($('#pl-code').value); const m = $('#pl-redeem-msg'); if (ok) { m.textContent = 'Plus unlocked. Enjoy the archive.'; m.className = 'good'; Object.assign(plus, T.plus()); show(); } else { m.textContent = 'That code did not work. Check the spelling and try again.'; m.className = 'bad'; } };
+    document.querySelectorAll('[data-checkout]').forEach(b => { if (!b.getAttribute('href') || b.getAttribute('href') === '#') { b.addEventListener('click', e => { e.preventDefault(); $('#pl-soon').hidden = false; $('#pl-soon').scrollIntoView({ behavior: 'smooth', block: 'center' }); }); } });
+  }
+  if (page === 'profile') { const el = $('#pf-plus'); if (el) el.innerHTML = plus.active ? plusBadge() + ' · <a href="archive.html">open the archive</a>' : `Free plan · <a href="plus.html">get TraversleDaily Plus</a> for the full archive`; }
 })();

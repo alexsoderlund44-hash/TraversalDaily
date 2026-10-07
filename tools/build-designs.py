@@ -7,12 +7,12 @@ FONTS = {
  'journal': 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Caveat:wght@500;700&display=swap',
  'atlas':   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap',
 }
-TITLE = {'index':'TraversleDaily – The daily travel strategy game','play':'Play today – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Stats – TraversleDaily','profile':'Profile – TraversleDaily'}
-NAV = [('index','Home'),('play','Play'),('achievements','Achievements'),('stats','Stats'),('profile','Profile')]
+TITLE = {'index':'TraversleDaily – The daily travel strategy game','play':'Play today – TraversleDaily','archive':'Archive – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'TraversleDaily Plus – the full archive'}
+NAV = [('index','Home'),('play','Play'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','Plus')]
 MARK = '<svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg>'
 
 def shell(design, page, body, scripts, prefix, css):
-    nav = ''.join(f'<a href="{p}.html"{" class=on" if p==page else ""}>{n}</a>' for p,n in NAV)
+    nav = ''.join(f'<a href="{p}.html" class="{"on " if p==page else ""}{"plus" if p=="plus" else ""}">{n}</a>' for p,n in NAV)
     canon = '<link rel="canonical" href="https://traversledaily.com/">' if (page=='index' and prefix=='') else ''
     return f'''<!doctype html>
 <html lang="en"><head>
@@ -62,7 +62,7 @@ HOME = '''
     <div class="step"><span class="n">4</span><h3>Arrive and compare</h3><p>Submit and see the planner's route next to yours. Rate Perfect, Expert, Navigator or Wayfarer, earn XP, keep the streak.</p></div>
   </section>
   <section id="archive" class="archive">
-    <div class="archive-head"><div><h2>Past expeditions</h2><p id="hm-archive-note"></p></div><a class="btn ghost" id="hm-random" href="play.html">Random expedition</a></div>
+    <div class="archive-head"><div><h2>Past expeditions</h2><p id="hm-archive-note"></p></div><div class="archive-ctas"><a class="btn ghost" href="archive.html">Full archive</a><a class="btn ghost" id="hm-random" href="play.html">Random expedition</a></div></div>
     <div class="alist" id="hm-archive"></div>
   </section>
   <section id="scoring" class="scoring">
@@ -109,6 +109,7 @@ PLAY = '''
     <div class="tv-picker" id="tv-picker"></div>
     <footer class="tv-plan-foot"><button class="btn ghost" id="tv-undo">Undo leg</button><button class="btn ghost" id="tv-clear">Clear</button><button class="btn primary" id="tv-submit" disabled>Submit journey</button></footer>
   </aside>
+  <div class="tv-modal" id="tv-modal" hidden></div>
   <section id="tv-result" class="tv-result" hidden></section>
   <section id="tv-board" class="tv-board" hidden></section>
   <p class="tv-source" id="tv-source"></p>
@@ -145,7 +146,7 @@ PROFILE = '''
   <header class="page-head"><h1>Profile</h1><p>Saved in this browser. Accounts and cloud sync are coming.</p></header>
   <section class="card profile">
     <div class="avatar" id="pf-initials">T</div>
-    <div class="who"><b id="pf-display">Traveller</b><span>Travelling since <em id="pf-since">today</em></span></div>
+    <div class="who"><b id="pf-display">Traveller</b><span>Travelling since <em id="pf-since">today</em></span><span class="pf-plus" id="pf-plus"></span></div>
     <div class="lvl-wrap" id="pf-level"></div>
     <div class="facts"><div><b id="pf-played">0</b><span>days played</span></div><div><b id="pf-streak">0</b><span>day streak</span></div><div><b id="pf-best">—</b><span>best score</span></div><div><b id="pf-badges">0</b><span>badges</span></div></div>
     <label class="field"><span>Display name</span><input id="pf-name" type="text" maxlength="24" placeholder="How should we call you?"></label>
@@ -153,8 +154,31 @@ PROFILE = '''
   </section>
   <section class="card danger"><h2>Reset</h2><p>Erase every journey, badge and your name from this browser.</p><button class="btn ghost" id="pf-reset">Erase my data</button></section>
 </main>'''
+ARCHIVE = '''
+<main class="td-page">
+  <header class="page-head"><h1>The archive</h1><p id="ar-summary"></p></header>
+  <div class="ar-tools"><input type="search" id="ar-q" placeholder="Search a city, country or twist…" autocomplete="off"><a class="btn ghost" href="play.html">Today's puzzle</a></div>
+  <div id="ar-list"></div>
+  <section class="plus-strip"><div><h2>Every puzzle since day one</h2><p>The last seven days are free to replay. TraversleDaily Plus opens the whole archive, forever.</p></div><a class="btn primary" href="plus.html">See Plus</a></section>
+</main>'''
+PLUS = '''
+<main class="td-page narrow plus-page">
+  <header class="page-head"><p class="eyebrow">✦ TraversleDaily Plus</p><h1>Every expedition, <em>forever.</em></h1><p>The daily puzzle stays free. Plus is for the people who want more of it.</p></header>
+  <div id="pl-status"></div>
+  <section class="prices">
+    <div class="price"><p class="k">Monthly</p><b>$2.99</b><span>per month</span><ul><li>The full archive, every puzzle since day one</li><li>Archive stats and ratings on your profile</li><li>Cancel any time</li></ul><a class="btn ghost" data-checkout="month" href="#">Choose monthly</a></div>
+    <div class="price best"><p class="k">Yearly · best value</p><b>$19.99</b><span>per year, about $1.67 a month</span><ul><li>Everything in monthly</li><li>Founder badge on your profile</li><li>Early access to new twists and modes</li></ul><a class="btn primary" data-checkout="year" href="#">Choose yearly</a></div>
+  </section>
+  <p class="pl-note" id="pl-soon" hidden>Payments open soon. If you have an access code, redeem it below.</p>
+  <section class="card redeem"><h2>Have an access code?</h2><form id="pl-redeem"><input type="text" id="pl-code" placeholder="e.g. EXPLORER-2026" autocomplete="off" required><button class="btn primary" type="submit">Redeem</button></form><p id="pl-redeem-msg"></p></section>
+  <section class="faq" aria-label="Questions">
+    <details><summary>What stays free?</summary><p>Today's puzzle, your official score, ranking, streaks, achievements, random expeditions and the last seven days of the archive. Always.</p></details>
+    <details><summary>What does Plus unlock?</summary><p>Every past puzzle, playable as practice with the planner's route reveal, plus archive stats and the founder badge on yearly.</p></details>
+    <details><summary>Where is my membership stored?</summary><p>In this browser for now. Accounts with sync across devices are coming, and Plus will carry over.</p></details>
+  </section>
+</main>'''
 PAGES_JS = '<script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script>'
-PAGES = (('index',HOME,HOME_JS),('play',PLAY,PLAY_JS),('achievements',ACH,PAGES_JS),('stats',STATS,PAGES_JS),('profile',PROFILE,PAGES_JS))
+PAGES = (('index',HOME,HOME_JS),('play',PLAY,PLAY_JS),('archive',ARCHIVE,PAGES_JS),('achievements',ACH,PAGES_JS),('stats',STATS,PAGES_JS),('profile',PROFILE,PAGES_JS),('plus',PLUS,PAGES_JS))
 
 for page, body, js in PAGES:
     open(os.path.join(ROOT, page+'.html'),'w').write(shell('atlas', page, body, js, '', 'css/atlas.css'))

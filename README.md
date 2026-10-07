@@ -11,6 +11,12 @@ Live at the repo root: `index.html` (home), `play.html`, `achievements.html`, `s
 3. **Score.** Money and time are measured against the best feasible routes, blended with decision speed. Ratings: Perfect, Expert, Navigator, Wayfarer, Arrived, relative to the planner's route score.
 4. **Progression.** XP per official day (score, streak, rating, all deals found), levels from Backpacker to Legend, 16 achievements. Past week of puzzles replayable from the archive (`play.html?day=N`); random expeditions (`play.html?seed=…`) for unlimited practice.
 
+## TraversleDaily Plus (paid archive)
+
+The last 7 puzzles are free to replay. Older ones are locked behind Plus (`plus.html`, `archive.html`). Until payments exist, Plus is unlocked with an access code redeemed on the Plus page; the codes are stored only as FNV hashes in `js/traverse.js` (`CODES`). Membership lives in `localStorage` under `traverse.plus`.
+
+To take real payments on a static site: create Stripe Payment Links for the monthly and yearly prices, put the URLs in the two `data-checkout` buttons in `tools/build-designs.py` (PLUS body), and have the Payment Link redirect to `plus.html?session_id={CHECKOUT_SESSION_ID}`. Verifying that session and issuing a code needs a small serverless function (Cloudflare Worker or Vercel function) with your Stripe secret key; accounts with sync are the longer-term answer.
+
 ## Live fares
 
 `tools/build-live.js` averages raw SlickTrip results into `data/live/<date>.js` and `latest.js`. A daily routine fetches fares for the next day's start, hubs and destination.

@@ -39,22 +39,10 @@ def shell(design, page, body, scripts, prefix, css):
 <footer class="td-foot"><div class="td-wrap"><span>TraversleDaily · a new travel puzzle every day</span><span>Map data: Natural Earth. Your runs stay in this browser.</span></div></footer>
 <script src="{prefix}data/cities.js"></script>{scripts.replace('@/', prefix)}
 <script>(function(){{var b=document.getElementById('td-burger'),m=document.getElementById('td-menu');function set(o){{m.hidden=!o;b.setAttribute('aria-expanded',o);b.classList.toggle('open',o);document.body.classList.toggle('td-menu-open',o);}}b.onclick=function(e){{e.stopPropagation();set(m.hidden);}};m.addEventListener('click',function(e){{if(e.target.closest('a'))set(false);}});document.addEventListener('click',function(e){{if(!m.hidden&&!m.contains(e.target))set(false);}});document.addEventListener('keydown',function(e){{if(e.key==='Escape'&&!m.hidden)set(false);}});
-var how=document.getElementById('hm-howmodal');if(how){{window.tdHow=function(o){{how.hidden=!o;document.body.classList.toggle('td-modal-open',o);if(!o&&location.hash==='#how')history.replaceState(null,'',location.pathname+location.search);}};['hm-how','hm-how-close','hm-how-ok','td-help'].forEach(function(id){{var el=document.getElementById(id);if(el)el.onclick=function(){{tdHow(id==='hm-how'||id==='td-help');}};}});how.onclick=function(e){{if(e.target===how)tdHow(false);}};document.addEventListener('keydown',function(e){{if(e.key==='Escape'&&!how.hidden)tdHow(false);}});window.addEventListener('hashchange',function(){{if(location.hash==='#how')tdHow(true);}});if(location.hash==='#how')tdHow(true);}}}})();</script>
+var how=document.getElementById('hm-howmodal');if(how){{window.tdHow=function(o){{if(window.tdTutorial)return window.tdTutorial(o);how.hidden=!o;}};['hm-how','td-help'].forEach(function(id){{var el=document.getElementById(id);if(el)el.onclick=function(){{tdHow(true);}};}});window.addEventListener('hashchange',function(){{if(location.hash==='#how')tdHow(true);}});if(location.hash==='#how')tdHow(true);}}}})();</script>
 </body></html>'''
 
-HOW_MODAL = '''<div class="td-modal" id="hm-howmodal" hidden><div class="td-modal-card" role="dialog" aria-modal="true" aria-label="How to play">
-    <button class="td-modal-x" id="hm-how-close" aria-label="Close">✕</button>
-    <p class="kicker">How to play</p>
-    <h2>One route a day. One attempt.</h2>
-    <ol class="how-steps">
-      <li><b>Check the mission.</b> A budget, a deadline and one twist. The clock starts when you do.</li>
-      <li><b>Build the route.</b> Tap a city, pick how you get there, repeat. Anything that breaks the mission is greyed out.</li>
-      <li><b>Find the deals.</b> Three legs are secretly cheap. Two of them are on the planner's route. You only see a deal when you look.</li>
-      <li><b>Submit and compare.</b> The planner's route appears next to yours. Earn a rating, bank the XP, keep the streak.</li>
-    </ol>
-    <p class="how-score">Your score: <b>money spent</b>, <b>time taken</b> and <b>how fast you decided</b>. Your first run is the one that counts. Practice as often as you like.</p>
-    <button class="btn primary" id="hm-how-ok">Got it</button>
-  </div></div>'''
+HOW_MODAL = '''<div class="td-modal" id="hm-howmodal" hidden></div>'''
 
 # ----- shared page bodies (design-neutral markup; themes do the rest) -----
 HOME = '''
@@ -72,7 +60,7 @@ HOME = '''
   <div class="hm-links"><button class="lnk" id="hm-how">How to play</button><a class="lnk" href="archive.html">Past puzzles</a><a class="lnk plus" href="plus.html">✦ Traversle +</a></div>
   @HOW@
 </main>'''
-HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script>'
+HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script>'
 
 PLAY = '''
 <main class="tv">
@@ -81,6 +69,7 @@ PLAY = '''
     <div class="tv-brief" id="tv-brief"></div>
     <div class="tv-maptools"><button id="tv-zin" aria-label="Zoom in">+</button><button id="tv-zout" aria-label="Zoom out">−</button><button id="tv-zfit" aria-label="Fit route" title="Fit the route">⤢</button></div>
     <div class="tv-tip" id="tv-tip" hidden></div>
+    <div class="tv-deal" id="tv-deal" hidden></div>
     <div class="tv-gate" id="tv-gate"><div class="tv-gate-card">
       <p class="tv-gate-kicker" id="tv-gate-day"></p>
       <h1 id="tv-gate-title"></h1>
@@ -111,7 +100,7 @@ PLAY = '''
   <p class="tv-source" id="tv-source"></p>
   @HOW@
 </main>'''
-PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/traverse-ui.js"></script>'
+PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/traverse-ui.js"></script>'
 
 ACH = '''
 <main class="td-page">

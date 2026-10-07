@@ -16,7 +16,7 @@
   let practice = mode !== 'today' || !!official;
 
   /* ---------- state ---------- */
-  let route = [], pendingTo = null, t0 = 0, timer = null, playing = false, found = new Set(), showPar = false;
+  let route = [], pendingTo = null, selOpt = null, t0 = 0, timer = null, playing = false, found = new Set(), showPar = false, drawn = false, dealT = null;
   const UNDOS = 3, HINTS = 2, HINT_SECS = 45; let undos = UNDOS, hints = HINTS;
   const at = () => route.length ? T.byId[route[route.length - 1].to] : ch.from;
   const atDest = () => at().id === ch.to.id;
@@ -35,7 +35,16 @@
   }
   const usable = (a, b) => T.legs(a, b, ch.seed).filter(l => !blocked(l, b));
   function noteDeals(a, b, ls) {
-    ls.forEach(l => { if (l.deal) { const k = dealKey(a, b, l); if (!found.has(k)) { found.add(k); if (playing) { toast('🏷️ Deal found: ' + l.name + ' to ' + b.name + ', ' + Math.round(l.deal * 100) + '% off'); renderBrief(); } } } });
+    ls.forEach(l => { if (l.deal) { const k = dealKey(a, b, l); if (!found.has(k)) { found.add(k); if (playing) { dealReveal(a, b, l); renderBrief(); renderCounts(); } } } });
+  }
+  const dealDots = () => Array.from({ length: M.deals }, (_, j) => `<i class="${j < found.size ? 'on' : ''}"></i>`).join('');
+  /* finding a secret fare should feel like finding something */
+  function dealReveal(a, b, l) {
+    const el = $('#tv-deal'), full = l.full || l.cost, saved = full - l.cost;
+    el.innerHTML = `<div class="ticket"><p class="k">🎟️ Secret fare found</p><b><s>${T.money(full)}</s><i>→</i>${T.money(l.cost)}</b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>You saved ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em><span class="dots">${dealDots()} ${found.size}/${M.deals} found</span></div>`;
+    el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(dealT); dealT = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 350); }, 3200);
+    gCities.selectAll('circle').filter(c => c.id === b.id).classed('pop', true); setTimeout(() => gCities.selectAll('circle').classed('pop', false), 1600);
   }
 
   /* ---------- static bits ---------- */
@@ -48,7 +57,7 @@
       <div class="route"><span class="pin s"></span><b>${T.flagImg(ch.from)} ${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></b>
       <span class="ln"></span><span></span>
       <span class="pin d"></span><b>${T.flagImg(ch.to)} ${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></b></div>
-      <p class="meta"><span>💰 <b>${T.money(M.budget)}</b></span><span>⏱️ <b>${T.dur(M.deadline)}</b></span>${twistPill()}<span title="Hidden fare deals discovered">🏷️ <b>${found.size}</b>/${M.deals}</span></p>`;
+      <p class="meta"><span>💰 <b>${T.money(M.budget)}</b></span><span>⏱️ <b>${T.dur(M.deadline)}</b></span>${twistPill()}<span class="deals" title="Secret fares found">🎟️ ${dealDots()}</span></p>`;
   }
   renderBrief();
   $('#tv-gate-day').textContent = title + ' · ' + dayLabel;
@@ -83,7 +92,7 @@
   const gCountry = g.append('g');
   gCountry.selectAll('text').data(feats.filter(f => path.area(f) > 60)).join('text').attr('class', 'tv-cname')
     .attr('transform', f => { const c = path.centroid(f); return `translate(${c[0]},${c[1]})`; }).text(f => (f.properties.name || '').toUpperCase()).style('display', 'none');
-  const gPar = g.append('g'), gLinks = g.append('g'), gBadges = g.append('g'), gHits = g.append('g'), gCities = g.append('g'), gLabels = g.append('g');
+  const gSpokes = g.append('g'), gPar = g.append('g'), gLinks = g.append('g'), gBadges = g.append('g'), gHits = g.append('g'), gCities = g.append('g'), gLabels = g.append('g');
   const pos = c => proj([c.lon, c.lat]);
   const tip = $('#tv-tip'), stage = $('#tv-stage');
   g.append('g').attr('class', 'tv-pulse-g').attr('transform', `translate(${pos(ch.to)[0]},${pos(ch.to)[1]})`).append('circle').attr('class', 'tv-pulse');
@@ -100,7 +109,10 @@
   svg.on('click', hideTip);
 
   let k = 1;
-  const strokeW = d => (d.cls === 'ghost' ? 1 : d.cls === 'flow' ? 1.2 : d.cls === 'par' ? 1.6 : 2.2) / k;
+  const strokeW = d => (d.cls === 'ghost' ? 1.4 : d.cls === 'flow' ? 1.2 : d.cls === 'par' ? 1.6 : 2.2) / k;
+  // dash patterns in screen pixels, whatever the zoom
+  const DASH = { spoke: [2, 3], ghost: [3, 4], par: [6, 4], train: [7, 4], bus: [3, 3], ferry: [1, 4], car: [10, 3, 2, 3], ride: [10, 3, 2, 3] };
+  const dashFor = cls => { const d = DASH[cls]; return d ? d.map(x => x / k).join(' ') : null; };
   const zoom = d3.zoom().scaleExtent([1, 14]).translateExtent([[-80, -40], [1040, 540]]).on('zoom', e => {
     g.attr('transform', e.transform); k = e.transform.k; const s = k;
     drawMap();
@@ -143,9 +155,21 @@
   const arc = (a, b) => path({ type: 'LineString', coordinates: [[a.lon, a.lat], [b.lon, b.lat]] });
   const mid = (a, b) => proj(d3.geoInterpolate([a.lon, a.lat], [b.lon, b.lat])(0.5));
 
+  /* where can I go from here? the destination if it fits, then six sensible stops */
+  function suggestFrom(cur) {
+    const on = onRouteIds();
+    const reach = T.C.filter(c => !on.has(c.id) && usable(cur, c).length);
+    const finish = reach.find(c => c.id === ch.to.id);
+    const suggested = reach.filter(c => c.id !== ch.to.id).map(c => ({ c, score: T.km(c, ch.to) + (usable(cur, c).length < 2 ? 400 : 0) - c.hub * 80 })).sort((a, b) => a.score - b.score).slice(0, 6).map(x => x.c);
+    return { reach, finish, suggested };
+  }
   function drawMap() {
     const cur = at(), on = onRouteIds(), par = parIds();
     const live = playing && !atDest();
+    // spokes: the connections that matter from where you stand; they fade when you focus on one
+    const spokes = [];
+    if (live) { const sg = suggestFrom(cur); (sg.finish ? [sg.finish] : []).concat(sg.suggested).forEach(c => { if (pendingTo && c.id === pendingTo.id) return; const hasDeal = T.legs(cur, c, ch.seed).some(l => l.deal && found.has(dealKey(cur, c, l))); spokes.push({ cls: 'spoke' + (pendingTo ? ' dim' : '') + (hasDeal ? ' deal' : '') + (c.id === ch.to.id ? ' fin' : ''), d: arc(cur, c) }); }); }
+    gSpokes.selectAll('path').data(spokes).join('path').attr('class', d => 'tv-spoke ' + d.cls).attr('d', d => d.d).style('stroke-width', 0.9 / k).style('stroke-dasharray', dashFor('spoke'));
     const reach = live ? new Set(T.C.filter(c => !on.has(c.id) && c.id !== cur.id && usable(cur, c).length).map(c => c.id)) : null;
     gCities.selectAll('circle').attr('class', c => 'tv-city'
       + (c.id === cur.id && live ? ' cur' : c.id === ch.from.id ? ' start' : c.id === ch.to.id ? ' dest' : on.has(c.id) ? ' on' : pendingTo && c.id === pendingTo.id ? ' pend' : par.has(c.id) ? ' par' : reach ? (reach.has(c.id) ? ' reach' : ' far') : ''));
@@ -153,12 +177,13 @@
     gCities.selectAll('circle').attr('r', c => (2 + c.hub * 0.5 + (c.id === cur.id && playing && !atDest() ? 1.5 : c.id === ch.from.id || c.id === ch.to.id || on.has(c.id) || par.has(c.id) ? 1 : 0)) / k).style('stroke-width', c => ((c.id === cur.id && playing && !atDest()) ? 8 : (pendingTo && c.id === pendingTo.id) ? 6 : 1) / k);
     layoutLabels();
     const plinks = showPar ? M.par.path.map(e => ({ cls: 'par', d: arc(T.byId[e.from], T.byId[e.to]) })) : [];
-    gPar.selectAll('path').data(plinks).join('path').attr('class', 'tv-link par').attr('d', d => d.d).style('stroke-width', strokeW);
+    gPar.selectAll('path').data(plinks).join('path').attr('class', function () { return 'tv-link par' + (this.classList.contains('draw') ? ' draw' : ''); }).attr('d', d => d.d).style('stroke-width', strokeW).style('stroke-dasharray', function () { return this.classList.contains('draw') ? '1' : dashFor('par'); });
     const links = [];
     route.forEach(r => { const a = T.byId[r.from], b = T.byId[r.to]; links.push({ cls: r.leg.mode, d: arc(a, b), col: T.MODES[r.leg.mode].color }); links.push({ cls: 'flow', d: arc(a, b) }); });
     if (pendingTo) links.push({ cls: 'ghost', d: arc(cur, pendingTo) });
-    gLinks.selectAll('path').data(links).join('path').attr('class', d => 'tv-link ' + d.cls).attr('d', d => d.d).style('stroke', d => d.col || null).style('stroke-width', strokeW);
-    const badges = route.map(r => { const [x, y] = mid(T.byId[r.from], T.byId[r.to]); return { x, y, cls: '', txt: `${r.leg.icon} ${T.money(r.leg.cost)} · ${T.dur(r.leg.hours)}${r.leg.deal ? ' 🏷️' : ''}` }; });
+    gLinks.selectAll('path').data(links).join('path').attr('class', function (d) { return 'tv-link ' + d.cls + (this.classList.contains('draw') ? ' draw' : ''); }).attr('d', d => d.d).style('stroke', d => d.col || null).style('stroke-width', strokeW).style('stroke-dasharray', function (d) { return this.classList.contains('draw') ? '1' : dashFor(d.cls); });
+    const badges = route.map((r, i) => { const [x, y] = mid(T.byId[r.from], T.byId[r.to]); return { x, y, cls: '', txt: `${i + 1} · ${r.leg.icon} ${T.money(r.leg.cost)} · ${T.dur(r.leg.hours)}${r.leg.deal ? ' 🎟️' : ''}` }; });
+    if (pendingTo && live) { const o = usable(cur, pendingTo).slice().sort((a, b) => a.cost - b.cost)[0]; if (o) { const [x, y] = mid(cur, pendingTo); badges.push({ x, y, cls: 'pend', txt: `${o.icon} from ${T.money(o.cost)} · ${T.dur(o.hours)}` }); } }
     if (showPar) M.par.path.forEach(e => { if (route.some(r => r.from === e.from && r.to === e.to && r.leg.mode === e.mode)) return; const [x, y] = mid(T.byId[e.from], T.byId[e.to]); badges.push({ x, y: y + 14 / k, cls: 'par', txt: `${T.MODES[e.mode].icon} ${T.money(e.cost)} · ${T.dur(e.hours)}` }); });
     const bsel = gBadges.selectAll('g').data(badges).join(enter => { const gg = enter.append('g'); gg.append('rect'); gg.append('text'); return gg; });
     bsel.attr('class', d => 'tv-badge ' + d.cls).attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / k})`);
@@ -190,13 +215,13 @@
     const all = T.legs(cur, c, ch.seed); noteDeals(cur, c, all);
     if (!all.length) return toast('Nothing runs from ' + cur.name + ' to ' + c.name + ' today');
     if (!all.some(l => !blocked(l, c))) return toast('Nothing from ' + cur.name + ' to ' + c.name + ' fits: ' + blocked(all.slice().sort((x, y) => x.cost - y.cost)[0], c));
-    pendingTo = c; refresh(); fitTo([cur, c], 2.2);
+    pendingTo = c; selOpt = null; refresh(); fitTo([cur, c], 2.2);
     $('#tv-plan').classList.remove('collapsed');
     const el = $('#tv-picker'); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
   function commit(c, leg) {
     if (blocked(leg, c)) return toast('That option is ' + blocked(leg, c));
-    route.push({ from: at().id, to: c.id, leg }); pendingTo = null; refresh();
+    route.push({ from: at().id, to: c.id, leg }); pendingTo = null; selOpt = null; refresh();
     if (!atDest()) fitTo([c, ch.to], 1.8); else fitRoute();
   }
   function refresh() { renderPlan(); drawMap(); }
@@ -219,7 +244,7 @@
     const [pt, pc] = pace(); const pe = $('#tv-pace'); pe.textContent = pt; pe.className = pc;
     const ts = twState(), done = tw.done(ts);
     $('#tv-twist').innerHTML = tw.id === 'open' ? `<span>${tw.icon} ${T.esc(tw.name)}</span><small>${T.esc(tw.desc)}</small>` : `<span>${tw.icon} ${T.esc(tw.name)}</span><small class="${done ? 'good' : ''}">${T.esc(tw.status(ts))}</small>`;
-    $('#tv-counts').innerHTML = `<span><b>${route.length}</b> leg${route.length === 1 ? '' : 's'}</span><span><b>${undos}</b> undo${undos === 1 ? '' : 's'} left</span><span><b>${hints}</b> hint${hints === 1 ? '' : 's'} left</span><span>🏷️ <b>${found.size}</b>/${M.deals} found</span>`;
+    renderCounts();
     $('#tv-hint').disabled = !hints || found.size >= M.deals || atDest();
     const est = atDest() ? T.score(tt.cost, tt.hours, elapsed(), M) : null;
     $('#tv-est').hidden = est === null; $('#tv-est b').textContent = est === null ? '—' : est.toLocaleString(); $('#tv-est .bar i').style.width = (est === null ? 0 : est / 100) + '%';
@@ -239,6 +264,16 @@
     renderPicker();
   }
 
+  function renderCounts() { $('#tv-counts').innerHTML = `<span><b>${route.length}</b> leg${route.length === 1 ? '' : 's'}</span><span><b>${undos}</b> undo${undos === 1 ? '' : 's'}</span><span><b>${hints}</b> hint${hints === 1 ? '' : 's'}</span><span class="deals" title="Secret fares found">🎟️ ${dealDots()} <b>${found.size}</b>/${M.deals}</span>`; }
+  /* what a leg means for the twist */
+  function twNote(o) {
+    const ts = twState();
+    if (tw.id === 'oneflight' && o.mode === 'plane') return 'Uses your one flight.';
+    if (tw.id === 'ferry' && o.mode === 'ferry') return 'Satisfies the Sea legs twist.';
+    if (tw.id === 'rail' && o.mode === 'train') return `Train ${Math.min(2, ts + 1)} of 2 for Rail pass.`;
+    if (tw.id === 'threemodes' && !(ts & { plane: 1, train: 2, bus: 4, ferry: 8, ride: 16, car: 32, bike: 64, walk: 128 }[o.mode])) return 'A new kind of transport for Mix it up.';
+    return '';
+  }
   /* the stop picker: choose the next city, then how to get there */
   function renderPicker() {
     const box = $('#tv-picker'), cur = at();
@@ -247,26 +282,30 @@
       const opts = T.legs(cur, pendingTo, ch.seed).slice().sort((a, b) => a.cost - b.cost); noteDeals(cur, pendingTo, opts);
       const okOpts = opts.filter(o => !blocked(o, pendingTo));
       const bc = Math.min(...okOpts.map(o => o.cost)), bt = Math.min(...okOpts.map(o => o.hours));
+      const tt = totals();
+      const card = selOpt !== null && opts[selOpt] ? (o => { const leftC = M.budget - tt.cost - o.cost, leftH = M.deadline - tt.hours - o.hours, note = twNote(o); return `<div class="tv-legcard" style="border-left-color:${T.MODES[o.mode].color}">
+          <div class="hd"><span class="ic">${o.icon}</span><div><b>${T.esc(o.name)}</b><small>${T.esc(cur.name)} → ${T.esc(pendingTo.name)} · ${Math.round(T.km(cur, pendingTo)).toLocaleString()} km</small></div></div>
+          <dl><div><dt>Cost</dt><dd>${T.money(o.cost)}${o.deal ? ` <s>${T.money(o.full)}</s>` : ''}</dd></div><div><dt>Time</dt><dd>${T.dur(o.hours)}</dd></div><div><dt>Budget after</dt><dd class="${leftC < M.budget * 0.15 ? 'warn' : ''}">${T.money(leftC)} left</dd></div><div><dt>Deadline after</dt><dd class="${leftH < M.deadline * 0.15 ? 'warn' : ''}">${T.dur(leftH)} left</dd></div></dl>
+          ${o.deal ? `<p class="dl">🎟️ Secret fare · ${Math.round(o.deal * 100)}% off</p>` : ''}${note ? `<p class="nt">${tw.icon} ${T.esc(note)}</p>` : ''}
+          <button class="btn primary" id="tv-addleg">Add this leg · ${T.money(o.cost)}</button></div>`; })(opts[selOpt]) : '';
       box.innerHTML = `<div class="tv-pick-head"><span class="muted">How do you get to</span><b>${T.place(pendingTo)}</b><small>${Math.round(T.km(cur, pendingTo)).toLocaleString()} km</small><button class="lnk" id="tv-unpick">change stop</button></div>
-        <div class="tv-opts">${opts.map((o, i) => { const b = blocked(o, pendingTo); return `<button class="tv-opt${b ? ' off' : ''}${!b && o.cost === bc ? ' best-cost' : ''}${!b && o.hours === bt ? ' best-time' : ''}${o.deal ? ' deal' : ''}" data-i="${i}" ${b ? 'disabled' : ''}>
-          <span class="ic">${o.icon}</span><span class="nm">${o.name}${o.deal ? ` <em class="deal">🏷️ Deal −${Math.round(o.deal * 100)}%</em>` : ''}<small class="${b ? 'off' : o.live ? 'live' : ''}">${b ? b : o.live ? 'avg of ' + T.esc(String(o.note).replace('avg of ', '')) + (o.nonstop ? ' · nonstop from ' + T.money(o.nonstop.cost) : '') : (o.note || 'modelled')}</small></span>
-          <span class="nums"><b>${T.money(o.cost)}${o.deal ? ` <s>${T.money(o.full)}</s>` : ''}</b><span>${T.dur(o.hours)}</span></span></button>`; }).join('')}</div>`;
-      box.querySelectorAll('.tv-opt:not(.off)').forEach(b => (b.onclick = () => commit(pendingTo, opts[+b.dataset.i])));
-      $('#tv-unpick').onclick = () => { pendingTo = null; refresh(); };
+        <div class="tv-opts">${opts.map((o, i) => { const b = blocked(o, pendingTo); return `<button class="tv-opt${b ? ' off' : ''}${!b && o.cost === bc ? ' best-cost' : ''}${!b && o.hours === bt ? ' best-time' : ''}${o.deal ? ' deal' : ''}${selOpt === i ? ' sel' : ''}" data-i="${i}" ${b ? 'disabled' : ''} style="border-left-color:${b ? 'transparent' : T.MODES[o.mode].color}">
+          <span class="ic">${o.icon}</span><span class="nm">${o.name}${o.deal ? ` <em class="deal">🎟️ −${Math.round(o.deal * 100)}%</em>` : ''}<small class="${b ? 'off' : o.live ? 'live' : ''}">${b ? b : o.live ? 'avg of ' + T.esc(String(o.note).replace('avg of ', '')) + (o.nonstop ? ' · nonstop from ' + T.money(o.nonstop.cost) : '') : (o.note || 'modelled')}</small></span>
+          <span class="nums"><b>${T.money(o.cost)}${o.deal ? ` <s>${T.money(o.full)}</s>` : ''}</b><span>${T.dur(o.hours)}</span></span></button>`; }).join('')}</div>
+        ${card}${selOpt === null ? '<p class="tv-pick-hint">Tap an option to see the details, tap again to take it.</p>' : ''}`;
+      box.querySelectorAll('.tv-opt:not(.off)').forEach(b => (b.onclick = () => { const i = +b.dataset.i; if (selOpt === i) commit(pendingTo, opts[i]); else { selOpt = i; renderPicker(); const c = $('.tv-legcard'); if (c) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }));
+      const add = $('#tv-addleg'); if (add) add.onclick = () => commit(pendingTo, opts[selOpt]);
+      $('#tv-unpick').onclick = () => { pendingTo = null; selOpt = null; refresh(); };
       return;
     }
     const on = onRouteIds();
-    const reach = T.C.filter(c => !on.has(c.id) && usable(cur, c).length);
-    const row = c => { const ls = usable(cur, c); const dealSeen = T.legs(cur, c, ch.seed).some(l => l.deal && found.has(dealKey(cur, c, l))); return `<button class="tv-stoprow${c.id === ch.to.id ? ' finish' : ''}" data-id="${c.id}"><span class="nm">${T.place(c)}<small>${c.id === ch.to.id ? 'destination' : Math.round(T.km(c, ch.to)).toLocaleString() + ' km to ' + T.esc(ch.to.name)}</small></span><span class="modes">${ls.map(l => `<i title="${l.name}">${l.icon}</i>`).join('')}${dealSeen ? '<i title="Deal found here">🏷️</i>' : ''}</span><span class="from">${ls.length} option${ls.length === 1 ? '' : 's'}</span></button>`; };
-    const finish = reach.find(c => c.id === ch.to.id);
+    const { reach, finish, suggested } = suggestFrom(cur);
+    const row = c => { const ls = usable(cur, c); const dealSeen = T.legs(cur, c, ch.seed).some(l => l.deal && found.has(dealKey(cur, c, l))); return `<button class="tv-stoprow${c.id === ch.to.id ? ' finish' : ''}" data-id="${c.id}"><span class="nm">${T.place(c)}<small>${c.id === ch.to.id ? 'destination' : Math.round(T.km(c, ch.to)).toLocaleString() + ' km to ' + T.esc(ch.to.name)}</small></span><span class="modes">${ls.map(l => `<i title="${l.name}">${l.icon}</i>`).join('')}${dealSeen ? '<i class="dl" title="Secret fare found here">🎟️</i>' : ''}</span><span class="from">from <b>${T.money(Math.min(...ls.map(l => l.cost)))}</b></span></button>`; };
     const destLegs = T.legs(cur, ch.to, ch.seed);
-    const suggested = reach.filter(c => c.id !== ch.to.id)
-      .map(c => ({ c, score: T.km(c, ch.to) + (usable(cur, c).length < 2 ? 400 : 0) - c.hub * 80 }))
-      .sort((a, b) => a.score - b.score).slice(0, 6).map(x => x.c);
     box.innerHTML = `<div class="tv-pick-head"><b>Add a stop</b><small>${reach.length} places fit from ${T.esc(cur.name)}</small></div>
       <div class="tv-search"><input type="search" id="tv-q" placeholder="Search any city…" autocomplete="off"><ul class="tv-results" id="tv-res" hidden></ul></div>
       <div class="tv-stoplist">${finish ? row(finish) : destLegs.length ? `<div class="tv-stoprow finish off"><span class="nm">${T.place(ch.to)}<small>reachable, but nothing fits: ${T.esc(blocked(destLegs.slice().sort((x, y) => x.cost - y.cost)[0], ch.to) || '')}</small></span></div>` : ''}${suggested.map(row).join('')}</div>
-      <p class="tv-pick-hint">Or tap a city on the map. Deals only show when you look.</p>`;
+      <p class="tv-pick-hint">Lit cities on the map are reachable. Secret fares only show when you look.</p>`;
     box.querySelectorAll('.tv-stoprow[data-id]').forEach(b => (b.onclick = () => pick(T.byId[b.dataset.id])));
     const q = $('#tv-q'), res = $('#tv-res');
     q.oninput = () => {
@@ -282,7 +321,7 @@
 
   /* ---------- flow ---------- */
   function start() {
-    route = []; pendingTo = null; playing = true; found = new Set(); showPar = false; undos = UNDOS; hints = HINTS;
+    route = []; pendingTo = null; selOpt = null; playing = true; found = new Set(); showPar = false; drawn = false; undos = UNDOS; hints = HINTS;
     renderBrief();
     $('#tv-gate').hidden = true; $('#tv-result').hidden = true; $('#tv-board').hidden = true; $('#tv-plan').hidden = false;
     $('#tv-plan').classList.toggle('collapsed', window.innerWidth <= 900);
@@ -304,8 +343,9 @@
     const hidden = M.dealKeys.filter(k => !found.has(k)); if (!hidden.length) return toast('You have found every deal.');
     const k = hidden[Math.floor(T.rng(T.hash(ch.seed + '|hint|' + hints))() * hidden.length)];
     const [pair, modeId] = k.split('|'), [fa, tb] = pair.split('-'); const a = T.byId[fa], b = T.byId[tb], m = T.MODES[modeId];
-    hints--; t0 -= HINT_SECS * 1000; found.add(k); renderBrief(); refresh();
-    toast(`🏷️ Hint: ${m.name} from ${a.name} to ${b.name} is on sale. +${HINT_SECS}s on your clock.`);
+    const leg = T.legs(a, b, ch.seed).find(l => l.mode === modeId);
+    hints--; t0 -= HINT_SECS * 1000; found.add(k); if (leg) dealReveal(a, b, leg); renderBrief(); refresh();
+    toast(`Hint used: +${HINT_SECS}s on your clock.`);
     fitTo([a, b], 2.4);
   };
   $('#tv-submit').onclick = () => {
@@ -323,43 +363,93 @@
     } else showResult(res, true, 0);
   };
 
-  /* the summary that pops up the moment you submit */
-  function showModal(res, isPractice, xpGain) {
-    const rk = T.rankOf(res.score, fld), pct = Math.max(1, Math.round(100 * rk.rank / rk.of)), tr = T.tier(res.score, M);
-    const prog = T.progression(T.load().results || {});
-    const grade = (v, best, good, ok) => v <= best * good ? 'good' : v <= best * ok ? 'ok' : 'poor';
-    const gLabel = { good: 'Excellent', ok: 'Decent', poor: 'Costly' };
-    const mG = grade(res.cost, M.par.cost, 1.08, 1.3), tG = grade(res.hours, M.par.hours, 1.08, 1.3), dG = res.secs <= 60 ? 'good' : res.secs <= 150 ? 'ok' : 'poor';
-    const dial = (lab, val, sub, g, pctFill, txt) => `<div class="dial ${g}"><span class="lab">${lab}</span><b>${val}</b><small>${sub}</small><div class="bar"><i style="width:${Math.max(4, Math.min(100, pctFill))}%"></i></div><em>${txt}</em></div>`;
-    const legs = res.route.map((r, i) => { const a = i ? T.byId[res.route[i - 1].to] : ch.from, b = T.byId[r.to], m = T.MODES[r.mode]; return `<li><span class="n">${i + 1}</span><span class="ic">${m.icon}</span><span class="where">${T.esc(a.name)} <i>→</i> ${T.esc(b.name)}<small>${m.name}${r.deal ? ` · <em class="deal">deal −${Math.round(r.deal * 100)}%</em>` : ''}</small></span><span class="num">${T.money(r.cost)}</span><span class="num">${T.dur(r.hours)}</span></li>`; }).join('');
-    const parMatch = res.parMatch || (res.cost <= M.par.cost + 1 && res.hours <= M.par.hours + 0.05);
-    const vsPar = parMatch ? `<span class="good">✓ You matched the planner's route</span>` : `<span>Planner: ${T.money(M.par.cost)} · ${T.dur(M.par.hours)} · ${M.par.legs} legs</span><span class="${res.cost > M.par.cost ? 'bad' : 'good'}">${res.cost > M.par.cost ? '+' + T.money(res.cost - M.par.cost) : 'cheaper'}</span><span class="${res.hours > M.par.hours ? 'bad' : 'good'}">${res.hours > M.par.hours + 0.05 ? '+' + T.dur(res.hours - M.par.hours) : 'as fast or faster'}</span>`;
-    const lvlPct = prog.next ? Math.round(100 * prog.into / prog.span) : 100;
-    $('#tv-modal').innerHTML = `<div class="tv-modal-card" role="dialog" aria-modal="true" aria-label="Journey summary">
-      <button class="tv-modal-x" id="tv-modal-close" aria-label="Close">✕</button>
-      <p class="kicker">${isPractice ? (mode === 'today' ? 'Practice run · not scored' : mode === 'archive' ? 'Archive practice · not scored' : 'Random expedition · not scored') : 'Official result · ' + ch.key}</p>
-      <div class="top">
-        <div class="tier"><span class="ic">${tr.icon}</span><b>${tr.name}</b><small>${title} · ${T.esc(ch.from.name)} → ${T.esc(ch.to.name)}</small></div>
-        <div class="pts"><b>${res.score.toLocaleString()}</b><small>Traversle score</small><span>${isPractice ? 'would rank' : 'rank'} <b>#${rk.rank.toLocaleString()}</b> of ${rk.of.toLocaleString()} · top ${pct}%</span></div>
-      </div>
-      <div class="dials">
-        ${dial('Money', T.money(res.cost), 'of ' + T.money(M.budget) + ' budget', mG, 100 * res.cost / M.budget, gLabel[mG])}
-        ${dial('Time', T.dur(res.hours), 'of ' + T.dur(M.deadline) + ' deadline', tG, 100 * res.hours / M.deadline, gLabel[tG])}
-        ${dial('Decision', T.secsF(res.secs), res.route.length + ' legs · ' + (res.deals ? res.deals.found : 0) + '/' + M.deals + ' deals found', dG, Math.min(100, 100 * res.secs / 240), dG === 'good' ? 'Quick' : dG === 'ok' ? 'Steady' : 'Slow')}
-      </div>
-      <ol class="legs">${legs}<li class="total"><span class="n"></span><span class="ic">Σ</span><span class="where">Total<small>${tw.icon} ${T.esc(tw.name)}</small></span><span class="num">${T.money(res.cost)}</span><span class="num">${T.dur(res.hours)}</span></li></ol>
-      <div class="vs">${vsPar}</div>
-      ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+${xpGain} XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
-      <div class="actions"><button class="btn primary" id="tv-modal-share">Copy result</button><button class="btn ghost" id="tv-modal-map">See the planner's route</button><button class="btn ghost" id="tv-modal-stats">Stats</button><button class="btn ghost" id="tv-modal-again">Practice again</button></div>
-    </div>`;
-    $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
-    $('#tv-modal-close').onclick = closeModal; $('#tv-modal-map').onclick = closeModal;
-    $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
-    $('#tv-modal-again').onclick = () => { closeModal(); start(); };
-    $('#tv-modal-stats').onclick = showStats;
-    $('#tv-modal-share').onclick = () => $('#tv-share').click();
+  /* ---------- the expedition report: journey, performance, route vs planner, score breakdown ---------- */
+  const factors = res => {
+    const mF = Math.pow(Math.min(1, M.cheapest / res.cost), 1.1), tF = Math.pow(Math.min(1, M.fastest / res.hours), 1.1);
+    const decF = Math.exp(-Math.max(0, res.secs - 30) / 240), dF = M.deals ? (res.deals ? res.deals.found : 0) / M.deals : 1;
+    return { cost: Math.round(100 * mF), time: Math.round(100 * tF), deals: Math.round(100 * dF), eff: Math.round(100 * Math.sqrt(mF * tF)), speed: Math.round(20 * decF), mF, tF, dF };
+  };
+  const parMatchOf = res => res.cost <= M.par.cost + 1 && res.hours <= M.par.hours + 0.05;
+  function verdict(res) {
+    const ps = T.score(res.cost, res.hours, 0, M), pp = M.par.score;
+    const dc = res.cost - M.par.cost, dh = res.hours - M.par.hours;
+    if (parMatchOf(res)) return { cls: 'tie', h: "🎯 You found the planner's route", t: 'The best balance of money and time on the board today.' };
+    if (ps > pp + 5) return { cls: 'win', h: '🧠 You outsmarted the planner', t: dc < -0.5 ? `You saved ${T.money(-dc)}${dh < -0.05 ? ' and ' + T.dur(-dh) : ''}.` : `You got there ${T.dur(-dh)} faster.` };
+    return { cls: 'lose', h: '🧭 The planner wins this one', t: dc > 0.5 ? `You were ${T.money(dc)} more expensive${dh > 0.05 ? ' and ' + T.dur(dh) + ' slower' : ''}.` : dh > 0.05 ? `You were ${T.dur(dh)} slower.` : 'A whisker behind on the balance of money and time.' };
   }
-  function closeModal() { $('#tv-modal').hidden = true; document.body.classList.remove('tv-modal-open'); fitRoute(); }
+  const routeCol = (title, rt, cost, hours, cls) => `<div class="col ${cls}"><h5>${title}</h5><ol>${[ch.from, ...rt.map(r => T.byId[r.to])].map((c, i) => (i ? `<li class="lg"><span class="ar">↓</span><span>${T.MODES[rt[i - 1].mode].icon} ${T.MODES[rt[i - 1].mode].name}${rt[i - 1].deal ? ' 🎟️' : ''}</span><small>${T.money(rt[i - 1].cost)} · ${T.dur(rt[i - 1].hours)}</small></li>` : '') + `<li class="st${i === 0 ? ' s' : i === rt.length ? ' d' : ''}">${T.esc(c.name)}</li>`).join('')}</ol><div class="tot"><b>${T.money(cost)}</b><span>${T.dur(hours)}</span><span>${rt.length} legs</span></div></div>`;
+  function buildSummary(res, isPractice, xpGain) {
+    const rk = T.rankOf(res.score, fld), pct = Math.max(1, Math.round(100 * rk.rank / rk.of)), tr = T.tier(res.score, M), f = factors(res), v = verdict(res);
+    const prog = T.progression(T.load().results || {}), lvlPct = prog.next ? Math.round(100 * prog.into / prog.span) : 100;
+    const parRoute = M.par.path.map(e => ({ to: e.to, mode: e.mode, cost: e.cost, hours: e.hours, deal: e.deal }));
+    const found = res.deals ? res.deals.found : 0, parDeals = M.par.path.filter(e => e.deal).length;
+    const modesUsed = Object.keys(T.MODES).filter(m => res.route.some(r => r.mode === m)).map(m => T.MODES[m].icon).join(' ');
+    const chain = [ch.from, ...res.route.map(r => T.byId[r.to])].map(c => `<span>${T.esc(c.name)}</span>`).join('<i>→</i>');
+    const perf = (lab, you, best, ok, delta) => `<div class="prow ${ok ? 'good' : 'bad'}"><span class="l">${lab}</span><span class="y"><small>You</small><b>${you}</b></span><span class="b"><small>Best</small><b>${best}</b></span><i>${ok ? '✓' : delta}</i></div>`;
+    const bar = (lab, val, cls) => `<div class="brow ${cls || ''}"><span>${lab}</span><div class="bar"><i style="width:${val}%"></i></div><b>${val} <small>/ 100</small></b></div>`;
+    const tags = [res.cost < M.par.cost - 0.5 ? ['you', 'Cheaper'] : res.cost > M.par.cost + 0.5 ? ['par', 'Planner cheaper'] : ['tie', 'Same cost'], res.hours < M.par.hours - 0.05 ? ['you', 'Faster'] : res.hours > M.par.hours + 0.05 ? ['par', 'Planner faster'] : ['tie', 'Same time'], res.route.length < M.par.legs ? ['you', 'Fewer legs'] : res.route.length > M.par.legs ? ['par', 'Planner fewer legs'] : ['tie', 'Same legs'], [found >= parDeals ? 'you' : 'par', `Deals ${res.deals ? res.deals.used : 0} vs ${parDeals} used`]];
+    return `
+      <p class="kicker">${isPractice ? (mode === 'today' ? 'Practice run · not scored' : mode === 'archive' ? 'Archive practice · not scored' : 'Random expedition · not scored') : 'Official result · ' + ch.key}</p>
+      <section class="rs-journey">
+        <p class="lab">Your journey</p>
+        <div class="chain">${chain}</div>
+        <div class="rs-stats"><div><b>${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.route.length}</b><span>legs</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>deals</span></div><div class="sc"><b>${res.score.toLocaleString()}</b><span>score</span></div></div>
+        <div class="rs-rating ${tr.name.toLowerCase()}"><span class="ic">${tr.icon}</span><div><b>${tr.name}</b><small>${isPractice ? 'would rank' : 'rank'} #${rk.rank.toLocaleString()} of ${rk.of.toLocaleString()} · top ${pct}%</small></div></div>
+      </section>
+      <section class="rs-perf"><p class="lab">Your performance</p>
+        ${perf('Cost', T.money(res.cost), T.money(M.cheapest), res.cost <= M.cheapest + 1, '+' + T.money(res.cost - M.cheapest))}
+        ${perf('Time', T.dur(res.hours), T.dur(M.fastest), res.hours <= M.fastest + 0.05, '+' + T.dur(res.hours - M.fastest))}
+        ${perf('Deals', found + '/' + M.deals, M.deals + '/' + M.deals, found >= M.deals, (M.deals - found) + ' missed')}
+      </section>
+      <section class="rs-vs"><p class="lab">Your route vs the planner</p>
+        <div class="cols">${routeCol('Your route', res.route, res.cost, res.hours, 'you')}<span class="vs">vs</span>${routeCol("Planner's route", parRoute, M.par.cost, M.par.hours, 'par')}</div>
+        <div class="verdict ${v.cls}"><b>${v.h}</b><small>${v.t}</small></div>
+        <div class="tags">${tags.map(t => `<span class="${t[0]}">${t[1]}</span>`).join('')}</div>
+      </section>
+      <section class="rs-score"><p class="lab">Score breakdown</p>
+        <div class="final"><b>${res.score.toLocaleString()}</b><span>final score</span></div>
+        ${bar('Cost', f.cost)}${bar('Time', f.time)}${bar('Deals', f.deals)}${bar('Efficiency', f.eff)}
+        <div class="brow bonus"><span>Speed bonus</span><div class="bar"><i style="width:${f.speed * 5}%"></i></div><b>+${f.speed}%</b></div>
+        <p class="note">Cost and time are measured against the best routes that fit today's mission. Efficiency rewards doing well at both. Deciding quickly adds a bonus, up to 20%, and never takes anything away.</p>
+      </section>
+      ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+${xpGain} XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
+      <div class="actions"><button class="btn primary big tv-share">Share result</button><button class="btn ghost tv-map">See the map</button><button class="btn ghost tv-stats">Stats</button><button class="btn ghost tv-again">Practice again</button>${mode !== 'today' ? '<a class="btn ghost" href="play.html">Today\'s puzzle</a>' : `<a class="btn ghost" href="play.html?seed=${Math.random().toString(36).slice(2, 8)}">Random expedition</a>`}</div>`;
+  }
+  function wireSummary(root, res) {
+    root.querySelectorAll('.tv-share').forEach(b => (b.onclick = () => share(res)));
+    root.querySelectorAll('.tv-map').forEach(b => (b.onclick = () => { closeModal(); $('#tv-stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
+    root.querySelectorAll('.tv-stats').forEach(b => (b.onclick = showStats));
+    root.querySelectorAll('.tv-again').forEach(b => (b.onclick = () => { closeModal(); start(); }));
+  }
+  /* the shareable card: performance without the solution */
+  function shareText(res) {
+    const tr = T.tier(res.score, M), f = factors(res);
+    const bar = x => { const n = Math.round(Math.max(0, Math.min(1, x)) * 10); return '█'.repeat(n) + '░'.repeat(10 - n); };
+    const modes = Object.keys(T.MODES).filter(m => res.route.some(r => r.mode === m)).map(m => T.MODES[m].icon).join(' ');
+    return `🌎 TRAVERSLE ${ch.n ? '#' + String(ch.n).padStart(3, '0') : 'EXPEDITION'}\n${ch.from.name} → ${ch.to.name}\n💰 ${T.money(res.cost)} · ⏱️ ${T.dur(res.hours)} · 🎟️ ${res.deals ? res.deals.found : 0}/${M.deals} deals\n${tr.icon} ${tr.name.toUpperCase()} · ${res.score.toLocaleString()}\n💰 ${bar(f.mF)}\n⏱️ ${bar(f.tF)}\n🎟️ ${bar(f.dF)}\n${res.route.length} legs · ${modes}\ntraversledaily.com`;
+  }
+  function share(res) {
+    const txt = shareText(res);
+    const copy = () => (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Result copied. Paste it anywhere.'), () => prompt('Copy your result:', txt));
+    if (navigator.share) navigator.share({ text: txt }).catch(e => { if (!e || e.name !== 'AbortError') copy(); }); else copy();
+  }
+  function showModal(res, isPractice, xpGain) {
+    $('#tv-modal').innerHTML = `<div class="tv-modal-card rs" role="dialog" aria-modal="true" aria-label="Expedition report"><button class="tv-modal-x" id="tv-modal-close" aria-label="Close">✕</button>${buildSummary(res, isPractice, xpGain)}</div>`;
+    $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
+    $('#tv-modal-close').onclick = closeModal;
+    $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
+    wireSummary($('#tv-modal'), res);
+  }
+  function closeModal() { $('#tv-modal').hidden = true; document.body.classList.remove('tv-modal-open'); if (showPar && !drawn) animateRoutes(); else fitRoute(); }
+  /* draw your route, then the planner's, across the map */
+  function animateRoutes() {
+    drawn = true; fitRoute();
+    const mine = gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), par = gPar.selectAll('path').nodes();
+    stage.classList.add('drawing');
+    mine.forEach((p, i) => { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('draw'); p.style.animationDelay = (0.3 + i * 0.5) + 's'; });
+    par.forEach((p, i) => { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('draw'); p.style.animationDelay = (0.9 + mine.length * 0.5 + i * 0.5) + 's'; });
+    setTimeout(() => { mine.concat(par).forEach(p => { p.classList.remove('draw'); p.removeAttribute('pathLength'); p.style.animationDelay = ''; }); stage.classList.remove('drawing'); drawMap(); }, ((mine.length + par.length) * 0.5 + 1.8) * 1000);
+  }
 
   /* personal stats pop-up (the thing people screenshot) */
   function showStats() {
@@ -382,60 +472,20 @@
     </div>`;
     $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
     $('#tv-modal-close').onclick = closeModal; $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
-    const sh = $('#tv-stats-share'); if (sh) sh.onclick = () => { const b = $('#tv-share'); if (b) b.click(); else toast('Play today first'); };
+    const sh = $('#tv-stats-share'); if (sh) sh.onclick = () => share(todayRes);
   }
   { const b = $('#td-stats'); if (b) b.onclick = showStats; }
 
   function showResult(res, isPractice, xpGain, quiet) {
-    $('#tv-plan').hidden = true; pendingTo = null; showPar = true;
+    $('#tv-plan').hidden = true; pendingTo = null; selOpt = null; showPar = true; drawn = false;
     route = res.route.map((r, i) => ({ from: i ? res.route[i - 1].to : ch.from.id, to: r.to, leg: { mode: r.mode, cost: r.cost, hours: r.hours, icon: T.MODES[r.mode].icon, deal: r.deal } }));
-    drawMap(); fitRoute();
-    const rk = T.rankOf(res.score, fld), pct = Math.max(1, Math.round(100 * rk.rank / rk.of));
-    const tr = T.tier(res.score, M), prog = T.progression(T.load().results || {});
-    const pathHTML = rt => [ch.from, ...rt.map(r => T.byId[r.to])].map((c, i) => (i ? `<span class="lg">${T.MODES[rt[i - 1].mode].icon} ${T.money(rt[i - 1].cost)} · ${T.dur(rt[i - 1].hours)}${rt[i - 1].deal ? ' 🏷️' : ''}</span>` : '') + `<span class="pl">${T.place(c)}</span>`).join('');
-    const parRoute = M.par.path.map(e => ({ to: e.to, mode: e.mode, cost: e.cost, hours: e.hours, deal: e.deal }));
-    const parMatch = res.parMatch || (res.cost <= M.par.cost + 1 && res.hours <= M.par.hours + 0.05);
-    const parStops = M.par.path.slice(0, -1).map(e => T.byId[e.to].name);
-    const insight = parMatch ? `You found the planner's route${res.secs > 120 ? `, but took <b>${T.secsF(res.secs)}</b> to decide. Quicker calls score higher.` : '. Nobody beats that on money and time today.'}`
-      : res.cost > M.par.cost * 1.25 ? `The planner went through ${parStops.join(' and ')} for <b>${T.money(M.par.cost)}</b>${M.par.path.some(e => e.deal) ? ' with a hidden deal' : ''}. You paid ${T.money(res.cost - M.par.cost)} more.`
-      : res.hours > M.par.hours * 1.25 ? `The planner went through ${parStops.join(' and ')} in <b>${T.dur(M.par.hours)}</b>. You took ${T.dur(res.hours - M.par.hours)} longer.`
-      : (res.deals && res.deals.found < M.deals) ? `Close. You found <b>${res.deals.found} of ${M.deals}</b> hidden deals. The planner's route uses ${M.par.path.filter(e => e.deal).length}.`
-      : `Strong route, just behind the planner. ${res.secs > 90 ? 'Decide faster for the rest of the points.' : ''}`;
-    const cmp = (a, b, fmt, lowerBetter) => `<td class="r">${fmt(a)}</td><td class="r">${fmt(b)}</td><td class="r ${a <= b ? 'good' : 'bad'}">${a <= b ? '✓' : (lowerBetter ? '+' + fmt(a - b) : '')}</td>`;
-    const lvlPct = prog.next ? Math.round(100 * prog.into / prog.span) : 100;
-    $('#tv-result').innerHTML = `
-      <div class="hero">
-        ${isPractice ? `<span class="tag prac">${mode === 'today' ? 'Practice run · not scored' : mode === 'archive' ? 'Archive practice · not scored' : 'Random expedition · not scored'}</span>` : '<span class="tag lock">Official score for ' + ch.key + ' saved</span>'}
-        <p class="tier">${tr.icon} ${tr.name}</p>
-        <p class="lbl">Traversle score</p><div class="score">${res.score.toLocaleString()}</div>
-        <p class="rank">${isPractice ? `Would rank <b>#${rk.rank.toLocaleString()}</b> of ${rk.of.toLocaleString()}` : `Global rank <b>#${rk.rank.toLocaleString()}</b> of ${rk.of.toLocaleString()} · top ${pct}%`}</p>
-        <p class="insight">${insight}</p>
-        ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+${xpGain} XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
-        <div class="actions"><button class="btn primary" id="tv-share" style="margin:0">Copy result</button><button class="btn ghost" id="tv-again">Practice again</button><a class="btn ghost" href="play.html?seed=${Math.random().toString(36).slice(2, 8)}">Random expedition</a>${mode !== 'today' ? '<a class="btn ghost" href="play.html">Today\'s puzzle</a>' : ''}</div>
-      </div>
-      <div class="compare">
-        <table><thead><tr><th></th><th class="r">You</th><th class="r">Planner</th><th class="r"></th></tr></thead><tbody>
-          <tr><td>Spent <small>budget ${T.money(M.budget)}</small></td>${cmp(res.cost, M.par.cost, T.money, true)}</tr>
-          <tr><td>Travel time <small>deadline ${T.dur(M.deadline)}</small></td>${cmp(res.hours, M.par.hours, T.dur, true)}</tr>
-          <tr><td>Legs</td><td class="r">${res.route.length}</td><td class="r">${M.par.legs}</td><td></td></tr>
-          <tr><td>Deals found</td><td class="r">${res.deals ? res.deals.found : 0} of ${M.deals}</td><td class="r">${M.par.path.filter(e => e.deal).length} used</td><td></td></tr>
-          <tr><td>Decided in</td><td class="r">${T.secsF(res.secs)}</td><td class="r">—</td><td></td></tr>
-        </tbody></table>
-      </div>
-      <div class="path"><h4>Your route</h4>${pathHTML(res.route)}</div>
-      <div class="path par"><h4>The planner's route <button class="lnk" id="tv-par-toggle">hide on map</button></h4>${pathHTML(parRoute)}</div>`;
+    drawMap();
+    $('#tv-result').innerHTML = `<div class="rs">${buildSummary(res, isPractice, xpGain)}<p class="rs-maptoggle"><button class="lnk" id="tv-par-toggle">Hide the planner's route on the map</button></p></div>`;
     $('#tv-result').hidden = false;
-    $('#tv-again').onclick = start;
-    $('#tv-par-toggle').onclick = () => { showPar = !showPar; $('#tv-par-toggle').textContent = showPar ? 'hide on map' : 'show on map'; drawMap(); fitRoute(); };
-    $('#tv-share').onclick = () => {
-      const modes = res.route.map(r => T.MODES[r.mode].icon).join('');
-      const pm = res.cost <= M.par.cost + 1 && res.hours <= M.par.hours + 0.05;
-      const vs = pm ? '🎯 Planner\'s route' : `vs planner ${res.cost > M.par.cost ? '+' + T.money(res.cost - M.par.cost) : '✓'} · ${res.hours > M.par.hours + 0.05 ? '+' + T.dur(res.hours - M.par.hours) : '✓'}`;
-      const txt = `TraversleDaily ${ch.n ? '#' + ch.n : 'expedition'} ${ch.from.name} → ${ch.to.name}\n${modes} ${res.route.length} legs · 🏷️ ${res.deals ? res.deals.found : 0}/${M.deals} · ${tw.icon} ${tw.name}\n${tr.icon} ${tr.name} ${res.score.toLocaleString()} · #${rk.rank.toLocaleString()} of ${rk.of.toLocaleString()}\n${vs} · ⚡ ${T.secsF(res.secs)}\n${location.origin}${location.pathname}`;
-      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copied'), () => { prompt('Copy your result:', txt); });
-    };
+    wireSummary($('#tv-result'), res);
+    $('#tv-par-toggle').onclick = () => { showPar = !showPar; $('#tv-par-toggle').textContent = (showPar ? 'Hide' : 'Show') + " the planner's route on the map"; drawMap(); fitRoute(); };
     showBoard(mode === 'today' ? (st.results[ch.key] || res) : res);
-    if (!quiet) showModal(res, isPractice, xpGain);
+    if (!quiet) showModal(res, isPractice, xpGain); else setTimeout(animateRoutes, 150);
   }
 
   function showBoard(mine) {
@@ -464,6 +514,6 @@
   if (official) { $('#tv-gate').hidden = true; showResult(official, false, 0, true); }
   else {
     setTimeout(() => fitTo([ch.from, ch.to], 1.6), 50);
-    try { const how = $('#hm-howmodal'); if (how && !localStorage.getItem('traverse.seen')) { how.hidden = false; document.body.classList.add('td-modal-open'); localStorage.setItem('traverse.seen', '1'); } } catch (e) {}
+    try { if (!localStorage.getItem('traverse.seen')) { if (window.tdTutorial) window.tdTutorial(true); localStorage.setItem('traverse.seen', '1'); } } catch (e) {}
   }
 })();

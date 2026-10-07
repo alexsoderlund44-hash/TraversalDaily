@@ -323,6 +323,9 @@
   /* ---------- storage ---------- */
   const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } };
   const save = s => { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} };
+  // test builds: bump TEST_RESET to wipe today's official run once per browser (remove before launch)
+  const TEST_RESET = 'reset-3';
+  try { if (localStorage.getItem('traverse.reset') !== TEST_RESET) { const s = load(); if (s.results) { delete s.results[dayKey(dayNumber())]; save(s); } localStorage.setItem('traverse.reset', TEST_RESET); } } catch (e) {}
 
   /* ---------- TraversleDaily Plus: the paid archive ----------
      The last FREE_DAYS puzzles are free to replay; older ones need Plus. Membership is stored in this browser.

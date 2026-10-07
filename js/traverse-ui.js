@@ -23,12 +23,12 @@
   const dayLabel = new Date(ch.key).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   const resetIn = () => { const ms = (T.dayNumber() * 86400000 + Date.UTC(2026, 9, 7)) - Date.now(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };
   $('#tv-brief').innerHTML = `<p class="k">TraversleDaily #${ch.n} · ${dayLabel}</p>
-    <div class="route"><span class="pin s"></span><b>${ch.from.flag} ${T.esc(ch.from.name)}<small>${T.esc(ch.from.country)}</small></b>
+    <div class="route"><span class="pin s"></span><b>${T.flagImg(ch.from)} ${T.esc(ch.from.name)}<small>${T.esc(ch.from.country)}</small></b>
     <span class="ln"></span><span></span>
-    <span class="pin d"></span><b>${ch.to.flag} ${T.esc(ch.to.name)}<small>${T.esc(ch.to.country)}</small></b></div>
+    <span class="pin d"></span><b>${T.flagImg(ch.to)} ${T.esc(ch.to.name)}<small>${T.esc(ch.to.country)}</small></b></div>
     <p class="meta"><span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>no direct route</span><span>resets in <b>${resetIn()}</b></span></p>`;
   $('#tv-gate-day').textContent = '#' + ch.n + ' · ' + dayLabel;
-  $('#tv-gate-title').innerHTML = `${ch.from.flag} ${T.esc(ch.from.name)}<span class="arr">→</span>${ch.to.flag} ${T.esc(ch.to.name)}`;
+  $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} ${T.esc(ch.from.name)}<small>${T.esc(ch.from.country)}</small></span><span class="arr">→</span><span class="city">${T.flagImg(ch.to, 40)} ${T.esc(ch.to.name)}<small>${T.esc(ch.to.country)}</small></span>`;
   $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km apart and nothing goes there directly. Chain buses, trains, rideshares, ferries and flights into the smartest journey.`;
   $('#tv-gate-note').textContent = practice ? 'You already have an official score for today. This run is practice.' : 'One official run per day. The decision clock starts when you press the button.';
   $('#td-nav-score').style.display = official ? '' : 'none';
@@ -126,7 +126,7 @@
       const ls = T.legs(cur, c, ch.seed);
       modes = ls.length ? `<div class="modes">${ls.map(l => `<span>${l.icon} <em>${T.money(l.cost)}</em></span>`).join('')}</div>` : `<div class="modes"><span>no direct link from ${T.esc(cur.name)}</span></div>`;
     }
-    tip.innerHTML = `<b>${c.flag} ${T.esc(c.name)}</b><small>${T.esc(c.country)}${c.id === ch.from.id ? ' · start' : c.id === ch.to.id ? ' · destination' : ''}</small>${modes}`;
+    tip.innerHTML = `<b>${T.flagImg(c)} ${T.esc(c.name)}</b><small>${T.esc(c.country)}${c.id === ch.from.id ? ' · start' : c.id === ch.to.id ? ' · destination' : ''}</small>${modes}`;
     tip.hidden = false;
   }
   function moveTip(e) { const r = stage.getBoundingClientRect(); tip.style.left = (e.clientX - r.left) + 'px'; tip.style.top = (e.clientY - r.top) + 'px'; }
@@ -164,13 +164,13 @@
     $('#tv-plan-sub').textContent = atDest() ? 'You\'ve arrived. Submit, or undo a leg to try another idea.' : `You're in ${cur.name}.`;
     $('#tv-submit').disabled = !atDest(); $('#tv-undo').disabled = !route.length;
 
-    let h = `<li class="start"><span class="dot"></span><div class="stop">${ch.from.flag} ${T.esc(ch.from.name)}<small>start</small></div>`;
+    let h = `<li class="start"><span class="dot"></span><div class="stop">${T.place(ch.from)}<small>start</small></div>`;
     route.forEach((r, i) => {
       const c = T.byId[r.to], m = T.MODES[r.leg.mode];
       h += `<div class="leg" style="border-color:${m.color}"><span>${r.leg.icon}</span><span><b>${T.money(r.leg.cost)}</b> · ${T.dur(r.leg.hours)}<br><span class="n">${m.name}${r.leg.note ? ' · ' + T.esc(r.leg.note) : ''}</span></span><span></span>${i === route.length - 1 ? `<button class="x" title="Remove this leg" data-i="${i}">✕</button>` : ''}</div></li>
-        <li class="${c.id === ch.to.id ? 'dest' : ''}"><span class="dot"></span><div class="stop">${c.flag} ${T.esc(c.name)}<small>${c.id === ch.to.id ? 'arrived' : 'stop ' + (i + 1)}</small></div>`;
+        <li class="${c.id === ch.to.id ? 'dest' : ''}"><span class="dot"></span><div class="stop">${T.place(c)}<small>${c.id === ch.to.id ? 'arrived' : 'stop ' + (i + 1)}</small></div>`;
     });
-    if (!atDest()) h += `</li><li class="dest ghost"><span class="dot"></span><div class="stop">${ch.to.flag} ${T.esc(ch.to.name)}<small>destination</small></div></li>`;
+    if (!atDest()) h += `</li><li class="dest ghost"><span class="dot"></span><div class="stop">${T.place(ch.to)}<small>destination</small></div></li>`;
     else h += '</li>';
     $('#tv-stops').innerHTML = h;
     $('#tv-stops').querySelectorAll('.x').forEach(b => (b.onclick = () => { route.splice(+b.dataset.i); pendingTo = null; refresh(); }));
@@ -189,7 +189,7 @@
     if (pendingTo) {
       const opts = T.legs(cur, pendingTo, ch.seed);
       const bc = Math.min(...opts.map(o => o.cost)), bt = Math.min(...opts.map(o => o.hours));
-      box.innerHTML = `<div class="tv-pick-head"><span class="muted">How do you get to</span><b>${pendingTo.flag} ${T.esc(pendingTo.name)}</b><small>${Math.round(T.km(cur, pendingTo)).toLocaleString()} km</small><button class="lnk" id="tv-unpick">change stop</button></div>
+      box.innerHTML = `<div class="tv-pick-head"><span class="muted">How do you get to</span><b>${T.place(pendingTo)}</b><small>${Math.round(T.km(cur, pendingTo)).toLocaleString()} km</small><button class="lnk" id="tv-unpick">change stop</button></div>
         <div class="tv-opts">${opts.map((o, i) => `<button class="tv-opt${o.cost === bc ? ' best-cost' : ''}${o.hours === bt ? ' best-time' : ''}" data-i="${i}">
           <span class="ic">${o.icon}</span><span class="nm">${o.name}<small class="${o.live ? 'live' : ''}">${o.live ? 'avg of ' + T.esc(String(o.note).replace('avg of ', '')) + (o.nonstop ? ' · nonstop from ' + T.money(o.nonstop.cost) : '') : (o.note || 'modelled')}</small></span>
           <span class="nums"><b>${T.money(o.cost)}</b><span>${T.dur(o.hours)}</span></span></button>`).join('')}</div>`;
@@ -199,7 +199,7 @@
     }
     const on = onRouteIds();
     const reach = T.C.filter(c => !on.has(c.id) && T.legs(cur, c, ch.seed).length);
-    const row = c => { const ls = T.legs(cur, c, ch.seed); const cheap = Math.min(...ls.map(l => l.cost)); return `<button class="tv-stoprow${c.id === ch.to.id ? ' finish' : ''}" data-id="${c.id}"><span class="nm">${c.flag} ${T.esc(c.name)}<small>${c.id === ch.to.id ? 'destination' : Math.round(T.km(c, ch.to)).toLocaleString() + ' km to ' + T.esc(ch.to.name)}</small></span><span class="modes">${ls.map(l => `<i title="${l.name}">${l.icon}</i>`).join('')}</span><span class="from">from <b>${T.money(cheap)}</b></span></button>`; };
+    const row = c => { const ls = T.legs(cur, c, ch.seed); const cheap = Math.min(...ls.map(l => l.cost)); return `<button class="tv-stoprow${c.id === ch.to.id ? ' finish' : ''}" data-id="${c.id}"><span class="nm">${T.place(c)}<small>${c.id === ch.to.id ? 'destination' : Math.round(T.km(c, ch.to)).toLocaleString() + ' km to ' + T.esc(ch.to.name)}</small></span><span class="modes">${ls.map(l => `<i title="${l.name}">${l.icon}</i>`).join('')}</span><span class="from">from <b>${T.money(cheap)}</b></span></button>`; };
     const finish = reach.find(c => c.id === ch.to.id);
     const suggested = reach.filter(c => c.id !== ch.to.id)
       .map(c => ({ c, score: T.km(c, ch.to) + (T.legs(cur, c, ch.seed).length < 2 ? 400 : 0) - c.hub * 80 }))
@@ -213,7 +213,7 @@
     q.oninput = () => {
       const v = q.value.trim().toLowerCase(); if (!v) { res.hidden = true; return; }
       const m = T.C.filter(c => !on.has(c.id) && (c.name.toLowerCase().includes(v) || c.country.toLowerCase().includes(v))).slice(0, 8);
-      res.innerHTML = m.map(c => { const ok = T.legs(cur, c, ch.seed).length; return `<li data-id="${c.id}" class="${ok ? '' : 'off'}">${c.flag} ${T.esc(c.name)} <span>${T.esc(c.country)}${ok ? '' : ' · no link today'}</span></li>`; }).join('') || '<li class="off">No match</li>';
+      res.innerHTML = m.map(c => { const ok = T.legs(cur, c, ch.seed).length; return `<li data-id="${c.id}" class="${ok ? '' : 'off'}">${T.place(c)}<span>${ok ? '' : 'no link today'}</span></li>`; }).join('') || '<li class="off">No match</li>';
       res.hidden = false;
       res.querySelectorAll('li[data-id]:not(.off)').forEach(li => (li.onclick = () => pick(T.byId[li.dataset.id])));
     };
@@ -253,7 +253,7 @@
     drawMap(); fitRoute();
     const rk = T.rankOf(res.score, fld), pct = Math.max(1, Math.round(100 * rk.rank / rk.of));
     const grade = (v, best, good, ok) => v <= best * good ? 'good' : v <= best * ok ? 'ok' : 'poor';
-    const pathHTML = [ch.from, ...res.route.map(r => T.byId[r.to])].map((c, i) => (i ? `<span class="lg">${T.MODES[res.route[i - 1].mode].icon} ${T.money(res.route[i - 1].cost)} · ${T.dur(res.route[i - 1].hours)}</span>` : '') + `<span>${c.flag} ${T.esc(c.name)}</span>`).join('');
+    const pathHTML = [ch.from, ...res.route.map(r => T.byId[r.to])].map((c, i) => (i ? `<span class="lg">${T.MODES[res.route[i - 1].mode].icon} ${T.money(res.route[i - 1].cost)} · ${T.dur(res.route[i - 1].hours)}</span>` : '') + `<span class="pl">${T.place(c)}</span>`).join('');
     const insight = res.cost > bm.cheapest * 1.6 ? `A much cheaper way existed. The thriftiest journey today costs about <b>${T.money(bm.cheapest)}</b>.`
       : res.hours > bm.fastest * 1.6 ? `A much faster way existed. The quickest journey today takes about <b>${T.dur(bm.fastest)}</b>.`
       : res.secs > 120 ? `Strong route, but you took <b>${T.secsF(res.secs)}</b> to decide. Faster calls score higher.`
@@ -276,7 +276,7 @@
     $('#tv-again').onclick = start;
     $('#tv-share').onclick = () => {
       const modes = res.route.map(r => T.MODES[r.mode].icon).join('');
-      const txt = `TraversleDaily #${ch.n} ${ch.from.flag}→${ch.to.flag}\n${modes}\n🏆 ${res.score.toLocaleString()} · #${rk.rank.toLocaleString()}\n💰 ${T.money(res.cost)} ⏱️ ${T.dur(res.hours)} ⚡ ${T.secsF(res.secs)}\n${location.origin}${location.pathname}`;
+      const txt = `TraversleDaily #${ch.n} ${T.placeText(ch.from)} → ${T.placeText(ch.to)}\n${modes}\n🏆 ${res.score.toLocaleString()} · #${rk.rank.toLocaleString()}\n💰 ${T.money(res.cost)} ⏱️ ${T.dur(res.hours)} ⚡ ${T.secsF(res.secs)}\n${location.origin}${location.pathname}`;
       (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copied'), () => { prompt('Copy your result:', txt); });
     };
     showBoard(st.results[ch.key] || res);

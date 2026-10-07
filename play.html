@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Play today – TraversleDaily</title>
+<meta name="description" content="TraversleDaily: one start city, one destination, every day. Plan the cheapest, fastest route across the world using real flight prices and beat players worldwide.">
+<meta property="og:title" content="TraversleDaily – The Daily Travel Strategy Game"><meta property="og:description" content="Same start, same destination, for everyone on Earth today. Plan the smartest journey and beat the world."><meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0A1A2B">
+<link rel="canonical" href="https://traversledaily.com/play.html">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/traverse.css">
+</head><body class="tv-body">
+<header class="td-head">
+  <a class="td-brand" href="./" aria-label="TraversleDaily home">
+    <svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 26 C 14 10, 26 10, 32 24" fill="none" stroke="#F5B544" stroke-width="2.6" stroke-linecap="round"/><circle cx="8" cy="26" r="3" fill="#39C6B0"/><circle cx="32" cy="24" r="3" fill="#FF6B57"/></svg>
+    <span>Traversle<b>Daily</b></span>
+  </a>
+  <nav class="td-nav"><a href="./">Home</a><a href="./#how">How to play</a><a href="#tv-board" id="td-nav-score">Today's field</a></nav>
+</header>
+
+<main class="tv">
+
+  <!-- ===== Map stage: the hero ===== -->
+  <section class="tv-stage" id="tv-stage">
+    <svg id="tv-svg" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid slice" aria-label="World map"></svg>
+
+    <!-- challenge card -->
+    <div class="tv-brief" id="tv-brief"></div>
+
+    <!-- map tools -->
+    <div class="tv-maptools">
+      <button id="tv-zin" aria-label="Zoom in">+</button>
+      <button id="tv-zout" aria-label="Zoom out">−</button>
+      <button id="tv-zfit" aria-label="Fit route" title="Fit the route">⤢</button>
+    </div>
+
+    <!-- hover tooltip -->
+    <div class="tv-tip" id="tv-tip" hidden></div>
+
+    <!-- intro overlay -->
+    <div class="tv-gate" id="tv-gate">
+      <div class="tv-gate-card">
+        <p class="tv-gate-kicker">TraversleDaily <span id="tv-gate-day"></span></p>
+        <h1 id="tv-gate-title"></h1>
+        <p class="tv-gate-sub" id="tv-gate-sub"></p>
+        <ul class="tv-gate-rules">
+          <li>Add stops one at a time, then pick how you travel each leg: bus, train, rideshare, ferry, car or flight.</li>
+          <li>Flights use today's real average fares. Land and sea legs are modelled and calibrated to them.</li>
+          <li>Money, hours and how fast you decide all count. One official run per day.</li>
+        </ul>
+        <button class="tv-cta" id="tv-start">Start the clock</button>
+        <p class="tv-gate-note" id="tv-gate-note"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Planning dashboard ===== -->
+  <aside class="tv-plan" id="tv-plan" hidden>
+    <header class="tv-plan-head">
+      <div>
+        <h2>Your plan</h2>
+        <p class="tv-plan-sub" id="tv-plan-sub">Choose your first stop on the map.</p>
+      </div>
+      <button class="tv-plan-collapse" id="tv-plan-toggle" aria-label="Collapse plan">▾</button>
+    </header>
+
+    <div class="tv-totals">
+      <div class="tv-total"><span class="lab">Spent</span><b id="tv-cost">$0</b><i id="tv-cost-vs"></i></div>
+      <div class="tv-total"><span class="lab">Travel</span><b id="tv-time">0h</b><i id="tv-time-vs"></i></div>
+      <div class="tv-total"><span class="lab">Deciding</span><b id="tv-timer">0s</b><i></i></div>
+    </div>
+
+    <div class="tv-estimate" id="tv-est"><span>Score estimate</span><b>—</b><div class="bar"><i style="width:0"></i></div></div>
+
+    <ol class="tv-stops" id="tv-stops"></ol>
+    <div class="tv-picker" id="tv-picker"></div>
+
+    <div class="tv-split" id="tv-split"></div>
+
+    <footer class="tv-plan-foot">
+      <button class="tv-btn ghost" id="tv-undo">Undo leg</button>
+      <button class="tv-btn ghost" id="tv-clear">Clear</button>
+      <button class="tv-btn primary" id="tv-submit" disabled>Submit journey</button>
+    </footer>
+  </aside>
+
+  <!-- ===== Result ===== -->
+  <section id="tv-result" class="tv-result" hidden></section>
+  <section id="tv-board" class="tv-board" hidden></section>
+  <p class="tv-source" id="tv-source"></p>
+</main>
+
+<footer class="td-foot"><span>TraversleDaily</span><span>Map data from Natural Earth via world-atlas. Your runs are saved in this browser.</span></footer>
+<script src="vendor/d3.min.js"></script><script src="vendor/topojson-client.min.js"></script>
+<script src="data/world.js"></script><script src="data/cities.js"></script>
+<script src="data/live/latest.js"></script>
+<script src="js/traverse.js"></script><script src="js/traverse-ui.js"></script>
+</body></html>

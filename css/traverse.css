@@ -33,7 +33,53 @@ button{font-family:inherit}
 .tv{max-width:none;margin:0;padding:0}
 .tv h1,.tv h2,.tv h3{font-family:var(--tv-font);letter-spacing:-.01em}
 
-/* ---------- stage / map ---------- */
+img.fl{display:inline-block;vertical-align:-.15em;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.14);margin-right:.35em;height:1em;width:auto}
+.tv-gate h1 .city{display:inline-flex;align-items:center;gap:.3em}
+.tv-gate h1 .city small{display:block;font-size:.42em;font-weight:500;color:var(--tv-ink-2);line-height:1.1}
+.tv-gate h1 .city img.fl{height:.9em}
+.tv-stoprow .nm > span,.tv-stops .stop > span{display:inline}
+.tv-result .path .pl{display:inline-flex;align-items:center;gap:.2em}
+
+/* ---------- home page ---------- */
+.td-home{max-width:1040px;margin:0 auto;padding:40px 20px 30px}
+.td-hero{display:grid;grid-template-columns:1.15fr .85fr;gap:36px;align-items:center;min-height:62vh}
+.td-hero h1{font-size:clamp(2.4rem,5.5vw,4rem);font-weight:800;line-height:1.02;letter-spacing:-.025em;margin:0 0 14px}
+.td-hero h1 em{font-style:normal;color:var(--tv-amber)}
+.td-hero .lead{font-size:1.15rem;color:var(--tv-ink-2);max-width:32em;margin:0 0 22px}
+.td-hero .ctas{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.td-hero .ctas .sub{color:var(--tv-mute);font-size:.85rem}
+.td-today{background:var(--tv-panel);border:1px solid var(--tv-panel-line);border-radius:22px;padding:22px 24px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.td-today .k{margin:0 0 10px;color:var(--tv-amber);font-weight:700;font-size:.82rem}
+.td-today .row{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center}
+.td-today .row b{font-size:1.4rem;font-weight:700;line-height:1.1;display:flex;align-items:center;gap:.3em}
+.td-today .row b small{display:block;color:var(--tv-mute);font-weight:500;font-size:.78rem}
+.td-today .pin{width:10px;height:10px;border-radius:50%}.td-today .pin.s{background:var(--tv-teal)}.td-today .pin.d{background:var(--tv-coral)}
+.td-today .ln{width:2px;height:22px;background:var(--tv-panel-line);justify-self:center}
+.td-today .meta{margin:14px 0 0;color:var(--tv-ink-2);font-size:.85rem;display:flex;gap:14px;flex-wrap:wrap}
+.td-today .meta b{color:var(--tv-ink)}
+.td-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:56px 0 20px}
+.td-step{background:rgba(242,245,240,.03);border:1px solid var(--tv-panel-line);border-radius:16px;padding:18px}
+.td-step .n{width:30px;height:30px;border-radius:50%;background:var(--tv-amber);color:#1B1206;font-weight:800;display:grid;place-items:center;margin-bottom:12px}
+.td-step h3{margin:0 0 6px;font-size:1.05rem}
+.td-step p{margin:0;color:var(--tv-ink-2);font-size:.92rem}
+.td-modes{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
+.td-modes span{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--tv-ink-2);background:rgba(242,245,240,.04);border:1px solid var(--tv-panel-line);border-radius:999px;padding:5px 11px}
+.td-modes i{width:14px;height:0;border-top:3px solid;border-radius:2px}
+.td-score{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center;margin:40px 0}
+.td-score h2{font-size:1.7rem;font-weight:800;margin:0 0 10px;line-height:1.15}
+.td-score p{color:var(--tv-ink-2);margin:0 0 10px}
+.td-dials{display:grid;gap:10px}
+.td-dial{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:center;background:rgba(242,245,240,.03);border:1px solid var(--tv-panel-line);border-radius:14px;padding:12px 16px}
+.td-dial .ic{font-size:1.5rem;grid-row:1/3}
+.td-dial b{font-size:1rem}.td-dial span{color:var(--tv-mute);font-size:.85rem}
+.td-faq{margin:30px 0 10px}
+.td-faq details{border-top:1px solid var(--tv-panel-line);padding:12px 0}
+.td-faq summary{cursor:pointer;font-weight:700;list-style:none}
+.td-faq summary::-webkit-details-marker{display:none}
+.td-faq p{margin:8px 0 0;color:var(--tv-ink-2);font-size:.95rem;max-width:60em}
+@media(max-width:860px){.td-hero{grid-template-columns:1fr;min-height:0;padding-top:10px}.td-steps{grid-template-columns:1fr 1fr}.td-score{grid-template-columns:1fr}}
+@media(max-width:520px){.td-steps{grid-template-columns:1fr}}
+
 .tv-stage{position:relative;height:calc(100vh - 62px);min-height:560px;background:radial-gradient(1200px 700px at 60% 40%,var(--tv-ocean-2),var(--tv-ocean));overflow:hidden}
 .tv-stage svg{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
 .tv-stage svg.dragging{cursor:grabbing}

@@ -188,11 +188,17 @@
   const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } };
   const save = s => { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} };
 
+  /* ---------- names & flags (flag emoji → ISO code → image, so it works on every device) ---------- */
+  const iso = c => { const cp = Array.from(c.flag).map(ch => ch.codePointAt(0) - 0x1F1E6 + 65); return cp.length === 2 ? String.fromCharCode(cp[0], cp[1]).toLowerCase() : ''; };
+  const flagImg = (c, h) => { const code = iso(c); return code ? `<img class="fl" src="https://flagcdn.com/h${h >= 40 ? 40 : 20}/${code}.png" alt="" onerror="this.style.display='none'" width="${Math.round((h || 20) * 1.4)}" height="${h || 20}" loading="lazy">` : ''; };
+  const place = c => `${flagImg(c)}<span>${esc(c.name)}, ${esc(c.country)}</span>`;
+  const placeText = c => `${c.name}, ${c.country}`;
+
   /* ---------- formatting ---------- */
   const money = n => '$' + Math.round(n).toLocaleString('en-US');
   const dur = h => { const m = Math.round(h * 60); const d = Math.floor(m / 1440), hh = Math.floor((m % 1440) / 60), mm = m % 60; return (d ? d + 'd ' : '') + (hh || !d ? hh + 'h ' : '') + (mm || (!d && !hh) ? mm + 'm' : '').trim(); };
   const secsF = s => s < 60 ? Math.round(s) + 's' : Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's';
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, C, byId, km, legs, MODES, dayNumber, dayKey, challenge, benchmarks, score, field, rankOf, load, save, money, dur, secsF, esc, rng, hash };
+  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, iso, flagImg, place, placeText, C, byId, km, legs, MODES, dayNumber, dayKey, challenge, benchmarks, score, field, rankOf, load, save, money, dur, secsF, esc, rng, hash };
 })();

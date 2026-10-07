@@ -22,7 +22,7 @@
   /* ---------- static header bits ---------- */
   const dayLabel = new Date(ch.key).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   const resetIn = () => { const ms = (T.dayNumber() * 86400000 + Date.UTC(2026, 9, 7)) - Date.now(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };
-  $('#tv-brief').innerHTML = `<p class="k">TraversleDaily #${ch.n} · ${dayLabel}</p>
+  $('#tv-brief').innerHTML = `<p class="k">Puzzle #${ch.n} · ${dayLabel}</p>
     <div class="route"><span class="pin s"></span><b>${T.flagImg(ch.from)} ${T.esc(ch.from.name)}<small>${T.esc(ch.from.country)}</small></b>
     <span class="ln"></span><span></span>
     <span class="pin d"></span><b>${T.flagImg(ch.to)} ${T.esc(ch.to.name)}<small>${T.esc(ch.to.country)}</small></b></div>
@@ -31,7 +31,7 @@
   $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} ${T.esc(ch.from.name)}<small>${T.esc(ch.from.country)}</small></span><span class="arr">→</span><span class="city">${T.flagImg(ch.to, 40)} ${T.esc(ch.to.name)}<small>${T.esc(ch.to.country)}</small></span>`;
   $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km apart and nothing goes there directly. Chain buses, trains, rideshares, ferries and flights into the smartest journey.`;
   $('#tv-gate-note').textContent = practice ? 'You already have an official score for today. This run is practice.' : 'One official run per day. The decision clock starts when you press the button.';
-  $('#td-nav-score').style.display = official ? '' : 'none';
+  { const n = $('#td-nav-score'); if (n) n.style.display = official ? '' : 'none'; }
   $('#tv-source').textContent = liveToday
     ? `Flight prices and times are averages of real one-way economy fares for departures on ${LIVE.depart}, fetched ${new Date(LIVE.fetched).toUTCString().slice(5, 22)} UTC. Trains, buses, rideshares, ferries and cars are modelled from distance and calibrated to the day's fares. Rankings are simulated.`
     : 'No live fare snapshot for today, so flights are modelled from distance. Rankings are simulated.';
@@ -264,7 +264,7 @@
         <p class="lbl">Traversle score</p><div class="score">${res.score.toLocaleString()}</div>
         <p class="rank">${isPractice ? `Would rank <b>#${rk.rank.toLocaleString()}</b> of ${rk.of.toLocaleString()}` : `Global rank <b>#${rk.rank.toLocaleString()}</b> of ${rk.of.toLocaleString()} · top ${pct}%`}</p>
         <p class="insight">${insight}</p>
-        <div class="actions"><button class="tv-btn primary" id="tv-share" style="margin:0">Copy result</button><button class="tv-btn ghost" id="tv-again">Practice again</button></div>
+        <div class="actions"><button class="btn primary" id="tv-share" style="margin:0">Copy result</button><button class="btn ghost" id="tv-again">Practice again</button></div>
       </div>
       <div class="stats">
         <div class="st ${grade(res.cost, bm.cheapest, 1.15, 1.6)}"><span class="lab">Money spent</span><b>${T.money(res.cost)}</b><span class="vs">best today<br>≈ ${T.money(bm.cheapest)}</span></div>

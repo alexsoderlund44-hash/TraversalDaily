@@ -92,6 +92,7 @@
     $('#pf-played').textContent = runs.length; $('#pf-streak').textContent = streak; $('#pf-best').textContent = best ? best.toLocaleString() : '—'; $('#pf-badges').textContent = unlocked + ' / ' + ACH.length;
     $('#pf-since').textContent = days.length ? new Date(days[0]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : 'today';
     $('#pf-level').innerHTML = levelHTML();
+    $('#pf-reset-today').onclick = () => { const key = T.dayKey(today); if (!R[key]) { alert('No official run saved for today yet.'); return; } if (confirm("Reset today's puzzle? Your official score for today will be erased so you can play it again.")) { delete st.results[key]; T.save(st); location.href = 'play.html'; } };
     $('#pf-reset').onclick = () => { if (confirm('Erase every saved journey, badge and your name from this browser? This cannot be undone.')) { try { localStorage.removeItem('traverse.v1'); localStorage.removeItem('traverse.profile'); } catch (e) {} location.reload(); } };
   }
 })();
@@ -122,11 +123,11 @@
   }
   if (page === 'plus') {
     const stat = $('#pl-status');
-    const show = () => { stat.innerHTML = plus.active ? `<div class="plus-active"><span class="ic">✦</span><b>You're a Plus member.</b><p>Every puzzle since day one is open in the <a href="archive.html">archive</a>. Thank you for backing the game.</p></div>` : ''; document.querySelectorAll('.price .btn').forEach(b => { if (plus.active) { b.textContent = 'Active'; b.classList.add('disabled'); } }); };
-    show();
-    const form = $('#pl-redeem');
-    form.onsubmit = e => { e.preventDefault(); const ok = T.redeem($('#pl-code').value); const m = $('#pl-redeem-msg'); if (ok) { m.textContent = 'Plus unlocked. Enjoy the archive.'; m.className = 'good'; Object.assign(plus, T.plus()); show(); } else { m.textContent = 'That code did not work. Check the spelling and try again.'; m.className = 'bad'; } };
-    document.querySelectorAll('[data-checkout]').forEach(b => { if (!b.getAttribute('href') || b.getAttribute('href') === '#') { b.addEventListener('click', e => { e.preventDefault(); $('#pl-soon').hidden = false; $('#pl-soon').scrollIntoView({ behavior: 'smooth', block: 'center' }); }); } });
+    stat.innerHTML = plus.active ? `<div class="plus-active"><span class="ic">✦</span><b>You're a Plus member${plus.plan === 'life' ? ' for life' : ''}.</b><p>Every puzzle since day one is open in the <a href="archive.html">archive</a>. Thank you for backing the game.</p></div>` : '';
+    document.querySelectorAll('[data-checkout]').forEach(b => {
+      if (plus.active) { b.textContent = plus.plan === b.dataset.checkout || plus.plan === 'life' ? 'Active' : b.textContent; if (plus.plan === 'life' || plus.plan === b.dataset.checkout) b.classList.add('disabled'); return; }
+      if (!b.getAttribute('href') || b.getAttribute('href') === '#') b.addEventListener('click', e => { e.preventDefault(); const n = $('#pl-soon'); n.hidden = false; n.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+    });
   }
   if (page === 'profile') { const el = $('#pf-plus'); if (el) el.innerHTML = plus.active ? plusBadge() + ' · <a href="archive.html">open the archive</a>' : `Free plan · <a href="plus.html">get TraversleDaily Plus</a> for the full archive`; }
 })();

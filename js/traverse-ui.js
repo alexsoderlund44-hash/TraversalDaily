@@ -11,6 +11,7 @@
   const fld = T.field(ch, M);
   const LIVE = T.liveFor(ch.seed);
   let st = T.load(); st.results = st.results || {};
+  if (params.get('reset') === '1' && mode === 'today') { delete st.results[ch.key]; T.save(st); history.replaceState(null, '', location.pathname); }
   const official = mode === 'today' ? st.results[ch.key] : null;
   let practice = mode !== 'today' || !!official;
 

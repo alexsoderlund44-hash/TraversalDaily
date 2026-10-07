@@ -326,13 +326,12 @@
 
   /* ---------- TraversleDaily Plus: the paid archive ----------
      The last FREE_DAYS puzzles are free to replay; older ones need Plus. Membership is stored in this browser.
-     Until payments are wired to a backend, Plus is unlocked with an access code (hashed below, never stored in clear). */
+     Plans: $2.99 a month or $20 once for lifetime. Checkout is wired in plus.html once a payment provider is connected. */
   const FREE_DAYS = 7;
   const PLUS_STORE = 'traverse.plus';
-  const CODES = [1882371269, 811914483, 1619956732]; // hash('TRAVERSLE-FOUNDER'), hash('EXPLORER-2026'), hash('NAVIGATOR-PASS')
+  const PLANS = { month: { name: 'Monthly', price: '$2.99', per: 'per month' }, life: { name: 'Lifetime', price: '$20', per: 'once, forever' } };
   const plus = () => { try { const p = JSON.parse(localStorage.getItem(PLUS_STORE)); return p && p.active ? p : { active: false }; } catch (e) { return { active: false }; } };
   const setPlus = p => { try { localStorage.setItem(PLUS_STORE, JSON.stringify(p)); } catch (e) {} };
-  const redeem = code => { const h = hash(String(code || '').trim().toUpperCase()); if (!CODES.includes(h)) return false; setPlus({ active: true, since: Date.now(), via: 'code' }); return true; };
   const dayLocked = n => n < dayNumber() - FREE_DAYS && !plus().active;
 
   /* ---------- names & flags (flag emoji → ISO code → image, so it works on every device) ---------- */
@@ -347,5 +346,5 @@
   const secsF = s => s < 60 ? Math.round(s) + 's' : Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's';
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, EPOCH, challenge, challengeRandom, mission, score, tier, TIERS, progression, LEVELS, field, rankOf, load, save, FREE_DAYS, plus, setPlus, redeem, dayLocked, money, dur, secsF, esc, rng, hash };
+  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, EPOCH, challenge, challengeRandom, mission, score, tier, TIERS, progression, LEVELS, field, rankOf, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
 })();

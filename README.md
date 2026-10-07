@@ -13,9 +13,11 @@ Live at the repo root: `index.html` (home), `play.html`, `achievements.html`, `s
 
 ## TraversleDaily Plus (paid archive)
 
-The last 7 puzzles are free to replay. Older ones are locked behind Plus (`plus.html`, `archive.html`). Until payments exist, Plus is unlocked with an access code redeemed on the Plus page; the codes are stored only as FNV hashes in `js/traverse.js` (`CODES`). Membership lives in `localStorage` under `traverse.plus`.
+The last 7 puzzles are free to replay. Older ones are locked behind Plus (`plus.html`, `archive.html`): $2.99 a month or $20 once for lifetime. Membership is read from `localStorage` under `traverse.plus` (`{active:true, plan:'month'|'life', since}`); nothing in the site writes it yet, so the plan buttons show a "payments open soon" note.
 
-To take real payments on a static site: create Stripe Payment Links for the monthly and yearly prices, put the URLs in the two `data-checkout` buttons in `tools/build-designs.py` (PLUS body), and have the Payment Link redirect to `plus.html?session_id={CHECKOUT_SESSION_ID}`. Verifying that session and issuing a code needs a small serverless function (Cloudflare Worker or Vercel function) with your Stripe secret key; accounts with sync are the longer-term answer.
+To take real payments on a static site: create Stripe Payment Links for the two prices, put the URLs in the two `data-checkout` buttons in `tools/build-designs.py` (PLUS body), and have each link redirect to `plus.html?session_id={CHECKOUT_SESSION_ID}`. A small serverless function (Cloudflare Worker or Vercel function) verifies the session with your Stripe secret key and the page then stores the membership. Accounts with sync are the longer-term answer, so a purchase follows the player across devices.
+
+Testing: Profile → "Reset today's puzzle" (or `play.html?reset=1`) erases today's official run so it can be played again.
 
 ## Live fares
 

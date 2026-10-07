@@ -152,7 +152,7 @@ PROFILE = '''
     <label class="field"><span>Display name</span><input id="pf-name" type="text" maxlength="24" placeholder="How should we call you?"></label>
     <div class="row"><button class="btn primary" id="pf-save">Save name</button><span class="saved" id="pf-saved" hidden>Saved</span></div>
   </section>
-  <section class="card danger"><h2>Reset</h2><p>Erase every journey, badge and your name from this browser.</p><button class="btn ghost" id="pf-reset">Erase my data</button></section>
+  <section class="card danger"><h2>Reset</h2><p>Reset today's puzzle to play it again from scratch, or erase every journey, badge and your name from this browser.</p><div class="row"><button class="btn ghost" id="pf-reset-today">Reset today's puzzle</button><button class="btn ghost" id="pf-reset">Erase my data</button></div></section>
 </main>'''
 ARCHIVE = '''
 <main class="td-page">
@@ -166,14 +166,14 @@ PLUS = '''
   <header class="page-head"><p class="eyebrow">✦ TraversleDaily Plus</p><h1>Every expedition, <em>forever.</em></h1><p>The daily puzzle stays free. Plus is for the people who want more of it.</p></header>
   <div id="pl-status"></div>
   <section class="prices">
-    <div class="price"><p class="k">Monthly</p><b>$2.99</b><span>per month</span><ul><li>The full archive, every puzzle since day one</li><li>Archive stats and ratings on your profile</li><li>Cancel any time</li></ul><a class="btn ghost" data-checkout="month" href="#">Choose monthly</a></div>
-    <div class="price best"><p class="k">Yearly · best value</p><b>$19.99</b><span>per year, about $1.67 a month</span><ul><li>Everything in monthly</li><li>Founder badge on your profile</li><li>Early access to new twists and modes</li></ul><a class="btn primary" data-checkout="year" href="#">Choose yearly</a></div>
+    <div class="price"><p class="k">Monthly</p><b>$2.99</b><span>per month, cancel any time</span><ul><li>The full archive, every puzzle since day one</li><li>Archive stats and ratings on your profile</li><li>Early access to new twists and modes</li></ul><a class="btn ghost" data-checkout="month" href="#">Choose monthly</a></div>
+    <div class="price best"><p class="k">Lifetime · best value</p><b>$20</b><span>once, yours forever</span><ul><li>Everything in monthly, with no renewals</li><li>Founder badge on your profile</li><li>Pays for itself in seven months</li></ul><a class="btn primary" data-checkout="life" href="#">Get lifetime access</a></div>
   </section>
-  <p class="pl-note" id="pl-soon" hidden>Payments open soon. If you have an access code, redeem it below.</p>
-  <section class="card redeem"><h2>Have an access code?</h2><form id="pl-redeem"><input type="text" id="pl-code" placeholder="e.g. EXPLORER-2026" autocomplete="off" required><button class="btn primary" type="submit">Redeem</button></form><p id="pl-redeem-msg"></p></section>
+  <p class="pl-note" id="pl-soon" hidden>Payments open soon. Today's puzzle and the last seven days stay free in the meantime.</p>
   <section class="faq" aria-label="Questions">
     <details><summary>What stays free?</summary><p>Today's puzzle, your official score, ranking, streaks, achievements, random expeditions and the last seven days of the archive. Always.</p></details>
-    <details><summary>What does Plus unlock?</summary><p>Every past puzzle, playable as practice with the planner's route reveal, plus archive stats and the founder badge on yearly.</p></details>
+    <details><summary>What does Plus unlock?</summary><p>Every past puzzle, playable as practice with the planner's route reveal, plus archive stats and the founder badge on lifetime.</p></details>
+    <details><summary>Monthly or lifetime?</summary><p>Monthly is $2.99 and cancels any time. Lifetime is $20 once and never renews, so it pays for itself in seven months.</p></details>
     <details><summary>Where is my membership stored?</summary><p>In this browser for now. Accounts with sync across devices are coming, and Plus will carry over.</p></details>
   </section>
 </main>'''

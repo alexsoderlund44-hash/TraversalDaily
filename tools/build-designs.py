@@ -8,8 +8,8 @@ FONTS = {
  'atlas':   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap',
 }
 TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – every puzzle, forever'}
-DESC = "Free daily travel puzzle. Same start city, same destination, same budget for everyone today. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world."
-LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"A free daily travel puzzle. Everyone gets the same start city, destination and budget. Plan the smartest route across trains, buses, ferries and flights, then compare with the world.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
+DESC = "The daily travel puzzle. One start city, one destination, one budget. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world."
+LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"The daily travel puzzle. One start city, one destination, one budget. Plan the smartest route across trains, buses, ferries and flights, then see how you rank.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
 NAV = [('index','Home'),('play','Play today'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
 MARK = '<svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg>'
 
@@ -42,13 +42,13 @@ def shell(design, page, body, scripts, prefix, css):
 # ----- shared page bodies (design-neutral markup; themes do the rest) -----
 HOME = '''
 <main class="td-home-min">
-  <header class="hm-head"><h1 class="hm-h1" id="hm-h1">The daily travel puzzle. Plan the smartest route across the world.</h1><p class="hm-pitch">Everyone on Earth gets the same trip today. Chain trains, buses, ferries and flights. Beat the budget. Beat the clock. See how you rank.</p></header>
+  <header class="hm-head"><h1 class="hm-h1" id="hm-h1">The daily travel puzzle. Plan the smartest route across the world.</h1><p class="hm-pitch">Chain trains, buses, ferries and flights. Beat the budget. Beat the clock. See how you rank.</p></header>
   <section class="hm-card">
     <p class="eyebrow" id="hm-day"></p>
     <div class="route" id="hm-route"></div>
     <div class="mission" id="hm-mission"></div>
     <a class="btn primary big wide" href="play.html" id="hm-play">Play today's puzzle</a>
-    <p class="sub" id="hm-sub">One shot a day. It counts.</p>
+    <p class="sub" id="hm-sub">You get one attempt. Make it count.</p>
     <div id="hm-level" class="hm-level" hidden></div>
     <p class="meta" id="hm-meta"></p>
   </section>
@@ -56,14 +56,14 @@ HOME = '''
   <div class="td-modal" id="hm-howmodal" hidden><div class="td-modal-card" role="dialog" aria-modal="true" aria-label="How to play">
     <button class="td-modal-x" id="hm-how-close" aria-label="Close">✕</button>
     <p class="kicker">How to play</p>
-    <h2>Same start. Same destination. Everyone on Earth, every day.</h2>
+    <h2>One route a day. One attempt.</h2>
     <ol class="how-steps">
       <li><b>Check the mission.</b> A budget, a deadline and one twist. The clock starts when you do.</li>
       <li><b>Build the route.</b> Tap a city, pick how you get there, repeat. Anything that breaks the mission is greyed out.</li>
       <li><b>Find the deals.</b> Three legs are secretly cheap. Two of them are on the planner's route. You only see a deal when you look.</li>
       <li><b>Submit and compare.</b> The planner's route appears next to yours. Earn a rating, bank the XP, keep the streak.</li>
     </ol>
-    <p class="how-score">Your score: <b>money spent</b>, <b>time taken</b> and <b>how fast you decided</b>. One official run a day. Practice as often as you like. A new puzzle lands at midnight.</p>
+    <p class="how-score">Your score: <b>money spent</b>, <b>time taken</b> and <b>how fast you decided</b>. Your first run is the one that counts. Practice as often as you like.</p>
     <button class="btn primary" id="hm-how-ok">Got it</button>
   </div></div>
 </main>'''

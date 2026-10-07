@@ -60,7 +60,7 @@
     <div class="mi"><span class="ic">🏷️</span><b>${M.deals} deal${M.deals === 1 ? '' : 's'}</b><span>hidden on the map</span></div>`;
   $('#tv-gate-rules').innerHTML = `<li>Add a stop, pick a ride, repeat. Anything over budget or past the deadline is greyed out.</li>
     <li>Hover a city to see its fares. Two of the hidden deals are on the planner's route.</li>
-    <li>Money, time and speed all count. ${mode === 'today' ? 'One official run a day.' : 'This one is practice.'}</li>`;
+    <li>Money, time and speed all count. ${mode === 'today' ? 'You get one attempt. Make it count.' : 'This one is practice.'}</li>`;
   $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'The clock starts when you press start.';
   const locked = mode === 'archive' && T.dayLocked(ch.n);
   if (locked) {

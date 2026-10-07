@@ -59,7 +59,7 @@
     const mis = M => `<div class="mi"><span class="ic">💰</span><b>${M ? T.money(M.budget) : '…'}</b><span>budget</span></div><div class="mi"><span class="ic">⏱️</span><b>${M ? T.dur(M.deadline) : '…'}</b><span>deadline</span></div><div class="mi" title="${T.esc(ch.twist.desc)}"><span class="ic">${ch.twist.icon}</span><b>${T.esc(ch.twist.name)}</b><span>twist</span></div><div class="mi"><span class="ic">🏷️</span><b>${M ? M.deals : 3}</b><span>hidden deals</span></div>`;
     g('hm-mission').innerHTML = mis(null);
     setTimeout(() => { const M = T.mission(ch); g('hm-mission').innerHTML = mis(M); g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> for under <em>${T.money(M.budget)}</em>?`; }, 30);
-    const meta = () => g('hm-meta').innerHTML = `<span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>next puzzle at midnight, in <b>${resetIn()}</b></span>`; meta(); setInterval(meta, 30000);
+    const meta = () => g('hm-meta').innerHTML = `<span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>next puzzle in <b>${resetIn()}</b></span>`; meta(); setInterval(meta, 30000);
     if (R[ch.key]) { g('hm-play').textContent = 'See your result'; g('hm-sub').innerHTML = `${R[ch.key].tier ? R[ch.key].tier + ' · ' : ''}you scored <b>${R[ch.key].score.toLocaleString()}</b> today`; }
     else if (streak) g('hm-sub').textContent = `🔥 ${streak}-day streak. Keep it alive.`;
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }

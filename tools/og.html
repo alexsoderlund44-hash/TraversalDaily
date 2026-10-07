@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Source for og.png (the link preview image). Render with: node tools/build-og.js -->
+<html><head><meta charset="utf-8">
+<style>
+  html,body{margin:0;width:1200px;height:630px;overflow:hidden;background:#0A1220;font-family:"Cormorant Garamond",Georgia,serif;color:#F2E9D8}
+  svg{position:absolute;inset:0}
+  .t{position:absolute;left:72px;top:150px;width:620px}
+  .k{font:700 20px "Nunito Sans",system-ui,sans-serif;letter-spacing:.28em;text-transform:uppercase;color:#C9A24E;margin:0 0 18px}
+  h1{font-weight:500;font-size:96px;line-height:.95;margin:0;letter-spacing:-.01em}
+  h1 b{font-style:italic;font-weight:600;color:#E4C77D}
+  p{font:400 30px/1.35 "Nunito Sans",system-ui,sans-serif;color:#C9BEA8;margin:26px 0 0}
+  .modes{position:absolute;left:72px;bottom:64px;font-size:38px;letter-spacing:.3em}
+</style></head><body>
+<svg id="m" width="1200" height="630"></svg>
+<div class="t"><p class="k">A new puzzle every day</p><h1>Traversle<b>Daily</b></h1><p>Plan the smartest route across the world on a budget.</p></div>
+<div class="modes">✈️ 🚆 🚌 🚢 🚘</div>
+<script src="../vendor/d3.min.js"></script><script src="../vendor/topojson-client.min.js"></script><script src="../data/world.js"></script>
+<script>
+  const svg = d3.select('#m'), proj = d3.geoNaturalEarth1().scale(1250).center([6, 46]).translate([900, 330]), path = d3.geoPath(proj);
+  const land = topojson.feature(WORLD_TOPO, WORLD_TOPO.objects.countries);
+  svg.append('path').attr('d', path({ type: 'Sphere' })).attr('fill', '#101B2E').attr('stroke', 'rgba(201,162,78,.25)');
+  svg.append('g').selectAll('path').data(land.features).join('path').attr('d', path).attr('fill', '#172741').attr('stroke', 'rgba(201,162,78,.18)').attr('stroke-width', .6);
+  const stops = [[-9.14, 38.72], [2.17, 41.39], [9.19, 45.46], [16.37, 48.21], [21.01, 52.23]]; // Lisbon, Barcelona, Milan, Vienna, Warsaw
+  const cols = ['#F5B544', '#39C6B0', '#8FB4FF', '#39C6B0'];
+  for (let i = 0; i < stops.length - 1; i++) svg.append('path').attr('d', path({ type: 'LineString', coordinates: [stops[i], stops[i + 1]] })).attr('fill', 'none').attr('stroke', cols[i]).attr('stroke-width', 4).attr('stroke-linecap', 'round');
+  stops.forEach((s, i) => { const [x, y] = proj(s); svg.append('circle').attr('cx', x).attr('cy', y).attr('r', i === 0 || i === stops.length - 1 ? 9 : 6).attr('fill', i === 0 ? '#4FB3A2' : i === stops.length - 1 ? '#E26A4F' : '#E4C77D').attr('stroke', '#0A1220').attr('stroke-width', 3); });
+  document.body.dataset.ready = '1';
+</script></body></html>

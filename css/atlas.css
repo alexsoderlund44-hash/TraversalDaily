@@ -740,3 +740,4 @@ body.td-modal-open{overflow:hidden}
 .tv-hist .d small{font-weight:600;font-size:.62rem;opacity:.85}
 .tv-board .card .sub a{color:var(--gold-2)}
 @media(max-width:560px){.pf-cal{gap:2px}.pf-cal .wk{gap:2px}}
+@media(max-width:900px){.tv-mission{grid-template-columns:1fr 1fr}} /* restated: the base rule above comes later in the file */

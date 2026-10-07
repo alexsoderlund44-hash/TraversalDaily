@@ -23,7 +23,7 @@ def shell(design, page, body, scripts, prefix, css):
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{TITLE[page]}</title>
 <meta name="description" content="{DESC}">
-<meta property="og:title" content="{TITLE[page]}"><meta property="og:type" content="website"><meta property="og:site_name" content="TraversleDaily"><meta property="og:description" content="{DESC}"><meta name="twitter:card" content="summary">
+<meta property="og:title" content="{TITLE[page]}"><meta property="og:type" content="website"><meta property="og:site_name" content="TraversleDaily"><meta property="og:description" content="{DESC}"><meta property="og:image" content="https://traversledaily.com/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="TraversleDaily: a route drawn across a map of Europe"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://traversledaily.com/og.png">
 <meta name="theme-color" content="#0A1220">{canon}{LD if page=='index' else ''}
 <link rel="icon" href="{prefix}favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

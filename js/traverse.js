@@ -440,7 +440,9 @@
 
   /* ---------- names & flags (flag emoji → ISO code → image, so it works on every device) ---------- */
   const iso = c => { const cp = Array.from(c.flag).map(ch => ch.codePointAt(0) - 0x1F1E6 + 65); return cp.length === 2 ? String.fromCharCode(cp[0], cp[1]).toLowerCase() : ''; };
-  const flagImg = (c, h) => { const code = iso(c); return code ? `<img class="fl" src="https://flagcdn.com/h${h >= 40 ? 40 : 20}/${code}.png" alt="" onerror="this.style.display='none'" width="${Math.round((h || 20) * 1.4)}" height="${h || 20}" loading="lazy">` : ''; };
+  // flags ship with the site (vendor/flags, from flag-icons, MIT) so they work offline; paths resolve from this script's folder
+  const BASE = typeof document !== 'undefined' && document.currentScript ? document.currentScript.src.replace(/js\/traverse\.js(\?.*)?$/, '') : '';
+  const flagImg = (c, h) => { const code = c && iso(c); h = h || 20; return code ? `<img class="fl" src="${BASE}vendor/flags/${code}.svg" alt="" onerror="this.style.display='none'" width="${Math.round(h * 4 / 3)}" height="${h}" loading="lazy">` : ''; };
   const place = c => `${flagImg(c)}<span>${esc(c.name)}, ${esc(c.country)}</span>`;
   const placeText = c => `${c.name}, ${c.country}`;
 

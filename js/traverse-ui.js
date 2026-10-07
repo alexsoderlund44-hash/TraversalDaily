@@ -68,9 +68,10 @@
     <div class="mi"><span class="ic">⏱️</span><b>${T.dur(M.deadline)}</b><span>deadline</span></div>
     <div class="mi"><span class="ic">${tw.icon}</span><b>${T.esc(tw.name)}</b><span>${T.esc(tw.desc)}</span></div>
     <div class="mi"><span class="ic">🏷️</span><b>${M.deals} deal${M.deals === 1 ? '' : 's'}</b><span>hidden on the map</span></div>`;
-  $('#tv-gate-rules').innerHTML = `<li>Add a stop, pick a ride, repeat. Anything over budget or past the deadline is greyed out.</li>
-    <li>Hover a city to see its fares. Two of the hidden deals are on the planner's route.</li>
-    <li>Money, time and speed all count. ${mode === 'today' ? 'You get one attempt. Make it count.' : 'This one is practice.'}</li>`;
+  const parDeals = M.par.path.filter(e => e.deal).length, word = n => ['no', 'one', 'two', 'three', 'four', 'five'][n] || String(n);
+  $('#tv-gate-rules').innerHTML = `<li>Tap a city to add a stop, then pick how to get there. Anything over budget or past the deadline is greyed out.</li>
+    <li>Fares show when you look at a city, and so do hidden deals. ${!parDeals ? '' : parDeals === M.deals ? (M.deals === 1 ? 'The deal is' : M.deals === 2 ? 'Both deals are' : 'All ' + word(M.deals) + ' deals are') + " on the planner's route." : word(parDeals).replace(/^./, c => c.toUpperCase()) + ' of the ' + word(M.deals) + ' deals ' + (parDeals === 1 ? 'is' : 'are') + " on the planner's route."}</li>
+    <li>Money, time and how fast you decide all count. ${mode === 'today' ? 'One attempt.' : 'This one is practice.'}</li>`;
   $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'The clock starts when you press start.';
   const locked = mode === 'archive' && T.dayLocked(ch.n);
   if (locked) {

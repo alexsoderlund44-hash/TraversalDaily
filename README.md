@@ -1,4 +1,4 @@
-# Traverse Daily
+# TraversleDaily
 
 The daily travel strategy game. Every day at 00:00 UTC every player gets the same start city and destination and must plan the best journey across the world: cheapest, fastest, and decided quickly.
 

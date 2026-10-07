@@ -1,4 +1,4 @@
-/* Traverse Daily UI: quiet map, stop picker, planning dashboard, result & ranking. */
+/* TraversleDaily UI: quiet map, stop picker, planning dashboard, result & ranking. */
 (function () {
   'use strict';
   const T = window.Traverse, $ = s => document.querySelector(s);
@@ -22,7 +22,7 @@
   /* ---------- static header bits ---------- */
   const dayLabel = new Date(ch.key).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   const resetIn = () => { const ms = (T.dayNumber() * 86400000 + Date.UTC(2026, 9, 7)) - Date.now(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };
-  $('#tv-brief').innerHTML = `<p class="k">Traverse Daily #${ch.n} · ${dayLabel}</p>
+  $('#tv-brief').innerHTML = `<p class="k">TraversleDaily #${ch.n} · ${dayLabel}</p>
     <div class="route"><span class="pin s"></span><b>${ch.from.flag} ${T.esc(ch.from.name)}<small>${T.esc(ch.from.country)}</small></b>
     <span class="ln"></span><span></span>
     <span class="pin d"></span><b>${ch.to.flag} ${T.esc(ch.to.name)}<small>${T.esc(ch.to.country)}</small></b></div>
@@ -261,7 +261,7 @@
     $('#tv-result').innerHTML = `
       <div class="hero">
         ${isPractice ? '<span class="tag prac">Practice run · not scored</span>' : '<span class="tag lock">Official score for ' + ch.key + ' saved</span>'}
-        <p class="lbl">Traverse score</p><div class="score">${res.score.toLocaleString()}</div>
+        <p class="lbl">Traversle score</p><div class="score">${res.score.toLocaleString()}</div>
         <p class="rank">${isPractice ? `Would rank <b>#${rk.rank.toLocaleString()}</b> of ${rk.of.toLocaleString()}` : `Global rank <b>#${rk.rank.toLocaleString()}</b> of ${rk.of.toLocaleString()} · top ${pct}%`}</p>
         <p class="insight">${insight}</p>
         <div class="actions"><button class="tv-btn primary" id="tv-share" style="margin:0">Copy result</button><button class="tv-btn ghost" id="tv-again">Practice again</button></div>
@@ -276,7 +276,7 @@
     $('#tv-again').onclick = start;
     $('#tv-share').onclick = () => {
       const modes = res.route.map(r => T.MODES[r.mode].icon).join('');
-      const txt = `Traverse Daily #${ch.n} ${ch.from.flag}→${ch.to.flag}\n${modes}\n🏆 ${res.score.toLocaleString()} · #${rk.rank.toLocaleString()}\n💰 ${T.money(res.cost)} ⏱️ ${T.dur(res.hours)} ⚡ ${T.secsF(res.secs)}\n${location.origin}${location.pathname}`;
+      const txt = `TraversleDaily #${ch.n} ${ch.from.flag}→${ch.to.flag}\n${modes}\n🏆 ${res.score.toLocaleString()} · #${rk.rank.toLocaleString()}\n💰 ${T.money(res.cost)} ⏱️ ${T.dur(res.hours)} ⚡ ${T.secsF(res.secs)}\n${location.origin}${location.pathname}`;
       (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copied'), () => { prompt('Copy your result:', txt); });
     };
     showBoard(st.results[ch.key] || res);
@@ -295,7 +295,7 @@
     const myBin = Math.min(19, Math.floor(mine.score / 500)), mx = Math.max(...bins);
     const played = Object.keys(st.results || {});
     const days = []; for (let i = 6; i >= 0; i--) { const n = ch.n - i; if (n < 1) continue; const key = T.dayKey(n); days.push(`<div class="d ${st.results[key] ? 'p' : ''}" title="${key}${st.results[key] ? ' · ' + st.results[key].score.toLocaleString() : ''}">#${n}</div>`); }
-    $('#tv-board').innerHTML = `<div class="card"><h3>Today's field</h3><p class="sub">Simulated global ranking for Traverse Daily #${ch.n}, ${rk.of.toLocaleString()} journeys. Your official score is the first one you submitted today.</p>
+    $('#tv-board').innerHTML = `<div class="card"><h3>Today's field</h3><p class="sub">Simulated global ranking for TraversleDaily #${ch.n}, ${rk.of.toLocaleString()} journeys. Your official score is the first one you submitted today.</p>
       <table><thead><tr><th>#</th><th>Traveller</th><th class="r">Score</th></tr></thead><tbody>
       ${rows.map(x => `<tr${x.me ? ' class="me"' : ''}><td>${x.rank.toLocaleString()}</td><td>${x.name}</td><td class="r">${x.score.toLocaleString()}</td></tr>`).join('')}</tbody></table>
       <div class="dist">${bins.map((b, i) => `<i class="${i === myBin ? 'me' : ''}" style="height:${Math.max(3, 100 * b / mx)}%" title="${(i * 500).toLocaleString()}–${(i * 500 + 499).toLocaleString()}: ${b}"></i>`).join('')}</div>

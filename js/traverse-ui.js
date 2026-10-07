@@ -64,7 +64,7 @@
   $('#tv-gate-note').textContent = mode === 'random' ? 'Practice run with a random start and destination. It is not scored.' : mode === 'archive' ? 'Archive puzzle. Practice only, your official score stays with the day you played.' : practice ? 'You already have an official score for today. This run is practice.' : 'The decision clock starts when you press the button.';
   const locked = mode === 'archive' && T.dayLocked(ch.n);
   if (locked) {
-    $('#tv-gate-mission').innerHTML = `<div class="tv-lock"><span class="ic">🔒</span><b>This puzzle is in the Plus archive</b><p>The last ${T.FREE_DAYS} days are free to replay. Every puzzle since day one, plus future archive features, comes with TraversleDaily Plus.</p><a class="btn primary" href="plus.html">See TraversleDaily Plus</a> <a class="btn ghost" href="archive.html">Back to the archive</a></div>`;
+    $('#tv-gate-mission').innerHTML = `<div class="tv-lock"><span class="ic">🔒</span><b>This puzzle is in the Traversle + archive</b><p>The last ${T.FREE_DAYS} days are free to replay. Every puzzle since day one, plus future archive features, comes with Traversle +.</p><a class="btn primary" href="plus.html">See Traversle +</a> <a class="btn ghost" href="archive.html">Back to the archive</a></div>`;
     $('#tv-gate-rules').hidden = true; $('#tv-start').hidden = true; $('#tv-gate-note').hidden = true;
   }
   $('#tv-source').textContent = LIVE

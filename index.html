@@ -12,49 +12,37 @@
 </head><body class="p-index" data-page="index">
 <header class="td-head"><div class="td-wrap">
   <a class="td-brand" href="index.html" aria-label="TraversleDaily home"><svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg><span>Traversle<b>Daily</b></span></a>
-  <nav class="td-nav" aria-label="Sections"><a href="index.html" class="on ">Home</a><a href="play.html" class="">Play</a><a href="archive.html" class="">Archive</a><a href="achievements.html" class="">Achievements</a><a href="stats.html" class="">Stats</a><a href="profile.html" class="">Profile</a><a href="plus.html" class="plus">Plus</a></nav>
-  <button class="td-burger" id="td-burger" aria-label="Menu" aria-expanded="false">☰</button>
+  <button class="td-burger" id="td-burger" aria-label="Menu" aria-expanded="false" aria-controls="td-menu"><span></span><span></span><span></span></button>
+  <nav class="td-menu" id="td-menu" aria-label="Sections" hidden><a href="index.html" class="on ">Home</a><a href="play.html" class="">Play today</a><a href="archive.html" class="">Archive</a><a href="achievements.html" class="">Achievements</a><a href="stats.html" class="">Stats</a><a href="profile.html" class="">Profile</a><a href="plus.html" class="plus">✦ Traversle +</a><a href="index.html#how">How to play</a></nav>
 </div></header>
 
-<main class="td-home">
-  <section class="hero">
-    <div class="hero-copy">
-      <p class="eyebrow" id="hm-day"></p>
-      <h1>Out-plan <em>the world</em>, one journey a day.</h1>
-      <p class="lead">Every day, everyone on Earth gets the same start city, the same destination, the same budget and the same deadline. Nothing goes there directly. Chain buses, trains, ferries, rideshares and flights, find the hidden deals, and get closer to the planner's route than anyone else.</p>
-      <div class="ctas"><a class="btn primary big" href="play.html" id="hm-play">Play today's puzzle</a><span class="sub" id="hm-sub">One official run per day</span></div>
-      <div id="hm-level" class="hm-level" hidden></div>
-    </div>
-    <aside class="today" id="hm-today">
-      <p class="k">Today's expedition</p>
-      <div class="route" id="hm-route"></div>
-      <div class="mission" id="hm-mission"></div>
-      <p class="meta" id="hm-meta"></p>
-    </aside>
+<main class="td-home-min">
+  <p class="tagline">The daily travel strategy game</p>
+  <section class="hm-card">
+    <p class="eyebrow" id="hm-day"></p>
+    <div class="route" id="hm-route"></div>
+    <div class="mission" id="hm-mission"></div>
+    <a class="btn primary big wide" href="play.html" id="hm-play">Play today's puzzle</a>
+    <p class="sub" id="hm-sub">One official run per day</p>
+    <div id="hm-level" class="hm-level" hidden></div>
+    <p class="meta" id="hm-meta"></p>
   </section>
-  <section id="how" class="steps" aria-label="How to play">
-    <div class="step"><span class="n">1</span><h3>Read the mission</h3><p>A budget, a deadline and one twist, like no flights or a ferry required. Then the decision clock starts.</p></div>
-    <div class="step"><span class="n">2</span><h3>Add a stop</h3><p>Search a city or hover one on the map. You see every way to get there from where you are, priced and timed. Anything that breaks the mission is greyed out.</p></div>
-    <div class="step"><span class="n">3</span><h3>Hunt the deals</h3><p>Three legs on the map are secretly discounted. Two of them sit on the planner's route. You only see a deal when you look at that city.</p></div>
-    <div class="step"><span class="n">4</span><h3>Arrive and compare</h3><p>Submit and see the planner's route next to yours. Rate Perfect, Expert, Navigator or Wayfarer, earn XP, keep the streak.</p></div>
-  </section>
-  <section id="archive" class="archive">
-    <div class="archive-head"><div><h2>Past expeditions</h2><p id="hm-archive-note"></p></div><div class="archive-ctas"><a class="btn ghost" href="archive.html">Full archive</a><a class="btn ghost" id="hm-random" href="play.html">Random expedition</a></div></div>
-    <div class="alist" id="hm-archive"></div>
-  </section>
-  <section id="scoring" class="scoring">
-    <div><h2>Three dials, one score</h2><p>Your Traversle score blends how much you spent, how long the journey takes, and how quickly you decided, measured against the best routes that fit the day's mission. A cheap route that crawls loses to a balanced one, and so does a fast route that blows the budget.</p><p>Flight prices and times are averages of real fares for the day's cities, refreshed every morning. Land and sea legs are modelled from distance and calibrated to those fares.</p></div>
-    <div class="dials"><div class="dial"><span class="ic">💰</span><b>Money spent</b><span>Every leg's price, added up. Must stay under budget.</span></div><div class="dial"><span class="ic">⏱️</span><b>Travel time</b><span>Hours on the move, including layovers. Must beat the deadline.</span></div><div class="dial"><span class="ic">⚡</span><b>Decision time</b><span>Seconds from pressing play to submitting.</span></div></div>
-  </section>
-  <section class="faq" aria-label="Questions">
-    <details><summary>When does the puzzle change?</summary><p>At 00:00 UTC, the same moment for everyone.</p></details>
-    <details><summary>Can I play more than once?</summary><p>Replay as practice as often as you like, and replay the last week of puzzles from the archive. Only your first submission of the day counts.</p></details>
-    <details><summary>Why is there never a direct route?</summary><p>Because then there'd be nothing to plan. The budget is set so the obvious hop doesn't fit either. Every day needs real stops.</p></details>
-    <details><summary>What is the planner's route?</summary><p>The route the puzzle was built around: the best balance of money and time that fits the mission, usually using the hidden deals. You see it after you submit.</p></details>
-    <details><summary>Where do the prices come from?</summary><p>Flights are averaged from real one-way economy fares. Trains, buses, rideshares, ferries and cars are modelled from distance and calibrated to those fares.</p></details>
-  </section>
+  <div class="hm-links"><button class="lnk" id="hm-how">How to play</button><a class="lnk" id="hm-random" href="play.html">Random expedition</a><a class="lnk" href="archive.html">Archive</a><a class="lnk plus" href="plus.html">✦ Traversle +</a></div>
+  <div class="td-modal" id="hm-howmodal" hidden><div class="td-modal-card" role="dialog" aria-modal="true" aria-label="How to play">
+    <button class="td-modal-x" id="hm-how-close" aria-label="Close">✕</button>
+    <p class="kicker">How to play</p>
+    <h2>Same start, same destination, for everyone on Earth today.</h2>
+    <ol class="how-steps">
+      <li><b>Read the mission.</b> A budget, a deadline and one twist, like no flights or a ferry required. The decision clock starts when you press play.</li>
+      <li><b>Add a stop.</b> Search a city or tap one on the map. You see every way to get there, priced and timed. Anything that breaks the mission is greyed out. The obvious two-leg hop never fits the budget.</li>
+      <li><b>Hunt the deals.</b> Three legs are secretly discounted. Two sit on the planner's route. You only see a deal when you look at that city.</li>
+      <li><b>Arrive and compare.</b> Submit and see the planner's route next to yours. Rate Perfect, Expert, Navigator or Wayfarer, earn XP, keep your streak.</li>
+    </ol>
+    <p class="how-score">Your score blends <b>money spent</b>, <b>travel time</b> and <b>decision time</b>, measured against the best routes that fit the mission. One official run per day; practice as much as you like.</p>
+    <button class="btn primary" id="hm-how-ok">Got it</button>
+  </div></div>
 </main>
 <footer class="td-foot"><div class="td-wrap"><span>TraversleDaily</span><span>Map data from Natural Earth via world-atlas. Your runs are saved in this browser.</span></div></footer>
 <script src="data/cities.js"></script><script src="data/live/latest.js"></script><script src="js/traverse.js"></script><script src="js/pages.js"></script>
-<script>document.getElementById('td-burger').onclick=function(){var n=document.querySelector('.td-nav');var o=n.classList.toggle('open');this.setAttribute('aria-expanded',o);};</script>
+<script>(function(){var b=document.getElementById('td-burger'),m=document.getElementById('td-menu');function set(o){m.hidden=!o;b.setAttribute('aria-expanded',o);b.classList.toggle('open',o);document.body.classList.toggle('td-menu-open',o);}b.onclick=function(e){e.stopPropagation();set(m.hidden);};m.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});document.addEventListener('click',function(e){if(!m.hidden&&!m.contains(e.target))set(false);});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!m.hidden)set(false);});})();</script>
 </body></html>

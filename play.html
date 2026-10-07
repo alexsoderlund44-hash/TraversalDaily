@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Play today – TraversleDaily</title>
-<meta name="description" content="TraversleDaily: one start city, one destination, every day. Beat the budget and the deadline, find the hidden deals, and out-plan the world.">
-<meta property="og:title" content="Play today – TraversleDaily"><meta property="og:type" content="website"><meta property="og:description" content="Same start, same destination, for everyone on Earth today. Plan the smartest journey under budget and before the deadline.">
+<title>Play today's puzzle – TraversleDaily</title>
+<meta name="description" content="Free daily travel puzzle. Same start city, same destination, same budget for everyone today. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world.">
+<meta property="og:title" content="Play today's puzzle – TraversleDaily"><meta property="og:type" content="website"><meta property="og:site_name" content="TraversleDaily"><meta property="og:description" content="Free daily travel puzzle. Same start city, same destination, same budget for everyone today. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world."><meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#0A1220">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,7 +50,7 @@
   <section id="tv-board" class="tv-board" hidden></section>
   <p class="tv-source" id="tv-source"></p>
 </main>
-<footer class="td-foot"><div class="td-wrap"><span>TraversleDaily</span><span>Map data from Natural Earth via world-atlas. Your runs are saved in this browser.</span></div></footer>
+<footer class="td-foot"><div class="td-wrap"><span>TraversleDaily · a new travel puzzle every day</span><span>Map data: Natural Earth. Your runs stay in this browser.</span></div></footer>
 <script src="data/cities.js"></script><script src="vendor/d3.min.js"></script><script src="vendor/topojson-client.min.js"></script><script src="data/world.js"></script><script src="data/live/latest.js"></script><script src="js/traverse.js"></script><script src="js/traverse-ui.js"></script>
 <script>(function(){var b=document.getElementById('td-burger'),m=document.getElementById('td-menu');function set(o){m.hidden=!o;b.setAttribute('aria-expanded',o);b.classList.toggle('open',o);document.body.classList.toggle('td-menu-open',o);}b.onclick=function(e){e.stopPropagation();set(m.hidden);};m.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});document.addEventListener('click',function(e){if(!m.hidden&&!m.contains(e.target))set(false);});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!m.hidden)set(false);});})();</script>
 </body></html>

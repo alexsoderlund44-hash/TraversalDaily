@@ -7,7 +7,9 @@ FONTS = {
  'journal': 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Caveat:wght@500;700&display=swap',
  'atlas':   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap',
 }
-TITLE = {'index':'TraversleDaily – The daily travel strategy game','play':'Play today – TraversleDaily','archive':'Archive – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – the full archive'}
+TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – every puzzle, forever'}
+DESC = "Free daily travel puzzle. Same start city, same destination, same budget for everyone today. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world."
+LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"A free daily travel puzzle. Everyone gets the same start city, destination and budget. Plan the smartest route across trains, buses, ferries and flights, then compare with the world.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
 NAV = [('index','Home'),('play','Play today'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
 MARK = '<svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg>'
 
@@ -18,9 +20,9 @@ def shell(design, page, body, scripts, prefix, css):
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{TITLE[page]}</title>
-<meta name="description" content="TraversleDaily: one start city, one destination, every day. Beat the budget and the deadline, find the hidden deals, and out-plan the world.">
-<meta property="og:title" content="{TITLE[page]}"><meta property="og:type" content="website"><meta property="og:description" content="Same start, same destination, for everyone on Earth today. Plan the smartest journey under budget and before the deadline.">
-<meta name="theme-color" content="#0A1220">{canon}
+<meta name="description" content="{DESC}">
+<meta property="og:title" content="{TITLE[page]}"><meta property="og:type" content="website"><meta property="og:site_name" content="TraversleDaily"><meta property="og:description" content="{DESC}"><meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#0A1220">{canon}{LD if page=='index' else ''}
 <link rel="icon" href="{prefix}favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="{FONTS[design]}" rel="stylesheet">
@@ -32,7 +34,7 @@ def shell(design, page, body, scripts, prefix, css):
   <nav class="td-menu" id="td-menu" aria-label="Sections" hidden>{nav}</nav>
 </div></header>
 {body}
-<footer class="td-foot"><div class="td-wrap"><span>TraversleDaily</span><span>Map data from Natural Earth via world-atlas. Your runs are saved in this browser.</span></div></footer>
+<footer class="td-foot"><div class="td-wrap"><span>TraversleDaily · a new travel puzzle every day</span><span>Map data: Natural Earth. Your runs stay in this browser.</span></div></footer>
 <script src="{prefix}data/cities.js"></script>{scripts.replace('@/', prefix)}
 <script>(function(){{var b=document.getElementById('td-burger'),m=document.getElementById('td-menu');function set(o){{m.hidden=!o;b.setAttribute('aria-expanded',o);b.classList.toggle('open',o);document.body.classList.toggle('td-menu-open',o);}}b.onclick=function(e){{e.stopPropagation();set(m.hidden);}};m.addEventListener('click',function(e){{if(e.target.closest('a'))set(false);}});document.addEventListener('click',function(e){{if(!m.hidden&&!m.contains(e.target))set(false);}});document.addEventListener('keydown',function(e){{if(e.key==='Escape'&&!m.hidden)set(false);}});}})();</script>
 </body></html>'''
@@ -40,13 +42,13 @@ def shell(design, page, body, scripts, prefix, css):
 # ----- shared page bodies (design-neutral markup; themes do the rest) -----
 HOME = '''
 <main class="td-home-min">
-  <header class="hm-head"><h1 class="hm-h1" id="hm-h1">Can you get there cheaper, faster and smarter than everyone else?</h1><p class="hm-pitch">One start city, one destination and one budget, the same for everyone on Earth today. Chain trains, buses, ferries and flights across the map, find the hidden deals, and beat the deadline before the clock runs out.</p></header>
+  <header class="hm-head"><h1 class="hm-h1" id="hm-h1">The daily travel puzzle. Plan the smartest route across the world.</h1><p class="hm-pitch">One trip a day, the same for everyone on Earth. Chain trains, buses, ferries and flights, beat the budget and the clock, then see how your route stacks up against the world.</p></header>
   <section class="hm-card">
     <p class="eyebrow" id="hm-day"></p>
     <div class="route" id="hm-route"></div>
     <div class="mission" id="hm-mission"></div>
     <a class="btn primary big wide" href="play.html" id="hm-play">Play today's puzzle</a>
-    <p class="sub" id="hm-sub">One official run per day</p>
+    <p class="sub" id="hm-sub">One shot a day. It counts.</p>
     <div id="hm-level" class="hm-level" hidden></div>
     <p class="meta" id="hm-meta"></p>
   </section>
@@ -54,14 +56,14 @@ HOME = '''
   <div class="td-modal" id="hm-howmodal" hidden><div class="td-modal-card" role="dialog" aria-modal="true" aria-label="How to play">
     <button class="td-modal-x" id="hm-how-close" aria-label="Close">✕</button>
     <p class="kicker">How to play</p>
-    <h2>Same start, same destination, for everyone on Earth today.</h2>
+    <h2>Same start. Same destination. Everyone on Earth, every day.</h2>
     <ol class="how-steps">
-      <li><b>Read the mission.</b> A budget, a deadline and one twist, like no flights or a ferry required. The decision clock starts when you press play.</li>
-      <li><b>Add a stop.</b> Search a city or tap one on the map. You see every way to get there, priced and timed. Anything that breaks the mission is greyed out. The obvious two-leg hop never fits the budget.</li>
-      <li><b>Hunt the deals.</b> Three legs are secretly discounted. Two sit on the planner's route. You only see a deal when you look at that city.</li>
-      <li><b>Arrive and compare.</b> Submit and see the planner's route next to yours. Rate Perfect, Expert, Navigator or Wayfarer, earn XP, keep your streak.</li>
+      <li><b>Check the mission.</b> A budget, a deadline and one twist. The clock starts when you do.</li>
+      <li><b>Build the route.</b> Tap a city, pick how you get there, repeat. Anything that breaks the mission is greyed out.</li>
+      <li><b>Find the deals.</b> Three legs are secretly cheap. Two of them are on the planner's route. You only see a deal when you look.</li>
+      <li><b>Submit and compare.</b> The planner's route appears next to yours. Earn a rating, bank the XP, keep the streak.</li>
     </ol>
-    <p class="how-score">Your score blends <b>money spent</b>, <b>travel time</b> and <b>decision time</b>, measured against the best routes that fit the mission. One official run per day; practice as much as you like.</p>
+    <p class="how-score"><b>Money</b> plus <b>time</b> plus <b>how fast you decided</b>. One official run a day. Practice as much as you like.</p>
     <button class="btn primary" id="hm-how-ok">Got it</button>
   </div></div>
 </main>'''
@@ -112,7 +114,7 @@ ACH = '''
 </main>'''
 STATS = '''
 <main class="td-page">
-  <header class="page-head"><h1>Your stats</h1><p>Every journey you've logged in this browser.</p></header>
+  <header class="page-head"><h1>Your stats</h1><p>Every journey you've logged, saved in this browser.</p></header>
   <div class="lvl-wrap" id="st-level"></div>
   <section class="stat-tiles">
     <div class="tile"><span>Days played</span><b id="st-played">0</b></div>
@@ -125,13 +127,13 @@ STATS = '''
     <div class="tile"><span>Favourite transport</span><b id="st-mode">—</b></div>
   </section>
   <section class="two">
-    <div class="card"><h2>Transport mix</h2><div id="st-modes"></div><p class="muted"><span id="st-spent">$0</span> spent and <span id="st-hours">0h</span> on the move in total.</p></div>
+    <div class="card"><h2>How you travel</h2><div id="st-modes"></div><p class="muted"><span id="st-spent">$0</span> spent and <span id="st-hours">0h</span> on the move in total.</p></div>
     <div class="card"><h2>Journey log</h2><div class="tbl"><table><thead><tr><th>Day</th><th>Route</th><th>Legs</th><th class="r">Spent</th><th class="r">Time</th><th class="r">Decided</th><th class="r">Score</th></tr></thead><tbody id="st-history"></tbody></table></div></div>
   </section>
 </main>'''
 PROFILE = '''
 <main class="td-page narrow">
-  <header class="page-head"><h1>Profile</h1><p>Saved in this browser. Accounts and cloud sync are coming.</p></header>
+  <header class="page-head"><h1>Profile</h1><p>Saved in this browser. Accounts that sync across devices are coming.</p></header>
   <section class="card profile">
     <div class="avatar" id="pf-initials">T</div>
     <div class="who"><b id="pf-display">Traveller</b><span>Travelling since <em id="pf-since">today</em></span><span class="pf-plus" id="pf-plus"></span></div>
@@ -140,27 +142,27 @@ PROFILE = '''
     <label class="field"><span>Display name</span><input id="pf-name" type="text" maxlength="24" placeholder="How should we call you?"></label>
     <div class="row"><button class="btn primary" id="pf-save">Save name</button><span class="saved" id="pf-saved" hidden>Saved</span></div>
   </section>
-  <section class="card danger"><h2>Reset</h2><p>Reset today's puzzle to play it again from scratch, or erase every journey, badge and your name from this browser.</p><div class="row"><button class="btn ghost" id="pf-reset-today">Reset today's puzzle</button><button class="btn ghost" id="pf-reset">Erase my data</button></div></section>
+  <section class="card danger"><h2>Reset</h2><p>Play today again from scratch, or wipe every journey, badge and your name from this browser.</p><div class="row"><button class="btn ghost" id="pf-reset-today">Reset today's puzzle</button><button class="btn ghost" id="pf-reset">Erase my data</button></div></section>
 </main>'''
 ARCHIVE = '''
 <main class="td-page">
-  <header class="page-head"><h1>The archive</h1><p id="ar-summary"></p></header>
+  <header class="page-head"><h1>Past puzzles</h1><p id="ar-summary"></p></header>
   <div class="ar-tools"><input type="search" id="ar-q" placeholder="Search a city, country or twist…" autocomplete="off"><a class="btn ghost" href="play.html">Today's puzzle</a></div>
   <div id="ar-list"></div>
-  <section class="plus-strip"><div><h2>Every puzzle since day one</h2><p>The last seven days are free to replay. Traversle + opens the whole archive, forever.</p></div><a class="btn primary" href="plus.html">See Traversle +</a></section>
+  <section class="plus-strip"><div><h2>Missed a day?</h2><p>Replay the last seven free. Traversle + opens every puzzle since day one.</p></div><a class="btn primary" href="plus.html">See Traversle +</a></section>
 </main>'''
 PLUS = '''
 <main class="td-page narrow plus-page">
-  <header class="page-head"><p class="eyebrow">✦ Traversle +</p><h1>Every expedition, <em>forever.</em></h1><p>The daily puzzle stays free. Traversle + is for the people who want more of it.</p></header>
+  <header class="page-head"><p class="eyebrow">✦ Traversle +</p><h1>Every puzzle, <em>forever.</em></h1><p>Today's puzzle is free, always. Traversle + is the whole archive.</p></header>
   <div id="pl-status"></div>
   <section class="prices">
     <div class="price"><p class="k">Monthly</p><b>$2.99</b><span>per month, cancel any time</span><ul><li>The full archive, every puzzle since day one</li><li>Archive stats and ratings on your profile</li><li>Early access to new twists and modes</li></ul><a class="btn ghost" data-checkout="month" href="#">Choose monthly</a></div>
     <div class="price best"><p class="k">Lifetime · best value</p><b>$20</b><span>once, yours forever</span><ul><li>Everything in monthly, with no renewals</li><li>Founder badge on your profile</li><li>Pays for itself in seven months</li></ul><a class="btn primary" data-checkout="life" href="#">Get lifetime access</a></div>
   </section>
-  <p class="pl-note" id="pl-soon" hidden>Payments open soon. Today's puzzle and the last seven days stay free in the meantime.</p>
+  <p class="pl-note" id="pl-soon" hidden>Payments open soon. Until then, today's puzzle and the last seven days are free.</p>
   <section class="faq" aria-label="Questions">
-    <details><summary>What stays free?</summary><p>Today's puzzle, your official score, ranking, streaks, achievements, random expeditions and the last seven days of the archive. Always.</p></details>
-    <details><summary>What does Traversle + unlock?</summary><p>Every past puzzle, playable as practice with the planner's route reveal, plus archive stats and the founder badge on lifetime.</p></details>
+    <details><summary>What stays free?</summary><p>Today's puzzle, your score and rank, streaks, achievements, random expeditions and the last seven days of past puzzles. Always.</p></details>
+    <details><summary>What does Traversle + unlock?</summary><p>Every past puzzle, with the planner's route reveal, archive stats on your profile, and the founder badge on lifetime.</p></details>
     <details><summary>Monthly or lifetime?</summary><p>Monthly is $2.99 and cancels any time. Lifetime is $20 once and never renews, so it pays for itself in seven months.</p></details>
     <details><summary>Where is my membership stored?</summary><p>In this browser for now. Accounts with sync across devices are coming, and Plus will carry over.</p></details>
   </section>

@@ -52,16 +52,16 @@
   renderBrief();
   $('#tv-gate-day').textContent = title + ' · ' + dayLabel;
   $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} <span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></span><span class="arr">→</span><span class="city">${T.flagImg(ch.to, 40)} <span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></span>`;
-  $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km apart and nothing goes there directly. Get there under budget, before the deadline, and find the route the planner had in mind.`;
+  $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km. No direct route. Get there under budget and before the deadline.`;
   $('#tv-gate-mission').innerHTML = `
     <div class="mi"><span class="ic">💰</span><b>${T.money(M.budget)}</b><span>budget</span></div>
     <div class="mi"><span class="ic">⏱️</span><b>${T.dur(M.deadline)}</b><span>deadline</span></div>
     <div class="mi"><span class="ic">${tw.icon}</span><b>${T.esc(tw.name)}</b><span>${T.esc(tw.desc)}</span></div>
-    <div class="mi"><span class="ic">🏷️</span><b>${M.deals} deal${M.deals === 1 ? '' : 's'}</b><span>hidden on the map. Look around to find them.</span></div>`;
-  $('#tv-gate-rules').innerHTML = `<li>Add stops one at a time and pick how you travel each leg. Anything over budget or past the deadline is greyed out.</li>
-    <li>Two of the hidden deals sit on the planner's route. Hover cities or open a stop to reveal its fares.</li>
-    <li>Money, hours and how fast you decide all count. ${mode === 'today' ? 'One official run per day.' : 'This is a practice expedition.'}</li>`;
-  $('#tv-gate-note').textContent = mode === 'random' ? 'Practice run with a random start and destination. It is not scored.' : mode === 'archive' ? 'Archive puzzle. Practice only, your official score stays with the day you played.' : practice ? 'You already have an official score for today. This run is practice.' : 'The decision clock starts when you press the button.';
+    <div class="mi"><span class="ic">🏷️</span><b>${M.deals} deal${M.deals === 1 ? '' : 's'}</b><span>hidden on the map</span></div>`;
+  $('#tv-gate-rules').innerHTML = `<li>Add a stop, pick a ride, repeat. Anything over budget or past the deadline is greyed out.</li>
+    <li>Hover a city to see its fares. Two of the hidden deals are on the planner's route.</li>
+    <li>Money, time and speed all count. ${mode === 'today' ? 'One official run a day.' : 'This one is practice.'}</li>`;
+  $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'The clock starts when you press start.';
   const locked = mode === 'archive' && T.dayLocked(ch.n);
   if (locked) {
     $('#tv-gate-mission').innerHTML = `<div class="tv-lock"><span class="ic">🔒</span><b>This puzzle is in the Traversle + archive</b><p>The last ${T.FREE_DAYS} days are free to replay. Every puzzle since day one, plus future archive features, comes with Traversle +.</p><a class="btn primary" href="plus.html">See Traversle +</a> <a class="btn ghost" href="archive.html">Back to the archive</a></div>`;
@@ -220,7 +220,7 @@
     $('#tv-twist').innerHTML = tw.id === 'open' ? `<span>${tw.icon} ${T.esc(tw.name)}</span><small>${T.esc(tw.desc)}</small>` : `<span>${tw.icon} ${T.esc(tw.name)}</span><small class="${done ? 'good' : ''}">${T.esc(tw.status(ts))}</small>`;
     const est = atDest() ? T.score(tt.cost, tt.hours, elapsed(), M) : null;
     $('#tv-est').hidden = est === null; $('#tv-est b').textContent = est === null ? '—' : est.toLocaleString(); $('#tv-est .bar i').style.width = (est === null ? 0 : est / 100) + '%';
-    $('#tv-plan-sub').textContent = atDest() ? (done ? 'You\'ve arrived. Submit, or undo a leg to try another idea.' : 'Arrived, but the twist isn\'t met: ' + tw.status(ts) + '.') : `You're in ${cur.name}.`;
+    $('#tv-plan-sub').textContent = atDest() ? (done ? 'You made it. Submit, or undo a leg and try another idea.' : 'You made it, but the twist isn\'t met: ' + tw.status(ts) + '.') : `You're in ${cur.name}.`;
     $('#tv-submit').disabled = !(atDest() && done); $('#tv-undo').disabled = !route.length;
 
     let h = `<li class="start"><span class="dot"></span><div class="stop">${T.place(ch.from)}<small>start</small></div>`;
@@ -263,7 +263,7 @@
     box.innerHTML = `<div class="tv-pick-head"><b>Add a stop</b><small>${reach.length} places fit from ${T.esc(cur.name)}</small></div>
       <div class="tv-search"><input type="search" id="tv-q" placeholder="Search any city…" autocomplete="off"><ul class="tv-results" id="tv-res" hidden></ul></div>
       <div class="tv-stoplist">${finish ? row(finish) : destLegs.length ? `<div class="tv-stoprow finish off"><span class="nm">${T.place(ch.to)}<small>reachable, but nothing fits: ${T.esc(blocked(destLegs.slice().sort((x, y) => x.cost - y.cost)[0], ch.to) || '')}</small></span></div>` : ''}${suggested.map(row).join('')}</div>
-      <p class="tv-pick-hint">Or hover and tap cities on the map. Hidden deals show up when you look.</p>`;
+      <p class="tv-pick-hint">Or tap a city on the map. Deals only show when you look.</p>`;
     box.querySelectorAll('.tv-stoprow[data-id]').forEach(b => (b.onclick = () => pick(T.byId[b.dataset.id])));
     const q = $('#tv-q'), res = $('#tv-res');
     q.oninput = () => {
@@ -353,11 +353,11 @@
     const parRoute = M.par.path.map(e => ({ to: e.to, mode: e.mode, cost: e.cost, hours: e.hours, deal: e.deal }));
     const parMatch = res.parMatch || (res.cost <= M.par.cost + 1 && res.hours <= M.par.hours + 0.05);
     const parStops = M.par.path.slice(0, -1).map(e => T.byId[e.to].name);
-    const insight = parMatch ? `You found the planner's route${res.secs > 120 ? `, but took <b>${T.secsF(res.secs)}</b> to decide. Faster calls score higher.` : '. That is the best balance of money and time today.'}`
+    const insight = parMatch ? `You found the planner's route${res.secs > 120 ? `, but took <b>${T.secsF(res.secs)}</b> to decide. Quicker calls score higher.` : '. Nobody beats that on money and time today.'}`
       : res.cost > M.par.cost * 1.25 ? `The planner spent <b>${T.money(M.par.cost)}</b> going through ${parStops.join(' and ')}${M.par.path.some(e => e.deal) ? ', using a hidden deal' : ''}. You spent ${T.money(res.cost - M.par.cost)} more.`
       : res.hours > M.par.hours * 1.25 ? `The planner got there in <b>${T.dur(M.par.hours)}</b> via ${parStops.join(' and ')}. Your route took ${T.dur(res.hours - M.par.hours)} longer.`
       : (res.deals && res.deals.found < M.deals) ? `Close. You found <b>${res.deals.found} of ${M.deals}</b> hidden deals. The planner's route uses ${M.par.path.filter(e => e.deal).length}.`
-      : `Strong route, within a whisker of the planner. ${res.secs > 90 ? 'Deciding faster is where the rest of the points are.' : ''}`;
+      : `Strong route, a whisker off the planner. ${res.secs > 90 ? 'The rest of the points are in deciding faster.' : ''}`;
     const cmp = (a, b, fmt, lowerBetter) => `<td class="r">${fmt(a)}</td><td class="r">${fmt(b)}</td><td class="r ${a <= b ? 'good' : 'bad'}">${a <= b ? '✓' : (lowerBetter ? '+' + fmt(a - b) : '')}</td>`;
     const lvlPct = prog.next ? Math.round(100 * prog.into / prog.span) : 100;
     $('#tv-result').innerHTML = `
@@ -405,7 +405,7 @@
     const myBin = Math.min(19, Math.floor(mine.score / 500)), mx = Math.max(...bins);
     const played = Object.keys(st.results || {});
     const days = []; for (let i = 6; i >= 0; i--) { const n = today - i; if (n < 1) continue; const key = T.dayKey(n); days.push(`<a class="d ${st.results[key] ? 'p' : ''}" href="play.html${n === today ? '' : '?day=' + n}" title="${key}${st.results[key] ? ' · ' + st.results[key].score.toLocaleString() : ''}">#${n}</a>`); }
-    $('#tv-board').innerHTML = `<div class="card"><h3>${ch.n ? 'Today\'s field' : 'Expedition field'}</h3><p class="sub">Simulated global ranking for ${ch.n ? 'TraversleDaily #' + ch.n : 'this expedition'}, ${rk.of.toLocaleString()} journeys. ${mode === 'today' ? 'Your official score is the first one you submitted today.' : ''}</p>
+    $('#tv-board').innerHTML = `<div class="card"><h3>${ch.n ? 'Today\'s field' : 'Expedition field'}</h3><p class="sub">${rk.of.toLocaleString()} journeys on ${ch.n ? 'puzzle #' + ch.n : 'this expedition'} (simulated ranking). ${mode === 'today' ? 'Your first submission of the day is the one that counts.' : ''}</p>
       <table><thead><tr><th>#</th><th>Traveller</th><th class="r">Score</th></tr></thead><tbody>
       ${rows.map(x => `<tr${x.me ? ' class="me"' : ''}><td>${x.rank.toLocaleString()}</td><td>${x.name}</td><td class="r">${x.score.toLocaleString()}</td></tr>`).join('')}</tbody></table>
       <div class="dist">${bins.map((b, i) => `<i class="${i === myBin ? 'me' : ''}" style="height:${Math.max(3, 100 * b / mx)}%" title="${(i * 500).toLocaleString()}–${(i * 500 + 499).toLocaleString()}: ${b}"></i>`).join('')}</div>

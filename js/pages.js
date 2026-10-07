@@ -55,13 +55,13 @@
     const resetIn = () => { const ms = (today * 86400000 + T.EPOCH) - Date.now(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };
     g('hm-day').textContent = 'Puzzle #' + ch.n + ' · ' + new Date(ch.key).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
     g('hm-route').innerHTML = `<span class="pin s"></span><b>${T.flagImg(ch.from, 40)}<span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></b><span class="ln"></span><span></span><span class="pin d"></span><b>${T.flagImg(ch.to, 40)}<span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></b>`;
-    g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> on a budget?`;
+    g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> on a budget?`; g('hm-h1').classList.add('live');
     const mis = M => `<div class="mi"><span class="ic">💰</span><b>${M ? T.money(M.budget) : '…'}</b><span>budget</span></div><div class="mi"><span class="ic">⏱️</span><b>${M ? T.dur(M.deadline) : '…'}</b><span>deadline</span></div><div class="mi" title="${T.esc(ch.twist.desc)}"><span class="ic">${ch.twist.icon}</span><b>${T.esc(ch.twist.name)}</b><span>twist</span></div><div class="mi"><span class="ic">🏷️</span><b>${M ? M.deals : 3}</b><span>hidden deals</span></div>`;
     g('hm-mission').innerHTML = mis(null);
     setTimeout(() => { const M = T.mission(ch); g('hm-mission').innerHTML = mis(M); g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> for under <em>${T.money(M.budget)}</em>?`; }, 30);
     const meta = () => g('hm-meta').innerHTML = `<span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>new puzzle in <b>${resetIn()}</b></span>`; meta(); setInterval(meta, 30000);
     if (R[ch.key]) { g('hm-play').textContent = 'See your result'; g('hm-sub').innerHTML = `${R[ch.key].tier ? R[ch.key].tier + ' · ' : ''}you scored <b>${R[ch.key].score.toLocaleString()}</b> today`; }
-    else if (streak) g('hm-sub').textContent = `🔥 ${streak}-day streak. Play today to keep it.`;
+    else if (streak) g('hm-sub').textContent = `🔥 ${streak}-day streak. Keep it alive.`;
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }
     const how = g('hm-howmodal'), open = o => { how.hidden = !o; document.body.classList.toggle('td-modal-open', o); if (!o && location.hash === '#how') history.replaceState(null, '', location.pathname); };
     g('hm-how').onclick = () => open(true); g('hm-how-close').onclick = () => open(false); g('hm-how-ok').onclick = () => open(false);
@@ -117,7 +117,7 @@
         (groups[month] = groups[month] || []).push(`<a class="arow${lock ? ' locked' : ''}" href="${lock ? 'plus.html' : 'play.html?day=' + n}"><span class="n">#${n}<small>${fmtDay(key)}</small></span><span class="rt">${T.flagImg(c.from)} ${T.esc(c.from.name)} <i>→</i> ${T.flagImg(c.to)} ${T.esc(c.to.name)}<small>${c.twist.icon} ${T.esc(c.twist.name)} · ${Math.round(T.km(c.from, c.to)).toLocaleString()} km</small></span><span class="sc">${r ? `<b>${r.score.toLocaleString()}</b><small>${r.tier || 'played'}</small>` : '<small>not played</small>'}</span><span class="go">${lock ? '🔒 Traversle +' : r ? 'Replay' : 'Play'}</span></a>`);
         shown++; if (lock) locked++;
       }
-      $('#ar-list').innerHTML = shown ? Object.entries(groups).map(([m, rows]) => `<h2 class="ar-month">${m}</h2><div class="alist">${rows.join('')}</div>`).join('') : `<div class="alist"><p class="empty">${today <= 1 ? 'Today is puzzle #1. From tomorrow, every past puzzle collects here.' : 'No puzzles match that search.'}</p></div>`;
+      $('#ar-list').innerHTML = shown ? Object.entries(groups).map(([m, rows]) => `<h2 class="ar-month">${m}</h2><div class="alist">${rows.join('')}</div>`).join('') : `<div class="alist"><p class="empty">${today <= 1 ? "Today is puzzle #1. From tomorrow, every past puzzle lands here." : 'No puzzles match that search.'}</p></div>`;
       $('#ar-summary').innerHTML = `${Math.max(0, today - 1)} past puzzle${today === 2 ? '' : 's'} · ${Object.keys(R).length} played${plus.active ? ' · ' + plusBadge() : locked ? ` · <a href="plus.html">${locked} locked, unlock with Traversle +</a>` : ''}`;
     };
     if (q) q.oninput = () => { filter = q.value.trim().toLowerCase(); render(); };

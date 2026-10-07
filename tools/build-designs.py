@@ -42,7 +42,7 @@ def shell(design, page, body, scripts, prefix, css):
 # ----- shared page bodies (design-neutral markup; themes do the rest) -----
 HOME = '''
 <main class="td-home-min">
-  <header class="hm-head"><h1 class="hm-h1" id="hm-h1">The daily travel puzzle. Plan the smartest route across the world.</h1><p class="hm-pitch">One trip a day, the same for everyone on Earth. Chain trains, buses, ferries and flights, beat the budget and the clock, then see how your route stacks up against the world.</p></header>
+  <header class="hm-head"><h1 class="hm-h1" id="hm-h1">The daily travel puzzle. Plan the smartest route across the world.</h1><p class="hm-pitch">Everyone on Earth gets the same trip today. Chain trains, buses, ferries and flights. Beat the budget. Beat the clock. See how you rank.</p></header>
   <section class="hm-card">
     <p class="eyebrow" id="hm-day"></p>
     <div class="route" id="hm-route"></div>
@@ -63,7 +63,7 @@ HOME = '''
       <li><b>Find the deals.</b> Three legs are secretly cheap. Two of them are on the planner's route. You only see a deal when you look.</li>
       <li><b>Submit and compare.</b> The planner's route appears next to yours. Earn a rating, bank the XP, keep the streak.</li>
     </ol>
-    <p class="how-score"><b>Money</b> plus <b>time</b> plus <b>how fast you decided</b>. One official run a day. Practice as much as you like.</p>
+    <p class="how-score">Your score: <b>money spent</b>, <b>time taken</b> and <b>how fast you decided</b>. One official run a day. Practice as often as you like. A new puzzle lands at midnight.</p>
     <button class="btn primary" id="hm-how-ok">Got it</button>
   </div></div>
 </main>'''
@@ -142,7 +142,7 @@ PROFILE = '''
     <label class="field"><span>Display name</span><input id="pf-name" type="text" maxlength="24" placeholder="How should we call you?"></label>
     <div class="row"><button class="btn primary" id="pf-save">Save name</button><span class="saved" id="pf-saved" hidden>Saved</span></div>
   </section>
-  <section class="card danger"><h2>Reset</h2><p>Play today again from scratch, or wipe every journey, badge and your name from this browser.</p><div class="row"><button class="btn ghost" id="pf-reset-today">Reset today's puzzle</button><button class="btn ghost" id="pf-reset">Erase my data</button></div></section>
+  <section class="card danger"><h2>Reset</h2><p>Replay today from scratch, or wipe everything saved in this browser.</p><div class="row"><button class="btn ghost" id="pf-reset-today">Reset today's puzzle</button><button class="btn ghost" id="pf-reset">Erase my data</button></div></section>
 </main>'''
 ARCHIVE = '''
 <main class="td-page">
@@ -156,15 +156,15 @@ PLUS = '''
   <header class="page-head"><p class="eyebrow">✦ Traversle +</p><h1>Every puzzle, <em>forever.</em></h1><p>Today's puzzle is free, always. Traversle + is the whole archive.</p></header>
   <div id="pl-status"></div>
   <section class="prices">
-    <div class="price"><p class="k">Monthly</p><b>$2.99</b><span>per month, cancel any time</span><ul><li>The full archive, every puzzle since day one</li><li>Archive stats and ratings on your profile</li><li>Early access to new twists and modes</li></ul><a class="btn ghost" data-checkout="month" href="#">Choose monthly</a></div>
-    <div class="price best"><p class="k">Lifetime · best value</p><b>$20</b><span>once, yours forever</span><ul><li>Everything in monthly, with no renewals</li><li>Founder badge on your profile</li><li>Pays for itself in seven months</li></ul><a class="btn primary" data-checkout="life" href="#">Get lifetime access</a></div>
+    <div class="price"><p class="k">Monthly</p><b>$2.99</b><span>per month, cancel any time</span><ul><li>Every puzzle since day one</li><li>Archive stats and ratings on your profile</li><li>Early access to new twists and modes</li></ul><a class="btn ghost" data-checkout="month" href="#">Choose monthly</a></div>
+    <div class="price best"><p class="k">Lifetime · best value</p><b>$20</b><span>once, yours forever</span><ul><li>Everything in monthly, no renewals</li><li>Founder badge on your profile</li><li>Pays for itself in seven months</li></ul><a class="btn primary" data-checkout="life" href="#">Get lifetime access</a></div>
   </section>
   <p class="pl-note" id="pl-soon" hidden>Payments open soon. Until then, today's puzzle and the last seven days are free.</p>
   <section class="faq" aria-label="Questions">
-    <details><summary>What stays free?</summary><p>Today's puzzle, your score and rank, streaks, achievements, random expeditions and the last seven days of past puzzles. Always.</p></details>
-    <details><summary>What does Traversle + unlock?</summary><p>Every past puzzle, with the planner's route reveal, archive stats on your profile, and the founder badge on lifetime.</p></details>
-    <details><summary>Monthly or lifetime?</summary><p>Monthly is $2.99 and cancels any time. Lifetime is $20 once and never renews, so it pays for itself in seven months.</p></details>
-    <details><summary>Where is my membership stored?</summary><p>In this browser for now. Accounts with sync across devices are coming, and Plus will carry over.</p></details>
+    <details><summary>What stays free?</summary><p>Today's puzzle, your score and rank, streaks and achievements. The last seven days of past puzzles too. Always.</p></details>
+    <details><summary>What does Traversle + unlock?</summary><p>Every past puzzle, with the planner's route reveal. Archive stats on your profile. The founder badge on lifetime.</p></details>
+    <details><summary>Monthly or lifetime?</summary><p>Monthly is $2.99, cancel any time. Lifetime is $20 once and never renews. It pays for itself in seven months.</p></details>
+    <details><summary>Where is my membership stored?</summary><p>In this browser for now. Accounts that sync across devices are coming, and your membership carries over.</p></details>
   </section>
 </main>'''
 PAGES_JS = '<script src="@/data/live/latest.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script>'

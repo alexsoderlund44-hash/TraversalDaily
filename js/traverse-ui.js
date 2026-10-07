@@ -40,7 +40,7 @@
   /* ---------- static bits ---------- */
   const dayLabel = ch.n ? new Date(ch.key).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : 'Random expedition';
   const title = ch.n ? 'Puzzle #' + ch.n : 'Expedition ' + ch.seed.slice(1).toUpperCase();
-  const resetIn = () => { const ms = (today * 86400000 + T.EPOCH) - Date.now(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };
+  const resetIn = () => { const ms = T.untilReset(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };
   const twistPill = () => `<span class="twist" title="${T.esc(tw.desc)}">${tw.icon} ${T.esc(tw.name)}</span>`;
   function renderBrief() {
     $('#tv-brief').innerHTML = `<p class="k">${title} · ${dayLabel}</p>
@@ -64,12 +64,12 @@
   $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'The clock starts when you press start.';
   const locked = mode === 'archive' && T.dayLocked(ch.n);
   if (locked) {
-    $('#tv-gate-mission').innerHTML = `<div class="tv-lock"><span class="ic">🔒</span><b>This puzzle is in the Traversle + archive</b><p>The last ${T.FREE_DAYS} days are free to replay. Every puzzle since day one, plus future archive features, comes with Traversle +.</p><a class="btn primary" href="plus.html">See Traversle +</a> <a class="btn ghost" href="archive.html">Back to the archive</a></div>`;
+    $('#tv-gate-mission').innerHTML = `<div class="tv-lock"><span class="ic">🔒</span><b>This puzzle is in the Traversle + archive</b><p>The last ${T.FREE_DAYS} days are free to replay. Traversle + opens every puzzle since day one.</p><a class="btn primary" href="plus.html">See Traversle +</a> <a class="btn ghost" href="archive.html">Back to the archive</a></div>`;
     $('#tv-gate-rules').hidden = true; $('#tv-start').hidden = true; $('#tv-gate-note').hidden = true;
   }
   $('#tv-source').textContent = LIVE
-    ? `Flight prices and times are averages of real one-way economy fares for departures on ${LIVE.depart}, fetched ${new Date(LIVE.fetched).toUTCString().slice(5, 22)} UTC. Trains, buses, rideshares, ferries and cars are modelled from distance and calibrated to the day's fares. Rankings are simulated.`
-    : 'No live fare snapshot for this puzzle, so flights are modelled from distance. Rankings are simulated.';
+    ? `Flights: average of real one-way economy fares for ${LIVE.depart}, fetched ${new Date(LIVE.fetched).toUTCString().slice(5, 22)} UTC. Ground and sea legs: modelled from distance and calibrated to those fares. Rankings are simulated.`
+    : 'No live fares for this puzzle, so flights are modelled from distance. Rankings are simulated.';
 
   /* ---------- map ---------- */
   const svg = d3.select('#tv-svg');
@@ -354,10 +354,10 @@
     const parMatch = res.parMatch || (res.cost <= M.par.cost + 1 && res.hours <= M.par.hours + 0.05);
     const parStops = M.par.path.slice(0, -1).map(e => T.byId[e.to].name);
     const insight = parMatch ? `You found the planner's route${res.secs > 120 ? `, but took <b>${T.secsF(res.secs)}</b> to decide. Quicker calls score higher.` : '. Nobody beats that on money and time today.'}`
-      : res.cost > M.par.cost * 1.25 ? `The planner spent <b>${T.money(M.par.cost)}</b> going through ${parStops.join(' and ')}${M.par.path.some(e => e.deal) ? ', using a hidden deal' : ''}. You spent ${T.money(res.cost - M.par.cost)} more.`
-      : res.hours > M.par.hours * 1.25 ? `The planner got there in <b>${T.dur(M.par.hours)}</b> via ${parStops.join(' and ')}. Your route took ${T.dur(res.hours - M.par.hours)} longer.`
+      : res.cost > M.par.cost * 1.25 ? `The planner went through ${parStops.join(' and ')} for <b>${T.money(M.par.cost)}</b>${M.par.path.some(e => e.deal) ? ' with a hidden deal' : ''}. You paid ${T.money(res.cost - M.par.cost)} more.`
+      : res.hours > M.par.hours * 1.25 ? `The planner went through ${parStops.join(' and ')} in <b>${T.dur(M.par.hours)}</b>. You took ${T.dur(res.hours - M.par.hours)} longer.`
       : (res.deals && res.deals.found < M.deals) ? `Close. You found <b>${res.deals.found} of ${M.deals}</b> hidden deals. The planner's route uses ${M.par.path.filter(e => e.deal).length}.`
-      : `Strong route, a whisker off the planner. ${res.secs > 90 ? 'The rest of the points are in deciding faster.' : ''}`;
+      : `Strong route, just behind the planner. ${res.secs > 90 ? 'Decide faster for the rest of the points.' : ''}`;
     const cmp = (a, b, fmt, lowerBetter) => `<td class="r">${fmt(a)}</td><td class="r">${fmt(b)}</td><td class="r ${a <= b ? 'good' : 'bad'}">${a <= b ? '✓' : (lowerBetter ? '+' + fmt(a - b) : '')}</td>`;
     const lvlPct = prog.next ? Math.round(100 * prog.into / prog.span) : 100;
     $('#tv-result').innerHTML = `
@@ -405,7 +405,7 @@
     const myBin = Math.min(19, Math.floor(mine.score / 500)), mx = Math.max(...bins);
     const played = Object.keys(st.results || {});
     const days = []; for (let i = 6; i >= 0; i--) { const n = today - i; if (n < 1) continue; const key = T.dayKey(n); days.push(`<a class="d ${st.results[key] ? 'p' : ''}" href="play.html${n === today ? '' : '?day=' + n}" title="${key}${st.results[key] ? ' · ' + st.results[key].score.toLocaleString() : ''}">#${n}</a>`); }
-    $('#tv-board').innerHTML = `<div class="card"><h3>${ch.n ? 'Today\'s field' : 'Expedition field'}</h3><p class="sub">${rk.of.toLocaleString()} journeys on ${ch.n ? 'puzzle #' + ch.n : 'this expedition'} (simulated ranking). ${mode === 'today' ? 'Your first submission of the day is the one that counts.' : ''}</p>
+    $('#tv-board').innerHTML = `<div class="card"><h3>${ch.n ? 'Today\'s field' : 'Expedition field'}</h3><p class="sub">${rk.of.toLocaleString()} journeys on ${ch.n ? 'puzzle #' + ch.n : 'this expedition'}. Simulated ranking. ${mode === 'today' ? 'Your first run of the day counts.' : ''}</p>
       <table><thead><tr><th>#</th><th>Traveller</th><th class="r">Score</th></tr></thead><tbody>
       ${rows.map(x => `<tr${x.me ? ' class="me"' : ''}><td>${x.rank.toLocaleString()}</td><td>${x.name}</td><td class="r">${x.score.toLocaleString()}</td></tr>`).join('')}</tbody></table>
       <div class="dist">${bins.map((b, i) => `<i class="${i === myBin ? 'me' : ''}" style="height:${Math.max(3, 100 * b / mx)}%" title="${(i * 500).toLocaleString()}–${(i * 500 + 499).toLocaleString()}: ${b}"></i>`).join('')}</div>

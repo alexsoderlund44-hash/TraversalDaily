@@ -8,8 +8,10 @@
   const DAY_MS = 86400000;
   const EPOCH = Date.UTC(2026, 9, 7); // day #1 = 7 Oct 2026 UTC (launch day)
 
-  const dayNumber = (t = Date.now()) => Math.floor((t - EPOCH) / DAY_MS) + 1;
+  // a new puzzle at midnight on the player's own clock (like Wordle), numbered by calendar date
+  const dayNumber = (t = Date.now()) => { const d = new Date(t); return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - EPOCH) / DAY_MS) + 1; };
   const dayKey = n => new Date(EPOCH + (n - 1) * DAY_MS).toISOString().slice(0, 10);
+  const untilReset = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() - d.getTime(); };
 
   /* ---------- seeded random ---------- */
   function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -59,12 +61,12 @@
   /* ---------- twists: one rule that changes the puzzle for the day ---------- */
   const TWISTS = [
     { id: 'open', icon: '🧭', name: 'Open road', desc: 'No extra rule today. Beat the budget and the clock.', state: () => 0, allow: () => true, done: () => true, status: () => '' },
-    { id: 'nofly', icon: '🚫', name: 'Grounded', desc: 'No flights today. Everything happens on the ground or at sea.', state: () => 0, allow: l => l.mode !== 'plane', done: () => true, status: () => 'no flights allowed' },
-    { id: 'oneflight', icon: '🎫', name: 'One ticket', desc: 'You may fly at most once.', state: (s, l) => Math.min(2, s + (l.mode === 'plane' ? 1 : 0)), allow: (l, s) => !(l.mode === 'plane' && s >= 1), done: () => true, status: s => s >= 1 ? 'your one flight is used' : 'one flight still available' },
-    { id: 'ferry', icon: '🚢', name: 'Sea legs', desc: 'Your journey must include a ferry.', state: (s, l) => s | (l.mode === 'ferry' ? 1 : 0), allow: () => true, done: s => s === 1, status: s => s ? 'ferry taken ✓' : 'still needs a ferry' },
+    { id: 'nofly', icon: '🚫', name: 'Grounded', desc: 'No flights today. Ground and sea only.', state: () => 0, allow: l => l.mode !== 'plane', done: () => true, status: () => 'no flights allowed' },
+    { id: 'oneflight', icon: '🎫', name: 'One ticket', desc: 'One flight, no more.', state: (s, l) => Math.min(2, s + (l.mode === 'plane' ? 1 : 0)), allow: (l, s) => !(l.mode === 'plane' && s >= 1), done: () => true, status: s => s >= 1 ? 'your one flight is used' : 'one flight still available' },
+    { id: 'ferry', icon: '🚢', name: 'Sea legs', desc: 'Take a ferry somewhere along the way.', state: (s, l) => s | (l.mode === 'ferry' ? 1 : 0), allow: () => true, done: s => s === 1, status: s => s ? 'ferry taken ✓' : 'still needs a ferry' },
     { id: 'rail', icon: '🚆', name: 'Rail pass', desc: 'Take the train at least twice.', state: (s, l) => Math.min(2, s + (l.mode === 'train' ? 1 : 0)), allow: () => true, done: s => s >= 2, status: s => s >= 2 ? 'two trains ✓' : (2 - s) + ' more train leg' + (s === 1 ? '' : 's') + ' needed' },
-    { id: 'overland', icon: '🛬', name: 'Overland arrival', desc: 'The final leg into the destination cannot be a flight.', state: () => 0, allow: (l, s, toDest) => !(toDest && l.mode === 'plane'), done: () => true, status: () => 'no flying into the destination' },
-    { id: 'threemodes', icon: '🎲', name: 'Mix it up', desc: 'Use at least three different kinds of transport.', state: (s, l) => s | MODE_BIT[l.mode], allow: () => true, done: s => pop(s) >= 3, status: s => pop(s) >= 3 ? 'three modes ✓' : (3 - pop(s)) + ' more mode' + (pop(s) === 2 ? '' : 's') + ' needed' },
+    { id: 'overland', icon: '🛬', name: 'Overland arrival', desc: "You can't fly into the destination.", state: () => 0, allow: (l, s, toDest) => !(toDest && l.mode === 'plane'), done: () => true, status: () => 'no flying into the destination' },
+    { id: 'threemodes', icon: '🎲', name: 'Mix it up', desc: 'Use three different kinds of transport.', state: (s, l) => s | MODE_BIT[l.mode], allow: () => true, done: s => pop(s) >= 3, status: s => pop(s) >= 3 ? 'three modes ✓' : (3 - pop(s)) + ' more mode' + (pop(s) === 2 ? '' : 's') + ' needed' },
   ];
   const pop = x => { let n = 0; while (x) { n += x & 1; x >>= 1; } return n; };
   const twistById = {}; TWISTS.forEach(t => (twistById[t.id] = t));
@@ -349,5 +351,5 @@
   const secsF = s => s < 60 ? Math.round(s) + 's' : Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's';
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, EPOCH, challenge, challengeRandom, mission, score, tier, TIERS, progression, LEVELS, field, rankOf, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
+  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, untilReset, EPOCH, challenge, challengeRandom, mission, score, tier, TIERS, progression, LEVELS, field, rankOf, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
 })();

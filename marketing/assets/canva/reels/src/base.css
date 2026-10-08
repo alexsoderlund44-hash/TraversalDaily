@@ -1,0 +1,31 @@
+@font-face{font-family:'Alegreya';font-style:italic;font-weight:500;src:url(fonts/Alegreya-500i.woff2) format('woff2');}
+@font-face{font-family:'Alegreya';font-style:normal;font-weight:500;src:url(fonts/Alegreya-500.woff2) format('woff2');}
+@font-face{font-family:'Alegreya';font-style:normal;font-weight:700;src:url(fonts/Alegreya-700.woff2) format('woff2');}
+@font-face{font-family:'Alegreya Sans';font-style:normal;font-weight:500;src:url(fonts/AlegreyaSans-500.woff2) format('woff2');}
+@font-face{font-family:'Alegreya Sans';font-style:normal;font-weight:700;src:url(fonts/AlegreyaSans-700.woff2) format('woff2');}
+@font-face{font-family:'Alegreya Sans';font-style:normal;font-weight:800;src:url(fonts/AlegreyaSans-800.woff2) format('woff2');}
+@font-face{font-family:'Alegreya Sans';font-style:normal;font-weight:900;src:url(fonts/AlegreyaSans-900.woff2) format('woff2');}
+@font-face{font-family:'Alfa Slab One';font-style:normal;font-weight:400;src:url(fonts/AlfaSlabOne-400.woff2) format('woff2');}
+:root{--page:#DFC995;--card:#F7EEDB;--ink:#2B1F14;--red:#8E2A1E;--brass:#5E3E0C;--teal:#26696D;--sea:#D8BE84;}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:var(--page)}
+body{font-family:'Alegreya Sans',sans-serif;color:var(--ink);position:relative}
+.stage{position:absolute;inset:0;overflow:hidden}
+svg.chart{position:absolute;inset:0;width:1080px;height:1920px;background:var(--sea)}
+/* paper grain + burnt vignette above everything except text */
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.22;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .25  0 0 0 0 .12  0 0 0 .9 0'/></filter><rect width='300' height='300' filter='url(%23n)'/></svg>")}
+.vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 75% 60% at 50% 48%,transparent 55%,rgba(94,62,12,.35) 85%,rgba(43,29,18,.7) 100%)}
+.full{position:absolute;inset:0}
+.title{font-family:'Alfa Slab One',serif;line-height:.98;letter-spacing:-.5px}
+/* TikTok-style caption: cream slab, hard ink shadow */
+.cap{position:absolute;left:70px;right:150px;font-family:'Alegreya Sans';font-weight:900;font-size:76px;line-height:1.08;text-align:left}
+.cap .w{display:inline-block;background:var(--card);padding:2px 16px 8px;margin:0 -4px 12px 0;border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink);transform-origin:50% 80%}
+.cap .w.hot{background:var(--red);color:var(--card)}
+.pill{display:inline-block;background:var(--red);color:var(--card);font-weight:900;letter-spacing:4px;text-transform:uppercase;padding:14px 26px;font-size:40px;border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
+.card{background:var(--card);border:6px solid var(--ink);box-shadow:14px 14px 0 var(--ink);border-radius:26px}
+.hud{position:absolute;top:150px;left:60px;right:60px;display:flex;gap:22px}
+.hud .box{flex:1;background:var(--card);border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink);border-radius:18px;padding:14px 22px}
+.hud .k{font-size:28px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:var(--brass)}
+.hud .v{font-family:'Alfa Slab One';font-size:68px;line-height:1.05}
+.city{font-family:'Alegreya';font-weight:700;font-size:44px;paint-order:stroke;stroke:#F7EEDB;stroke-width:10px;fill:var(--ink)}

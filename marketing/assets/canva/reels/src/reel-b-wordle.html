@@ -1,0 +1,122 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css">
+<style>
+.scene{position:absolute;inset:0;overflow:hidden}
+.bg-red{background:var(--red)} .bg-teal{background:var(--teal)} .bg-page{background:var(--page)} .bg-ink{background:var(--ink)} .bg-card{background:var(--card)}
+.huge{position:absolute;left:70px;right:110px;font-family:'Alfa Slab One';color:var(--card);line-height:1}
+.tiles{position:absolute;left:0;right:0;top:700px;display:flex;justify-content:center;gap:12px;perspective:1200px}
+.tile{width:104px;height:122px;border:6px solid var(--ink);display:grid;place-items:center;font-family:'Alfa Slab One';font-size:74px;color:var(--card);background:var(--card);box-shadow:6px 6px 0 var(--ink);border-radius:10px}
+.tile.c1{background:var(--teal)} .tile.c2{background:#B8862B} .tile.c3{background:#6E5A44}
+.sub{position:absolute;left:0;right:0;text-align:center;font-family:'Alegreya';font-style:italic;font-weight:500;font-size:68px}
+.big-emoji{position:absolute;left:0;right:0;text-align:center;font-size:300px;line-height:1}
+.rule-k{position:absolute;left:70px;font-weight:900;letter-spacing:8px;font-size:44px;text-transform:uppercase}
+.rule-v{position:absolute;left:70px;right:90px;font-family:'Alfa Slab One';font-size:150px;line-height:.95}
+.phone{position:absolute;left:190px;top:520px;width:700px;height:1244px;border-radius:64px;background:var(--ink);padding:22px;box-shadow:22px 22px 0 rgba(43,31,20,.55)}
+.phone video{width:100%;height:100%;object-fit:cover;border-radius:44px;display:block}
+.share{position:absolute;left:90px;right:90px;top:640px;padding:46px 50px;font-size:70px;line-height:1.35;font-weight:800;white-space:pre-wrap;min-height:420px}
+.caret{display:inline-block;width:6px;height:70px;background:var(--ink);vertical-align:-10px;margin-left:4px}
+#wipe{position:absolute;inset:-200px;background:var(--ink);pointer-events:none}
+</style></head><body>
+<div class="stage">
+  <!-- 1 hook -->
+  <div class="scene bg-red" id="s1">
+    <div class="huge" id="s1a" style="top:330px;font-size:150px">Wordle<br>players</div>
+    <div class="big-emoji" id="s1e" style="top:120px;text-align:right;right:90px;left:auto;font-size:190px">👀</div>
+    <div class="cap" id="s1cap" style="top:780px;font-size:88px" data-words="I found your next *daily *obsession"></div>
+  </div>
+  <!-- 2 tile reveal -->
+  <div class="scene bg-page" id="s2">
+    <div class="grain"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="sub" id="s2sub" style="top:900px">the daily travel puzzle</div>
+    <div class="cap" id="s2cap" style="top:1130px;left:110px;font-size:70px" data-words="but instead of guessing *words…"></div>
+  </div>
+  <!-- 3 rules -->
+  <div class="scene bg-teal" id="r1"><div class="rule-k" style="top:420px;color:#F7EEDB">Rule 1</div><div class="rule-v" style="top:500px;color:#F7EEDB">One route.<br>Same for everyone.</div><div class="big-emoji" id="r1e" style="top:1050px">🌍</div></div>
+  <div class="scene bg-page" id="r2"><div class="grain"></div><div class="rule-k" style="top:420px;color:var(--brass)">Rule 2</div><div class="rule-v" style="top:500px">Get there for</div><div class="rule-v" id="r2n" style="top:690px;font-size:300px;color:var(--red)">$440</div><div class="sub" style="top:1080px">Cancún → San Francisco</div></div>
+  <div class="scene bg-red" id="r3"><div class="rule-k" style="top:420px;color:#F7EEDB">Today's twist</div><div class="rule-v" style="top:500px;color:#F7EEDB">No flights.</div><div class="big-emoji" id="r3e" style="top:900px">🚫✈️</div></div>
+  <!-- 4 gameplay -->
+  <div class="scene bg-page" id="s4"><div class="grain"></div>
+    <div class="cap" id="s4cap" style="top:170px;font-size:72px" data-words="Chain *buses, *trains and *ferries"></div>
+    <div class="phone" id="phone"><video id="vid" src="clip-route-scroll.webm" muted preload="auto"></video></div>
+  </div>
+  <!-- 5 share text -->
+  <div class="scene bg-ink" id="s5">
+    <div class="cap" id="s5cap" style="top:300px;font-size:76px" data-words="Then flex your *score"></div>
+    <div class="share card" id="share"></div>
+    <div class="cap" id="s5cap2" style="top:1240px;font-size:66px" data-words="Drop yours in the *comments 👇"></div>
+  </div>
+  <!-- 6 end -->
+  <div class="scene bg-red" id="s6">
+    <div class="huge" id="s6a" style="top:420px;font-size:128px">Your new<br>morning<br>3 minutes.</div>
+    <div id="s6p" style="position:absolute;left:70px;top:1050px"><span class="pill" style="background:var(--card);color:var(--ink);font-size:46px">traversledaily.com</span></div>
+    <div class="sub" id="s6s" style="top:1200px;text-align:left;left:74px;color:#F7EEDB;font-size:54px">Free. New route at midnight UTC.</div>
+  </div>
+  <div id="wipe"></div>
+</div>
+<script src="lib.js"></script>
+<script>
+window.DUR = 16;
+const S = [['s1', 0], ['s2', 2.7], ['r1', 5.3], ['r2', 6.6], ['r3', 7.9], ['s4', 9.2], ['s5', 11.9], ['s6', 14.2]];
+const caps = {}; $$('.cap').forEach(c => caps[c.id] = buildCaption(c));
+const word = 'TRAVERSLE', cls = ['c1', 'c2', 'c1', 'c3', 'c1', 'c1', 'c2', 'c1', 'c1'];
+const tiles = word.split('').map((ch, i) => { const d = document.createElement('div'); d.className = 'tile'; d.innerHTML = `<span>${ch}</span>`; $('#tiles').appendChild(d); return d; });
+const SHARE = 'Traversle #8 🏆 Perfect\n🚢🚌🚌🚌🚆🚗\n$346 · 3d 19h · 9,545';
+const vid = $('#vid');
+const seek = s => new Promise(r => { setTimeout(r, 3000); if (Math.abs(vid.currentTime - s) < 1e-3) return r(); vid.addEventListener('seeked', () => r(), { once: true }); vid.currentTime = s; });
+
+window.render = async function (t) {
+  // which scene is current; each scene enters with a diagonal wipe from the right
+  S.forEach(([id, s], i) => {
+    const next = S[i + 1], on = t >= s - .001 && (!next || t < next[1] + .35);
+    const el = $('#' + id); el.style.display = on ? 'block' : 'none'; el.style.zIndex = i;
+    const w = i === 0 ? 1 : E.inOut(P(t, s - .05, .4));
+    el.style.clipPath = `polygon(${lerp(130, 0, w)}% 0, 100% 0, 100% 100%, ${lerp(160, -30, w)}% 100%)`;
+    el.style.transform = `scale(${lerp(1.08, 1, E.out(P(t, s, .7)))})`;
+  });
+  $('#wipe').style.display = 'none';
+
+  // 1 hook: readable on frame 0
+  const a = E.spring(P(t, 0, .45));
+  css($('#s1a'), { transform: `scale(${lerp(.9, 1, a)}) rotate(-3deg)`, transformOrigin: '0 50%' });
+  css($('#s1e'), { transform: `rotate(${Math.sin(t * 6) * 8}deg) scale(${E.spring(P(t, .3, .5))})` });
+  revealWords(caps.s1cap, t, .5, .14);
+
+  // 2 tiles flip in sequence
+  tiles.forEach((d, i) => {
+    const f = P(t, 2.95 + i * .12, .38), half = f < .5;
+    css(d, { transform: `rotateX(${half ? f * 180 : (1 - f) * 180}deg) scale(${lerp(.6, 1, E.out(P(t, 2.75 + i * .04, .3)))})`, opacity: P(t, 2.75 + i * .04, .1) });
+    d.className = 'tile' + (f >= .5 ? ' ' + cls[i] : '');
+    d.firstChild.style.color = f >= .5 ? '#F7EEDB' : 'var(--ink)';
+  });
+  css($('#s2sub'), { opacity: P(t, 4.1, .3), transform: `translateY(${(1 - E.out(P(t, 4.1, .4))) * 40}px)` });
+  revealWords(caps.s2cap, t, 4.45, .12);
+
+  // 3 rules
+  css($('#r1e'), { transform: `rotate(${t * 40}deg) scale(${E.spring(P(t, 5.4, .5))})` });
+  $('#r2n').textContent = money(lerp(0, 440, E.out(P(t, 6.7, .7))));
+  const st = P(t, 8.05, .35);
+  css($('#r3e'), { transform: `rotate(-8deg) scale(${lerp(2.2, 1, E.out5(st))}) translateX(${st < 1 && st > 0 ? Math.sin(t * 90) * 12 : 0}px)`, opacity: st > 0 ? 1 : 0 });
+
+  // 4 phone with real gameplay
+  revealWords(caps.s4cap, t, 9.4, .12);
+  const ph = E.spring(P(t, 9.25, .7));
+  css($('#phone'), { transform: `translateY(${(1 - ph) * 900}px) rotate(${lerp(8, -3, ph)}deg)` });
+  if (t >= 9.1 && t < 12.3) await seek(clamp(t - 9.1 + .6, 0, 4.95));
+
+  // 5 typed share result
+  revealWords(caps.s5cap, t, 12.0, .12);
+  const sh = E.spring(P(t, 12.15, .5));
+  css($('#share'), { transform: `scale(${lerp(.7, 1, sh)}) rotate(${lerp(-5, -1.5, sh)}deg)`, opacity: P(t, 12.15, .1) });
+  const chars = Array.from(SHARE), n = Math.floor(chars.length * P(t, 12.4, 1.1));
+  $('#share').innerHTML = chars.slice(0, n).join('').replace(/\n/g, '<br>') + (Math.floor(t * 4) % 2 || n < chars.length ? '<span class="caret"></span>' : '');
+  revealWords(caps.s5cap2, t, 13.45, .12);
+
+  // 6 end
+  const e = E.spring(P(t, 14.3, .5));
+  css($('#s6a'), { transform: `scale(${lerp(.85, 1, e)}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  css($('#s6p'), { opacity: P(t, 14.7, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, 14.7, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  css($('#s6s'), { opacity: P(t, 15.0, .3) });
+};
+window.render(0);
+</script></body></html>

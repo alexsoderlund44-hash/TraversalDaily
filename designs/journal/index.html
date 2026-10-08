@@ -20,7 +20,7 @@
 <main class="td-home-min hm">
   <header class="hm-hero">
     <h1 class="hm-brand" aria-label="Traversle Daily"><span class="hm-word">Traversle</span><span class="hm-stamp">Daily</span>
-      <svg class="hm-trail" viewBox="0 0 420 44" aria-hidden="true"><path class="rt" d="M10 32 C 80 -6, 150 54, 230 16 S 350 30, 396 10"/><circle class="s" cx="10" cy="32" r="4.5"/><path class="d" d="M396 10 m-6 0 a6 6 0 1 1 12 0 c0 5 -6 12 -6 12 s-6 -7 -6 -12z"/></svg></h1>
+      <svg class="hm-trail" viewBox="0 0 420 36" aria-hidden="true"><path class="rt" d="M12 22 C 90 -2, 160 42, 240 14 S 340 30, 400 8"/><circle class="s" cx="12" cy="22" r="4.5"/><path class="d" d="M400 8 m-6 0 a6 6 0 1 1 12 0 c0 5 -6 12 -6 12 s-6 -7 -6 -12z"/></svg></h1>
     <p class="hm-tag" id="hm-h1">One start. One destination. One budget. Out-plan the planner.</p>
   </header>
   <section class="hm-card" aria-label="Today's expedition">
@@ -43,7 +43,7 @@
   <div class="td-modal" id="hm-howmodal" hidden></div>
 </main>
 <footer class="td-foot"><div class="td-wrap"><span>© 2026 TraversleDaily. A new travel puzzle every day.</span><span>Map data from Natural Earth. Your progress is saved in this browser.</span></div></footer>
-<script src="../../data/cities.js"></script><script src="../../data/live/latest.js"></script><script src="../../data/schedule.js"></script><script src="../../js/traverse.js"></script><script src="../../js/tutorial.js"></script><script src="../../js/pages.js"></script><script src="../../js/chart-bg.js" defer></script>
+<script src="../../data/cities.js"></script><script src="../../data/live/latest.js"></script><script src="../../data/schedule.js"></script><script src="../../js/traverse.js"></script><script src="../../data/tutorial-map.js"></script><script src="../../js/tutorial.js"></script><script src="../../js/pages.js"></script><script src="../../js/chart-bg.js" defer></script>
 <script>(function(){var b=document.getElementById('td-burger'),m=document.getElementById('td-menu');function set(o){m.hidden=!o;b.setAttribute('aria-expanded',o);b.classList.toggle('open',o);document.body.classList.toggle('td-menu-open',o);}b.onclick=function(e){e.stopPropagation();set(m.hidden);};m.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});document.addEventListener('click',function(e){if(!m.hidden&&!m.contains(e.target))set(false);});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!m.hidden)set(false);});
 var how=document.getElementById('hm-howmodal');if(how){window.tdHow=function(o){if(window.tdTutorial)return window.tdTutorial(o);how.hidden=!o;};['hm-how','td-help'].forEach(function(id){var el=document.getElementById(id);if(el)el.onclick=function(){tdHow(true);};});window.addEventListener('hashchange',function(){if(location.hash==='#how')tdHow(true);});if(location.hash==='#how')tdHow(true);}})();</script>
 </body></html>

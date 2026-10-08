@@ -50,7 +50,7 @@ HOME = '''
 <main class="td-home-min hm">
   <header class="hm-hero">
     <h1 class="hm-brand" aria-label="Traversle Daily"><span class="hm-word">Traversle</span><span class="hm-stamp">Daily</span>
-      <svg class="hm-trail" viewBox="0 0 420 44" aria-hidden="true"><path class="rt" d="M10 32 C 80 -6, 150 54, 230 16 S 350 30, 396 10"/><circle class="s" cx="10" cy="32" r="4.5"/><path class="d" d="M396 10 m-6 0 a6 6 0 1 1 12 0 c0 5 -6 12 -6 12 s-6 -7 -6 -12z"/></svg></h1>
+      <svg class="hm-trail" viewBox="0 0 420 36" aria-hidden="true"><path class="rt" d="M12 22 C 90 -2, 160 42, 240 14 S 340 30, 400 8"/><circle class="s" cx="12" cy="22" r="4.5"/><path class="d" d="M400 8 m-6 0 a6 6 0 1 1 12 0 c0 5 -6 12 -6 12 s-6 -7 -6 -12z"/></svg></h1>
     <p class="hm-tag" id="hm-h1">One start. One destination. One budget. Out-plan the planner.</p>
   </header>
   <section class="hm-card" aria-label="Today's expedition">
@@ -72,11 +72,12 @@ HOME = '''
   </section>
   @HOW@
 </main>'''
-HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script><script src="@/js/chart-bg.js" defer></script>'
+HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/data/tutorial-map.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script><script src="@/js/chart-bg.js" defer></script>'
 
 PLAY = '''
 <main class="tv">
   <section class="tv-stage" id="tv-stage">
+    <svg id="tv-chart" class="tv-chart" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
     <svg id="tv-svg" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid slice" aria-label="World map"></svg>
     <div class="tv-brief" id="tv-brief"></div>
     <div class="tv-maptools"><button id="tv-zin" aria-label="Zoom in">+</button><button id="tv-zout" aria-label="Zoom out">−</button><button id="tv-zfit" aria-label="Fit route" title="Fit the route">⤢</button></div>
@@ -112,7 +113,7 @@ PLAY = '''
   <p class="tv-source" id="tv-source"></p>
   @HOW@
 </main>'''
-PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/traverse-ui.js"></script>'
+PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/world-lite.js"></script><script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/data/tutorial-map.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/traverse-ui.js"></script>'
 
 ACH = '''
 <main class="td-page">

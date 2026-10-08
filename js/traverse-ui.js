@@ -92,20 +92,25 @@
   const proj = d3.geoNaturalEarth1().fitSize([960, 500], { type: 'Sphere' });
   const path = d3.geoPath(proj);
   const feats = topojson.feature(WORLD_TOPO, WORLD_TOPO.objects.countries).features;
+  // the chart itself (sea, graticule, rhumb lines, coasts, land, country names) lives in its own svg, so the
+  // pulsing and flowing bits on the interactive svg above it never make the heavy chart repaint
+  const chart = d3.select('#tv-chart'), gc = chart.append('g');
   const g = svg.append('g');
-  g.append('path').attr('class', 'tv-sphere').attr('d', path({ type: 'Sphere' }));
+  gc.append('path').attr('class', 'tv-sphere').attr('d', path({ type: 'Sphere' }));
   // an old chart: graticule, water lines along the coast, then the land
-  g.append('path').attr('class', 'tv-grat').attr('d', path(d3.geoGraticule().step([10, 10])()));
+  gc.append('path').attr('class', 'tv-grat').attr('d', path(d3.geoGraticule().step([10, 10])()));
   // rhumb lines radiating from compass roses out at sea, as on a portolan chart
   const ROSES = [[-40, 25], [-30, -30], [70, -15], [170, 10], [-150, -30], [20, 60]];
-  const rh = g.append('g');
+  const rh = gc.append('g');
   ROSES.forEach(([lo, la]) => { const [x, y] = proj([lo, la]); for (let a = 0; a < 32; a++) { const t = a * Math.PI / 16; rh.append('line').attr('class', 'tv-rhumb').attr('x1', x).attr('y1', y).attr('x2', x + Math.cos(t) * 700).attr('y2', y + Math.sin(t) * 700); } });
   rh.attr('clip-path', null);
-  ROSES.slice(0, 4).forEach(([lo, la]) => { const [x, y] = proj([lo, la]); const r = 9; let d = ''; for (let i = 0; i < 16; i++) { const t = i * Math.PI / 8, L = i % 2 ? r * .55 : r, w = i % 2 ? r * .08 : r * .14; d += `M${x + Math.cos(t) * L},${y + Math.sin(t) * L}L${x + Math.cos(t + Math.PI / 2) * w},${y + Math.sin(t + Math.PI / 2) * w}L${x + Math.cos(t - Math.PI / 2) * w},${y + Math.sin(t - Math.PI / 2) * w}Z`; } g.append('path').attr('class', 'tv-rose').attr('d', d); });
-  const landAll = topojson.merge(WORLD_TOPO, WORLD_TOPO.objects.countries.geometries);
-  ['tv-coast c3', 'tv-coast c2', 'tv-coast'].forEach(c => g.append('path').attr('class', c).attr('d', path(landAll)));
-  g.append('g').selectAll('path').data(feats).join('path').attr('class', 'tv-land').attr('d', path);
-  const gCountry = g.append('g');
+  ROSES.slice(0, 4).forEach(([lo, la]) => { const [x, y] = proj([lo, la]); const r = 9; let d = ''; for (let i = 0; i < 16; i++) { const t = i * Math.PI / 8, L = i % 2 ? r * .55 : r, w = i % 2 ? r * .08 : r * .14; d += `M${x + Math.cos(t) * L},${y + Math.sin(t) * L}L${x + Math.cos(t + Math.PI / 2) * w},${y + Math.sin(t + Math.PI / 2) * w}L${x + Math.cos(t - Math.PI / 2) * w},${y + Math.sin(t - Math.PI / 2) * w}Z`; } gc.append('path').attr('class', 'tv-rose').attr('d', d); });
+  // the water lines along the coast are wide soft strokes, so they use the simplified outline and hide while the chart moves
+  const LITE = window.WORLD_LITE || WORLD_TOPO;
+  const landAll = topojson.merge(LITE, LITE.objects.countries.geometries);
+  ['tv-coast c3', 'tv-coast c2', 'tv-coast'].forEach(c => gc.append('path').attr('class', c).attr('d', path(landAll)));
+  gc.append('g').selectAll('path').data(feats).join('path').attr('class', 'tv-land').attr('d', path);
+  const gCountry = gc.append('g');
   gCountry.selectAll('text').data(feats.filter(f => path.area(f) > 60)).join('text').attr('class', 'tv-cname')
     .attr('transform', f => { const c = path.centroid(f); return `translate(${c[0]},${c[1]})`; }).text(f => (f.properties.name || '').toUpperCase()).style('display', 'none');
   const gSpokes = g.append('g'), gCourse = g.append('g'), gPar = g.append('g'), gLinks = g.append('g'), gBadges = g.append('g'), gHits = g.append('g'), gCities = g.append('g'), gLabels = g.append('g');
@@ -141,7 +146,8 @@
     layoutLabels();
   };
   const zoom = d3.zoom().scaleExtent([1, 14]).translateExtent([[-80, -40], [1040, 540]]).on('zoom', e => {
-    g.attr('transform', e.transform); k = e.transform.k;
+    g.attr('transform', e.transform); gc.attr('transform', e.transform); k = e.transform.k;
+    moving();
     if (!stage.classList.contains('zooming')) relayout();
     else { // mid-swoop: only the cheap bits follow the zoom, so markers keep their size while the chart moves
       gCities.selectAll('circle').attr('r', c => (2 + c.hub * 0.5 + (c.id === ch.from.id || c.id === ch.to.id ? 1 : 0)) / k).style('stroke-width', 1 / k);
@@ -149,6 +155,9 @@
     }
   }).on('start', () => { svg.classed('dragging', true); hideTip(); }).on('end', () => svg.classed('dragging', false));
   svg.call(zoom);
+  // while the chart moves the coast glow is off, then it fades back in once the chart settles
+  let moveT = null;
+  function moving() { stage.classList.add('moving'); clearTimeout(moveT); moveT = setTimeout(() => stage.classList.remove('moving'), 180); }
 
   const parIds = () => new Set(showPar ? M.par.path.map(e => e.to) : []);
   const labelOn = c => c.id === ch.from.id || c.id === ch.to.id || onRouteIds().has(c.id) || parIds().has(c.id) || (pendingTo && c.id === pendingTo.id) || (c.hub >= 3 && k >= 1.8) || (c.hub >= 2 && k >= 2.6) || (c.hub >= 1 && k >= 3.6) || k >= 5;

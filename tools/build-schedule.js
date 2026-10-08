@@ -12,22 +12,24 @@ require(path.join(ROOT, 'data/cities.js'));
 window.TRAVERSE_SCHEDULE = { epoch: '', days: {} }; // build from scratch, never from the old file
 require(path.join(ROOT, 'js/traverse.js'));
 const T = window.Traverse;
+window.TRAVERSE_SCHEDULE.epoch = T.dayKey(1); // so the hand-made days below are what challenge(n) sees while they are checked
 const N = +process.argv[2] || 730, MAX_TRIES = 16;
 /* Hand-made days: [start, destination, twist, title, blurb]. Each must still pass the checks below. */
 const HANDMADE = {
-  1: ['ist', 'tbi', 'threemodes', 'Over the Caucasus', 'Istanbul to Tbilisi with three kinds of transport. The mountains make the flights tempting and the buses cheap.'],
-  2: ['bkk', 'bal', 'ferry', 'Island Hopper', 'Bangkok to Bali, with at least one ferry. Somewhere between the mainland and the islands there is a boat worth taking.'],
-  3: ['sea', 'den', 'nofly', 'Coast to the Rockies', 'Seattle to Denver with no flights at all. Trains, buses and a long way round through California.'],
-  4: ['rio', 'bue', 'overland', 'Tango by Land', 'Rio de Janeiro to Buenos Aires, but you cannot fly into the city. Find the last overland leg.'],
-  5: ['cai', 'nbo', 'open', 'Nile to the Rift', 'Cairo to Nairobi, no extra rule. The direct hop never fits the budget, so look for a stop along the way.'],
-  6: ['sto', 'mil', 'rail', 'Interrail Day', 'Stockholm to Milan with at least two trains. A classic rail crossing of Europe, north to south.'],
-  7: ['mct', 'tel', 'oneflight', 'Gulf to the Levant', 'Muscat to Tel Aviv with one flight at most. Ground legs along the Gulf, then one well-chosen hop.'],
+  1: ['sea', 'den', 'nofly', 'Coast to the Rockies', 'Seattle to Denver with no flights at all. Trains, buses and a long way round through California.'],
+  2: ['tok', 'sel', 'threemodes', 'Across the Sea of Japan', 'Tokyo to Seoul with three kinds of transport. The bullet train is only the start.'],
+  3: ['sto', 'mil', 'rail', 'North to South', 'Stockholm to Milan with at least two trains. A classic rail crossing of Europe.'],
+  4: ['cai', 'mad', 'oneflight', 'Nile to the Tagus', 'Cairo to Madrid with one flight at most. Pick the hop that makes the rest cheap.'],
+  5: ['cpt', 'dar', 'open', 'Cape to the Swahili Coast', 'Cape Town to Dar es Salaam, no extra rule. The direct flight never fits the budget, so look for a stop along the way.'],
+  6: ['rio', 'bue', 'overland', 'Tango by Land', 'Rio de Janeiro to Buenos Aires, but you cannot fly into the city. Find the last overland leg.'],
+  7: ['ath', 'bcn', 'ferry', 'The Mediterranean', 'Athens to Barcelona with at least one ferry. Somewhere along the coast there is a boat worth taking.'],
 };
 const days = {}; let imperfect = 0; const t0 = Date.now();
 for (let n = 1; n <= N; n++) {
   const want = T.rhythmOf(n).twist.id; let pick = null;
   if (HANDMADE[n]) {
     const h = HANDMADE[n]; window.TRAVERSE_SCHEDULE.days[n] = h; T.forget('d' + n);
+    if (h[2] !== want) { console.error('hand-made day ' + n + ' (' + h[3] + ') is a ' + h[2] + ' day but ' + T.rhythmOf(n).label + ' needs ' + want); process.exit(1); }
     const ch = T.challenge(n), M = T.mission(ch);
     if (!(ch.twistId === h[2] && M.par.legs >= 3 && M.routes >= 3)) { console.error('hand-made day ' + n + ' (' + h[3] + ') fails the checks: twist ' + ch.twistId + ', legs ' + M.par.legs + ', routes ' + M.routes); process.exit(1); }
     days[n] = h; T.forget('d' + n); continue;

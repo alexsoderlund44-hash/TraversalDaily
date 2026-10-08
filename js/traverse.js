@@ -138,10 +138,28 @@
   }
 
   /* ---------- the day's challenge ---------- */
-  /* weekly rhythm: each weekday (UTC date of the puzzle) has its own twist, so "Rail pass Tuesday" becomes a habit */
-  const RHYTHM = ['overland', 'open', 'rail', 'oneflight', 'threemodes', 'ferry', 'nofly']; // Sunday first, like getUTCDay()
+  const CONTINENT = {};
+  [['Africa', 'Egypt Tunisia Algeria Morocco Nigeria Ghana Senegal Kenya Ethiopia Tanzania'], ['North America', 'USA Canada Mexico Cuba Panama'],
+   ['South America', 'Colombia Peru Chile Argentina Brazil'], ['Oceania', 'Australia New Zealand'],
+   ['Asia', 'Georgia Azerbaijan Armenia Israel Jordan Lebanon UAE Qatar Iran Oman India Pakistan Thailand Vietnam Malaysia Singapore Indonesia Philippines China Japan Taiwan']
+  ].forEach(([k, v]) => v.split(' ').forEach(c => (CONTINENT[c] = k)));
+  Object.assign(CONTINENT, { 'South Africa': 'Africa', 'Saudi Arabia': 'Asia', 'Sri Lanka': 'Asia', 'Hong Kong': 'Asia', 'South Korea': 'Asia' });
+  const continentOf = c => CONTINENT[c.country] || 'Europe';
+  const COUNTRIES = Array.from(new Set(C.map(c => c.country)));
+  const CONTINENTS = ['Europe', 'Asia', 'Africa', 'North America', 'South America', 'Oceania'];
+  /* weekly rhythm: each weekday has a named theme, a twist and a part of the world, so "Eurorail Saturday" becomes a habit.
+     Sunday first, like getUTCDay(). region: continents both cities must be in (null = anywhere); minKm: a long-haul floor. */
+  const RHYTHM = [
+    { twist: 'oneflight', name: 'Grand Tour', region: null, minKm: 2600, desc: 'A long way to go and one flight at most.' },
+    { twist: 'open', name: 'Open Road', region: null, desc: 'No extra rule. Anywhere in the world.' },
+    { twist: 'overland', name: 'Southern Crossing', region: ['South America', 'Africa'], desc: 'South America or Africa, and no flying into the destination.' },
+    { twist: 'ferry', name: 'Island Hopper', region: ['Asia', 'Europe', 'North America'], coastal: true, desc: 'Coast to coast, with at least one ferry.' },
+    { twist: 'nofly', name: 'Road Trip', region: ['North America', 'South America'], desc: 'The Americas with no flights at all.' },
+    { twist: 'threemodes', name: 'Mix It Up', region: ['Asia'], desc: 'Asia, with three kinds of transport.' },
+    { twist: 'rail', name: 'Eurorail', region: ['Europe'], desc: 'Europe by train, at least twice.' },
+  ];
   const DAYNAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const rhythmOf = n => { const wd = new Date(dayKey(n)).getUTCDay(); return { twist: twistById[RHYTHM[wd]], day: DAYNAMES[wd] }; };
+  const rhythmOf = n => { const wd = new Date(dayKey(n)).getUTCDay(), r = RHYTHM[wd]; return { twist: twistById[r.twist], day: DAYNAMES[wd], name: r.name, label: r.name + ' ' + DAYNAMES[wd], desc: r.desc, rule: r }; };
   // a quick check that a city pair can host a twist at all (the mission search has the final say)
   const fits = (tw, a, b) => tw === 'nofly' ? (sameLand(a, b) && !crossesMed(a, b)) || (a.coastal && b.coastal)
     : tw === 'rail' ? a.rail && b.rail && sameLand(a, b) : tw === 'ferry' ? a.coastal || b.coastal : true;
@@ -153,7 +171,8 @@
   function challenge(n, salt) {
     const s = salt === undefined ? scheduled(n) : null;
     if (s) return build('d' + n, '', n, null, { from: byId[s[0]], to: byId[s[1]], twist: twistById[s[2]], title: s[3] || '', blurb: s[4] || '' });
-    return build('d' + n, 'traverse-day-' + n + (salt ? '-' + salt : ''), n, null, { twist: rhythmOf(n).twist });
+    const rh = rhythmOf(n);
+    return build('d' + n, 'traverse-day-' + n + (salt ? '-' + salt : ''), n, null, { twist: rh.twist, rule: rh.rule });
   }
   // random expeditions: try a few city pairs (deterministic from the tag) until one has a real multi-leg puzzle
   function challengeRandom(tag) {
@@ -172,8 +191,10 @@
     const r = rng(hash(hashKey || seed));
     let a = fixed.from, b = fixed.to, tries = 0;
     if (!a || !b) {
-      do { a = C[Math.floor(r() * C.length)]; b = C[Math.floor(r() * C.length)]; tries++; }
-      while ((a.id === b.id || km(a, b) < 1000 || km(a, b) > 4200 || a.hub + b.hub < 2 || (fixed.twist && tries < 300 && !fits(fixed.twist.id, a, b))) && tries < 400);
+      const rule = fixed.rule || {}, pool = rule.region ? C.filter(c => rule.region.includes(continentOf(c)) && (!rule.coastal || c.coastal)) : C;
+      const minKm = rule.minKm || 1000;
+      do { a = pool[Math.floor(r() * pool.length)]; b = pool[Math.floor(r() * pool.length)]; tries++; }
+      while ((a.id === b.id || km(a, b) < minKm || km(a, b) > 4200 || a.hub + b.hub < 2 || (fixed.twist && tries < 300 && !fits(fixed.twist.id, a, b))) && tries < 400);
     }
     BLOCKED[seed] = [a.id, b.id].sort().join('-');
     const twist = fixed.twist || TWISTS[Math.floor(r() * TWISTS.length)];
@@ -338,15 +359,6 @@
   }
 
   /* ---------- player stats: one source for the profile, stats page, achievements and the stats pop-up ---------- */
-  const CONTINENT = {};
-  [['Africa', 'Egypt Tunisia Algeria Morocco Nigeria Ghana Senegal Kenya Ethiopia Tanzania'], ['North America', 'USA Canada Mexico Cuba Panama'],
-   ['South America', 'Colombia Peru Chile Argentina Brazil'], ['Oceania', 'Australia New Zealand'],
-   ['Asia', 'Georgia Azerbaijan Armenia Israel Jordan Lebanon UAE Qatar Iran Oman India Pakistan Thailand Vietnam Malaysia Singapore Indonesia Philippines China Japan Taiwan']
-  ].forEach(([k, v]) => v.split(' ').forEach(c => (CONTINENT[c] = k)));
-  Object.assign(CONTINENT, { 'South Africa': 'Africa', 'Saudi Arabia': 'Asia', 'Sri Lanka': 'Asia', 'Hong Kong': 'Asia', 'South Korea': 'Asia' });
-  const continentOf = c => CONTINENT[c.country] || 'Europe';
-  const COUNTRIES = Array.from(new Set(C.map(c => c.country)));
-  const CONTINENTS = ['Europe', 'Asia', 'Africa', 'North America', 'South America', 'Oceania'];
   const dayOfKey = k => Math.round((Date.parse(k) - EPOCH) / DAY_MS) + 1;
   function stats(results, now) {
     results = results || {}; const today = now || dayNumber();

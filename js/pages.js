@@ -29,12 +29,14 @@
     g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> on a budget?`; g('hm-h1').classList.add('live');
     const mis = M => `<div class="mi"><span class="ic">💰</span><b>${M ? T.money(M.budget) : '…'}</b><span>budget</span></div><div class="mi"><span class="ic">⏱️</span><b>${M ? T.dur(M.deadline) : '…'}</b><span>deadline</span></div><div class="mi" title="${T.esc(ch.twist.desc)}"><span class="ic">${ch.twist.icon}</span><b>${T.esc(ch.twist.name)}</b><span>twist</span></div><div class="mi"><span class="ic">🏷️</span><b>${M ? M.deals : 3}</b><span>hidden deals</span></div>`;
     g('hm-mission').innerHTML = mis(null);
-    const rh = T.rhythmOf(ch.n); g('hm-day').textContent += ch.title ? ' · ' + ch.title : rh.twist.id === ch.twistId ? ' · ' + rh.twist.name + ' ' + rh.day : '';
+    const rh = T.rhythmOf(ch.n); if (rh.twist.id === ch.twistId) g('hm-day').textContent += ' · ' + rh.label;
+    if (ch.title) { document.querySelector('.hm-pitch').insertAdjacentHTML('afterend', `<p class="hm-theme"><b>${T.esc(ch.title)}.</b> ${T.esc(ch.blurb)}</p>`); }
     setTimeout(() => { const M = T.mission(ch); g('hm-mission').innerHTML = mis(M); g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> for under <em>${T.money(M.budget)}</em>?`; }, 30);
     const meta = () => g('hm-meta').innerHTML = `<span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>next puzzle in <b>${resetIn()}</b></span>`; meta(); setInterval(meta, 30000);
     if (R[ch.key]) { g('hm-play').textContent = 'See your result'; g('hm-sub').innerHTML = `${R[ch.key].tier ? R[ch.key].tier + ' · ' : ''}you scored <b>${R[ch.key].score.toLocaleString()}</b> today`; }
     else if (streak) g('hm-sub').textContent = `🔥 ${streak}-day streak. Keep it alive.`;
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }
+    const wk = g('hm-week'); if (wk) { const wd = new Date(ch.key).getUTCDay(); wk.innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => { const rh = T.rhythmOf(ch.n + ((d - wd + 7) % 7)); return `<li class="${d === wd ? 'now' : ''}"><span class="ic">${rh.twist.icon}</span><b>${T.esc(rh.label)}</b><span>${T.esc(rh.desc)}</span></li>`; }).join(''); }
   }
   if (page === 'achievements') {
     $('#ach-summary').textContent = `${unlocked} of ${ACH.length} badges · ${tiersEarned} of ${tiersAll} tiers earned`;
@@ -119,7 +121,7 @@
         const key = T.dayKey(n), c = T.challenge(n), r = R[key], lock = T.dayLocked(n);
         if (filter && !(c.from.name + ' ' + c.to.name + ' ' + c.from.country + ' ' + c.to.country + ' ' + c.twist.name).toLowerCase().includes(filter)) continue;
         const month = new Date(key).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-        (groups[month] = groups[month] || []).push(`<a class="arow${lock ? ' locked' : ''}" href="${lock ? 'plus.html' : 'play.html?day=' + n}"><span class="n">#${n}<small>${fmtDay(key)}</small></span><span class="rt">${T.flagImg(c.from)} ${T.esc(c.from.name)} <i>→</i> ${T.flagImg(c.to)} ${T.esc(c.to.name)}<small>${c.twist.icon} ${T.esc(c.twist.name)}${c.title ? ' · ' + T.esc(c.title) : ''} · ${Math.round(T.km(c.from, c.to)).toLocaleString()} km</small></span><span class="sc">${r ? `<b>${r.score.toLocaleString()}</b><small>${r.tier || 'played'}</small>` : '<small>not played</small>'}</span><span class="go">${lock ? '🔒 Traversle +' : r ? 'Replay' : 'Play'}</span></a>`);
+        (groups[month] = groups[month] || []).push(`<a class="arow${lock ? ' locked' : ''}" href="${lock ? 'plus.html' : 'play.html?day=' + n}"><span class="n">#${n}<small>${fmtDay(key)}</small></span><span class="rt">${T.flagImg(c.from)} ${T.esc(c.from.name)} <i>→</i> ${T.flagImg(c.to)} ${T.esc(c.to.name)}<small>${c.twist.icon} ${T.esc(T.rhythmOf(n).twist.id === c.twistId ? T.rhythmOf(n).label : c.twist.name)}${c.title ? ' · ' + T.esc(c.title) : ''} · ${Math.round(T.km(c.from, c.to)).toLocaleString()} km</small></span><span class="sc">${r ? `<b>${r.score.toLocaleString()}</b><small>${r.tier || 'played'}</small>` : '<small>not played</small>'}</span><span class="go">${lock ? '🔒 Traversle +' : r ? 'Replay' : 'Play'}</span></a>`);
         shown++; if (lock) locked++;
       }
       $('#ar-list').innerHTML = shown ? Object.entries(groups).map(([m, rows]) => `<h2 class="ar-month">${m}</h2><div class="alist">${rows.join('')}</div>`).join('') : `<div class="alist"><p class="empty">${today <= 1 ? "Today is puzzle #1. From tomorrow, every past puzzle lands here." : 'No puzzles match that search.'}</p></div>`;

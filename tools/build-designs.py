@@ -58,6 +58,7 @@ HOME = '''
     <p class="meta" id="hm-meta"></p>
   </section>
   <div class="hm-links"><button class="lnk" id="hm-how">How to play</button><a class="lnk" href="archive.html">Past puzzles</a><a class="lnk plus" href="plus.html">✦ Traversle +</a></div>
+  <section class="hm-week" aria-label="The week"><h2>Every day of the week has its own rule</h2><ol id="hm-week"></ol></section>
   @HOW@
 </main>'''
 HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script>'

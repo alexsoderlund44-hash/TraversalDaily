@@ -336,6 +336,9 @@
     return (MIS[ch.seed] = M);
   }
 
+  /* the decisions a mission allows: one more than the planner needed, never fewer than four */
+  const decisionsFor = M => Math.max(4, M.par.legs + 1);
+
   /* ---------- scoring ---------- */
   function score(cost, hours, secs, M) {
     if (!(cost > 0) || !(hours > 0)) return 0;
@@ -464,5 +467,5 @@
   const secsF = s => s < 60 ? Math.round(s) + 's' : Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's';
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, untilReset, EPOCH, challenge, challengeRandom, mission, benchmarks: mission, score, tier, TIERS, progression, LEVELS, stats, achievements, newlyEarned, COUNTRIES, CONTINENTS, continentOf, rhythmOf, forget, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
+  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, untilReset, EPOCH, challenge, challengeRandom, mission, decisionsFor, benchmarks: mission, score, tier, TIERS, progression, LEVELS, stats, achievements, newlyEarned, COUNTRIES, CONTINENTS, continentOf, rhythmOf, forget, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
 })();

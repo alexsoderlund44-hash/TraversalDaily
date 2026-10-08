@@ -1,4 +1,4 @@
-/* TraversleDaily play UI: quiet map, mission gauges, stop picker, deals, the planner's route, the result and your week. */
+/* TraversleDaily play UI: the chart, two or three route choices at a time, a decisions counter, the ending, the result and your week. */
 (function () {
   'use strict';
   const T = window.Traverse, $ = s => document.querySelector(s);
@@ -7,7 +7,7 @@
   if (params.get('seed')) { ch = T.challengeRandom(params.get('seed')); mode = 'random'; }
   else if (params.get('day') && +params.get('day') >= 1 && +params.get('day') < today) { ch = T.challenge(+params.get('day')); mode = 'archive'; }
   else ch = T.challenge(today);
-  const M = T.mission(ch), tw = ch.twist;
+  const M = T.mission(ch), tw = ch.twist, DEC = T.decisionsFor(M);
   const LIVE = T.liveFor(ch.seed);
   let st = T.load(); st.results = st.results || {};
   if (params.get('reset') === '1' && mode === 'today') { delete st.results[ch.key]; T.save(st); history.replaceState(null, '', location.pathname); }
@@ -15,21 +15,18 @@
   let practice = mode !== 'today' || !!official;
 
   /* ---------- state ---------- */
-  let route = [], pendingTo = null, selOpt = null, t0 = 0, timer = null, playing = false, found = new Set(), showPar = false, drawn = false, dealT = null, parPending = false;
-  /* events for the guided first play (js/coach.js): start, pick, select, commit, deal, arrive, submit, report */
+  let route = [], t0 = 0, playing = false, found = new Set(), showPar = false, drawn = false, dealT = null, parPending = false;
+  let choices = [], sel = null, riding = false, ended = false, decisions = DEC;
   const subs = {}; const emit = (e, d) => (subs[e] || []).forEach(f => { try { f(d); } catch (x) {} });
-  window.tdGame = { on: (e, f) => { (subs[e] = subs[e] || []).push(f); }, mode: () => mode, dest: () => ch.to, deals: () => M.deals };
+  window.tdGame = { on: (e, f) => { (subs[e] = subs[e] || []).push(f); }, mode: () => mode, dest: () => ch.to };
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  /* a short-lived class on one city marker (born, pop, no), kept across redraws */
   const KEEP = ['born', 'pop', 'no'];
   function markCity(id, cls, ms) { gCities.selectAll('circle').filter(c => c.id === id).classed(cls, true); setTimeout(() => gCities.selectAll('circle').filter(c => c.id === id).classed(cls, false), ms); }
-  const UNDOS = 3, HINTS = 2, HINT_SECS = 45; let undos = UNDOS, hints = HINTS;
   /* a run in progress survives a refresh or an accidental back swipe: saved after every move, picked up from the mission card */
   const RUN_KEY = 'traverse.run'; let resume = null;
   try { const r = JSON.parse(localStorage.getItem(RUN_KEY) || 'null'); if (r && r.key === ch.key && mode === 'today' && !official && Array.isArray(r.route) && r.route.length) resume = r; } catch (e) {}
-  function saveRun() { if (mode !== 'today' || practice || !playing) return; try { localStorage.setItem(RUN_KEY, JSON.stringify({ key: ch.key, route, found: [...found], secs: elapsed(), undos, hints })); } catch (e) {} }
+  function saveRun() { if (mode !== 'today' || practice || !playing) return; try { localStorage.setItem(RUN_KEY, JSON.stringify({ key: ch.key, route, found: [...found], secs: elapsed(), decisions })); } catch (e) {} }
   function clearRun() { try { localStorage.removeItem(RUN_KEY); } catch (e) {} }
-  /* a small nudge on phones that have one: a tap for a leg, a double for a secret fare, a buzz for a refusal */
   const buzz = pat => { try { if (navigator.vibrate && !reducedMotion) navigator.vibrate(pat); } catch (e) {} };
   const at = () => route.length ? T.byId[route[route.length - 1].to] : ch.from;
   const atDest = () => at().id === ch.to.id;
@@ -38,26 +35,57 @@
   const onRouteIds = () => new Set([ch.from.id, ...route.map(r => r.to)]);
   const twState = () => route.reduce((s, r) => tw.state(s, r.leg), 0);
   const dealKey = (a, b, l) => a.id + '-' + b.id + '|' + l.mode;
-  /* why an option can't be taken right now (null = fine) */
-  function blocked(leg, to) {
-    const tt = totals();
-    if (tt.cost + leg.cost > M.budget) return 'over budget';
-    if (tt.hours + leg.hours > M.deadline) return 'misses deadline';
-    if (!tw.allow(leg, twState(), to.id === ch.to.id)) return tw.name + ' rule';
-    return null;
+  const kmToGo = () => Math.round(T.km(at(), ch.to));
+  const travelled = () => Math.round(route.reduce((a, r) => a + T.km(T.byId[r.from], T.byId[r.to]), 0));
+
+  /* ---------- the legs you may take: the day's rule filters them, nothing else does ---------- */
+  const allowed = (a, b) => T.legs(a, b, ch.seed).filter(l => tw.allow(l, twState(), b.id === ch.to.id));
+  /* one leg per destination: the planner's own leg where the planner went that way, otherwise the best balance of money and time,
+     with the day's rule tipping the choice (a ferry on Sea legs, a train on Rail pass, a new kind of transport on Mix it up) */
+  function pickLeg(a, b, ls) {
+    const onPar = M.par.path.find(e => e.from === a.id && e.to === b.id); if (onPar) { const l = ls.find(x => x.mode === onPar.mode); if (l) return l; }
+    const s = twState(), used = new Set(route.map(r => r.leg.mode));
+    const bal = l => l.cost / M.budget + l.hours / M.deadline;
+    const pref = l => (tw.id === 'ferry' && !tw.done(s) && l.mode === 'ferry') || (tw.id === 'rail' && !tw.done(s) && l.mode === 'train') || (tw.id === 'threemodes' && !used.has(l.mode) && used.size < 3) ? -0.35 : 0;
+    return ls.slice().sort((x, y) => (bal(x) + pref(x)) - (bal(y) + pref(y)))[0];
   }
-  const usable = (a, b) => T.legs(a, b, ch.seed).filter(l => !blocked(l, b));
-  const why = b => b === 'over budget' ? 'is over budget' : b === 'misses deadline' ? 'misses the deadline' : 'breaks the ' + b;
+  /* how many legs from each city to the destination, under the day's rule; built once, used to keep every step winnable */
+  let hops = null;
+  function hopTable() {
+    if (hops) return hops;
+    const rev = {}; T.C.forEach(c => (rev[c.id] = []));
+    T.C.forEach(a => T.C.forEach(b => { if (a.id !== b.id && T.legs(a, b, ch.seed).some(l => tw.allow(l, 0, b.id === ch.to.id))) rev[b.id].push(a.id); }));
+    hops = { [ch.to.id]: 0 }; const q = [ch.to.id];
+    while (q.length) { const x = q.shift(); rev[x].forEach(y => { if (hops[y] === undefined) { hops[y] = hops[x] + 1; q.push(y); } }); }
+    return hops;
+  }
+  /* two or three ways onward: the destination when it is one leg away, the planner's next stop when you are on that path,
+     then the stops that keep the finish within your decisions, spread between cheap, fast and far */
+  function choicesFrom(cur) {
+    const H = hopTable(), on = onRouteIds(), left = decisions - 1, toGo = T.km(cur, ch.to);
+    let cands = T.C.filter(c => !on.has(c.id) && c.id !== cur.id).map(c => { const ls = allowed(cur, c); if (!ls.length) return null; const leg = pickLeg(cur, c, ls); const h = H[c.id]; return { c, leg, hops: h === undefined ? 99 : h, safe: h !== undefined && h <= left, gain: toGo - T.km(c, ch.to) }; }).filter(Boolean);
+    // never offer a dead end: a stop with no way onward to somewhere new (the destination is always fine)
+    const s0 = twState(), onward = x => x.c.id === ch.to.id || T.C.some(c => c.id !== x.c.id && c.id !== cur.id && !on.has(c.id) && T.legs(x.c, c, ch.seed).some(l => tw.allow(l, tw.state(s0, x.leg), c.id === ch.to.id)));
+    const live = cands.filter(onward); if (live.length) cands = live;
+    const out = [], take = x => { if (x && !out.some(o => o.c.id === x.c.id) && out.length < 3) out.push(x); };
+    take(cands.find(x => x.c.id === ch.to.id));
+    const i = M.par.path.findIndex(e => e.from === cur.id); if (i >= 0) take(cands.find(x => x.c.id === M.par.path[i].to));
+    const safe = cands.filter(x => x.safe && x.c.id !== ch.to.id).sort((p, q) => p.hops - q.hops || q.gain - p.gain);
+    const pool = safe.slice(0, 6);
+    if (pool.length) { take(pool.slice().sort((p, q) => p.leg.cost - q.leg.cost)[0]); take(pool.slice().sort((p, q) => p.leg.hours - q.leg.hours)[0]); take(pool[0]); }
+    safe.forEach(take);
+    cands.filter(x => !x.safe).sort((p, q) => q.gain - p.gain).forEach(take);
+    return out;
+  }
   function noteDeals(a, b, ls) {
-    ls.forEach(l => { if (l.deal) { const k = dealKey(a, b, l); if (!found.has(k)) { found.add(k); if (playing) { dealReveal(a, b, l); renderBrief(); renderCounts(); saveRun(); } } } });
+    ls.forEach(l => { if (l.deal) { const k = dealKey(a, b, l); if (!found.has(k)) { found.add(k); if (playing) { dealReveal(a, b, l); saveRun(); } } } });
   }
-  const dealDots = () => Array.from({ length: M.deals }, (_, j) => `<i class="${j < found.size ? 'on' : ''}"></i>`).join('');
   /* finding a secret fare should feel like finding something */
   function dealReveal(a, b, l) {
     const el = $('#tv-deal'), full = l.full || l.cost, saved = full - l.cost;
-    el.innerHTML = `<div class="ticket"><p class="k">🎟️ Secret fare found</p><b><s>${T.money(full)}</s><i>→</i><span class="new">${T.money(l.cost)}</span></b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>Save ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em><span class="dots">${dealDots()} ${found.size}/${M.deals} found</span></div>`;
+    el.innerHTML = `<div class="ticket"><p class="k">🎟️ Secret fare</p><b><s>${T.money(full)}</s><i>→</i><span class="new">${T.money(l.cost)}</span></b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>Save ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em></div>`;
     el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(dealT); dealT = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 350); }, 3600);
+    clearTimeout(dealT); dealT = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 350); }, 3000);
     markCity(b.id, 'pop', 1600); buzz([15, 40, 25]); emit('deal', { from: a, to: b, leg: l, found: found.size });
   }
 
@@ -65,30 +93,30 @@
   const dayLabel = ch.n ? new Date(ch.key).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : 'Random expedition';
   const title = ch.n ? 'Puzzle #' + ch.n : 'Expedition ' + ch.seed.slice(1).toUpperCase();
   const resetIn = () => { const ms = T.untilReset(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };
-  const twistPill = () => `<span class="twist" title="${T.esc(tw.desc)}">${tw.icon} ${T.esc(tw.name)}</span>`;
+  const pips = () => Array.from({ length: DEC }, (_, j) => `<i class="${j < decisions ? 'on' : 'off'}"></i>`).join('');
+  /* the mission strip: where you are going, how many decisions are left, how far there is to go */
   function renderBrief() {
+    const go = kmToGo();
     $('#tv-brief').innerHTML = `<p class="k">${title} · ${dayLabel}</p>
       <div class="route"><span class="pin s"></span><b>${T.flagImg(ch.from)} ${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></b>
       <span class="ln"></span><span></span>
       <span class="pin d"></span><b>${T.flagImg(ch.to)} ${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></b></div>
-      <p class="meta"><span>💰 <b>${T.money(M.budget)}</b></span><span>⏱️ <b>${T.dur(M.deadline)}</b></span>${twistPill()}<span class="deals" title="Secret fares found">🎟️ ${dealDots()}</span></p>`;
+      <div class="dec" aria-label="${decisions} of ${DEC} decisions left"><span class="pips">${pips()}</span><b>${decisions}</b><small>decision${decisions === 1 ? '' : 's'} left</small></div>
+      <p class="meta"><span>${atDest() ? '<b>Arrived</b>' : playing && route.length ? `<b>${go.toLocaleString()} km</b> to go` : `<b>${go.toLocaleString()} km</b> apart`}</span>${tw.id !== 'open' ? `<span class="twist" title="${T.esc(tw.desc)}">${tw.icon} ${T.esc(tw.name)}</span>` : ''}${found.size ? `<span title="Secret fares found">🎟️ ${found.size}</span>` : ''}</p>`;
   }
   renderBrief();
   const rhythm = ch.n ? T.rhythmOf(ch.n) : null;
   $('#tv-gate-day').textContent = title + ' · ' + dayLabel + (rhythm && rhythm.twist.id === tw.id ? ' · ' + rhythm.label : '');
   $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} <span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></span><span class="arr">→</span><span class="city">${T.flagImg(ch.to, 40)} <span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></span>`;
-  $('#tv-gate-sub').textContent = ch.blurb ? (ch.title ? ch.title + '. ' : '') + ch.blurb : `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km with no direct route. Get there under budget and before the deadline.`;
+  $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km, no direct route. You have ${DEC} decisions to get there.${ch.blurb ? ' ' + ch.blurb : ''}`;
   $('#tv-gate-mission').innerHTML = `
-    <div class="mi"><span class="ic">💰</span><b>${T.money(M.budget)}</b><span>budget</span></div>
-    <div class="mi"><span class="ic">⏱️</span><b>${T.dur(M.deadline)}</b><span>deadline</span></div>
+    <div class="mi big"><span class="ic">🧭</span><b>${DEC}</b><span>decisions</span></div>
+    <div class="mi"><span class="ic">📏</span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b><span>as the crow flies</span></div>
     <div class="mi"><span class="ic">${tw.icon}</span><b>${T.esc(tw.name)}</b><span>${T.esc(tw.desc)}</span></div>
-    <div class="mi"><span class="ic">🏷️</span><b>${M.deals} deal${M.deals === 1 ? '' : 's'}</b><span>hidden on the map</span></div>`;
-  const parDeals = M.par.path.filter(e => e.deal).length, word = n => ['no', 'one', 'two', 'three', 'four', 'five'][n] || String(n);
-  $('#tv-gate-rules').innerHTML = `<li>Tap a city to add a stop, then pick how to get there. Anything you can't afford, or that would miss the deadline, is grayed out.</li>
-    <li>Fares show when you look at a city, and so do hidden deals. ${!parDeals ? '' : parDeals === M.deals ? (M.deals === 1 ? 'The deal is' : M.deals === 2 ? 'Both deals are' : 'All ' + word(M.deals) + ' deals are') + " on the planner's route." : word(parDeals).replace(/^./, c => c.toUpperCase()) + ' of the ' + word(M.deals) + ' deals ' + (parDeals === 1 ? 'is' : 'are') + " on the planner's route."}</li>
-    <li>You're scored on money, time and how quickly you decide. ${mode === 'today' ? 'Everyone playing today has this same puzzle, and you get one scored attempt.' : 'This one is just practice.'}</li>`;
-  $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'The timer starts when you press Begin.';
-  if (resume) { $('#tv-start').textContent = 'Continue the journey'; $('#tv-gate-note').textContent = `You left with ${resume.route.length} leg${resume.route.length === 1 ? '' : 's'} in place. The clock picks up where it stopped.`; }
+    <div class="mi"><span class="ic">🎟️</span><b>${M.deals} secret fare${M.deals === 1 ? '' : 's'}</b><span>cheap legs, if you look</span></div>`;
+  $('#tv-gate-rules').innerHTML = `<li>Each step shows a few ways onward. Pick one and you travel there. Every pick costs a decision.</li><li>Reach ${T.esc(ch.to.name)} before the decisions run out. Spend less and arrive sooner than the planner for a better score.</li>`;
+  $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'Everyone playing today gets this same route, and one scored attempt.';
+  if (resume) { $('#tv-start').textContent = 'Continue the journey'; $('#tv-gate-note').textContent = `You left with ${resume.route.length} leg${resume.route.length === 1 ? '' : 's'} in place and ${resume.decisions} decision${resume.decisions === 1 ? '' : 's'} left.`; }
   const locked = mode === 'archive' && T.dayLocked(ch.n);
   if (locked) {
     $('#tv-gate-mission').innerHTML = `<div class="tv-lock"><span class="ic">🔒</span><b>This puzzle is in the Traversle + archive</b><p>The last ${T.FREE_DAYS} days are free to replay. Traversle + opens every puzzle since day one.</p><a class="btn primary" href="plus.html">See Traversle +</a> <a class="btn ghost" href="archive.html">Back to the archive</a></div>`;
@@ -132,7 +160,7 @@
     .attr('class', 'tv-city').attr('r', c => 2 + c.hub * 0.5)
     .attr('cx', c => pos(c)[0]).attr('cy', c => pos(c)[1]).style('pointer-events', 'none');
   // generous hit targets so cities are easy to tap, with the label part of the target too
-  const wire = sel => sel.on('click', (e, c) => { e.stopPropagation(); hideTip(); pick(c); })
+  const wire = sel => sel.on('click', (e, c) => { e.stopPropagation(); hideTip(); tapCity(c); })
     .on('mouseenter', (e, c) => { if (e.pointerType !== 'touch') showTip(c, e); }).on('mousemove', e => moveTip(e)).on('mouseleave', hideTip)
     .on('touchstart', (e, c) => { e.stopPropagation(); showTip(c, e.touches[0]); }, { passive: true });
   wire(gHits.selectAll('circle').data(T.C).join('circle').attr('class', 'tv-hit').attr('r', 9).attr('cx', c => pos(c)[0]).attr('cy', c => pos(c)[1]));
@@ -171,10 +199,10 @@
   function moving() { stage.classList.add('moving'); clearTimeout(moveT); moveT = setTimeout(() => stage.classList.remove('moving'), 180); }
 
   const parIds = () => new Set(showPar ? M.par.path.map(e => e.to) : []);
-  const labelOn = c => c.id === ch.from.id || c.id === ch.to.id || onRouteIds().has(c.id) || parIds().has(c.id) || (pendingTo && c.id === pendingTo.id) || (c.hub >= 3 && k >= 1.8) || (c.hub >= 2 && k >= 2.6) || (c.hub >= 1 && k >= 3.6) || k >= 5;
+  const labelOn = c => c.id === ch.from.id || c.id === ch.to.id || onRouteIds().has(c.id) || parIds().has(c.id) || choiceIds().has(c.id) || (c.hub >= 3 && k >= 1.8) || (c.hub >= 2 && k >= 2.6) || (c.hub >= 1 && k >= 3.6) || k >= 5;
   function layoutLabels() {
     const s = k, boxes = [], vis = {};
-    const pri = c => (c.id === ch.from.id || c.id === ch.to.id ? 100 : onRouteIds().has(c.id) ? 90 : (pendingTo && c.id === pendingTo.id) ? 85 : parIds().has(c.id) ? 80 : c.hub * 10);
+    const pri = c => (c.id === ch.from.id || c.id === ch.to.id ? 100 : choiceIds().has(c.id) ? 95 : onRouteIds().has(c.id) ? 90 : parIds().has(c.id) ? 80 : c.hub * 10);
     T.C.filter(labelOn).sort((a, b) => pri(b) - pri(a)).forEach(c => {
       const [x, y] = pos(c); const w = c.name.length * 5.6 / s, h = 11 / s;
       const bx = { x0: x + 4 / s, y0: y - h / 2, x1: x + 4 / s + w, y1: y + h / 2 };
@@ -185,7 +213,7 @@
   $('#tv-zin').onclick = () => svg.transition().call(zoom.scaleBy, 1.6);
   $('#tv-zout').onclick = () => svg.transition().call(zoom.scaleBy, 1 / 1.6);
   $('#tv-zfit').onclick = () => fitRoute();
-  document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === '+' || e.key === '=') $('#tv-zin').click(); else if (e.key === '-') $('#tv-zout').click(); else if (e.key === 'Escape') { if (!$('#tv-modal').hidden) closeModal(); else if (pendingTo) { pendingTo = null; refresh(); } } });
+  document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === '+' || e.key === '=') $('#tv-zin').click(); else if (e.key === '-') $('#tv-zout').click(); else if (e.key === 'Escape') { if (!$('#tv-modal').hidden) closeModal(); else unselect(); } else if (/^[1-3]$/.test(e.key) && playing && !riding && choices[+e.key - 1]) { if (sel === +e.key - 1) travel(sel); else select(+e.key - 1); } else if (e.key === 'Enter' && sel !== null && playing && !riding) travel(sel); });
   function fitTo(points, pad, dur, ease, delay, offset) {
     const xs = points.map(p => pos(p)[0]), ys = points.map(p => pos(p)[1]);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
@@ -195,43 +223,36 @@
     const kk = Math.min(12, Math.max(1, Math.min(vw / w, vh / h) * 0.9));
     const cx = (x0 + x1) / 2 + (window.innerWidth > 900 ? (offset == null ? 120 : offset) / kk : 0);
     // on a phone the planning sheet covers the lower part of the chart, so the route lands in the strip above it
-    const plan = $('#tv-plan'), sheet = window.innerWidth <= 900 && plan && !plan.hidden, cy = sheet ? (plan.classList.contains('collapsed') ? 200 : 110) : 250;
+    // the choice dock covers the lower part of the chart while you decide, so the picture lands in the strip above it
+    const dk = $('#tv-choices'), docked = dk && !dk.hidden, cy = docked ? (window.innerWidth <= 900 ? 150 : 205) : 250;
     return svg.transition().delay(delay || 0).duration(dur == null ? 750 : dur).ease(ease || d3.easeCubicOut).call(zoom.transform, d3.zoomIdentity.translate(480 - kk * cx, cy - kk * (y0 + y1) / 2).scale(kk));
   }
   function fitRoute() { fitTo([ch.from, ch.to, ...route.map(r => T.byId[r.to]), ...(showPar ? M.par.path.map(e => T.byId[e.to]) : [])], 1.8); }
   const arc = (a, b) => path({ type: 'LineString', coordinates: [[a.lon, a.lat], [b.lon, b.lat]] });
   const mid = (a, b) => proj(d3.geoInterpolate([a.lon, a.lat], [b.lon, b.lat])(0.5));
 
-  /* where can I go from here? the destination if it fits, then six sensible stops */
-  function suggestFrom(cur) {
-    const on = onRouteIds();
-    const reach = T.C.filter(c => !on.has(c.id) && usable(cur, c).length);
-    const finish = reach.find(c => c.id === ch.to.id);
-    const suggested = reach.filter(c => c.id !== ch.to.id).map(c => ({ c, score: T.km(c, ch.to) + (usable(cur, c).length < 2 ? 400 : 0) - c.hub * 80 })).sort((a, b) => a.score - b.score).slice(0, 6).map(x => x.c);
-    return { reach, finish, suggested };
-  }
+  /* ---------- the chart: where you are, where you can go, where you have been ---------- */
+  const choiceIds = () => new Set(choices.map(x => x.c.id));
   function drawMap() {
-    const cur = at(), on = onRouteIds(), par = parIds();
-    const live = playing && !atDest();
-    // spokes: the connections that matter from where you stand; they fade when you focus on one
-    const spokes = [];
-    if (live) { const sg = suggestFrom(cur); (sg.finish ? [sg.finish] : []).concat(sg.suggested).forEach(c => { if (pendingTo && c.id === pendingTo.id) return; const hasDeal = T.legs(cur, c, ch.seed).some(l => l.deal && found.has(dealKey(cur, c, l))); spokes.push({ cls: 'spoke' + (pendingTo ? ' dim' : '') + (hasDeal ? ' deal' : '') + (c.id === ch.to.id ? ' fin' : ''), d: arc(cur, c) }); }); }
-    gSpokes.selectAll('path').data(spokes).join('path').attr('class', d => 'tv-spoke ' + d.cls).attr('d', d => d.d).style('stroke-width', 0.9 / k).style('stroke-dasharray', dashFor('spoke'));
-    const reach = live ? new Set(T.C.filter(c => !on.has(c.id) && c.id !== cur.id && usable(cur, c).length).map(c => c.id)) : null;
+    const cur = at(), on = onRouteIds(), par = parIds(), opts = choiceIds();
+    const live = playing && !atDest() && !ended;
+    // spokes: the ways onward from where you stand; the one you are looking at stays bright
+    const spokes = live ? choices.map((x, i) => ({ cls: 'spoke' + (sel !== null && sel !== i ? ' dim' : '') + (x.leg.deal ? ' deal' : '') + (x.c.id === ch.to.id ? ' fin' : ''), d: arc(cur, x.c) })) : [];
+    gSpokes.selectAll('path').data(spokes).join('path').attr('class', d => 'tv-spoke ' + d.cls).attr('d', d => d.d).style('stroke-width', 1.1 / k).style('stroke-dasharray', dashFor('spoke'));
+    const picked = sel !== null && choices[sel] ? choices[sel].c.id : null;
     gCities.selectAll('circle').attr('class', function (c) { return 'tv-city'
-      + (c.id === cur.id && live ? ' cur' : c.id === ch.from.id ? ' start' : c.id === ch.to.id ? ' dest' : on.has(c.id) ? ' on' : pendingTo && c.id === pendingTo.id ? ' pend' : par.has(c.id) ? ' par' : reach ? (reach.has(c.id) ? ' reach' : ' far') : '')
+      + (c.id === cur.id && live ? ' cur' : c.id === ch.from.id ? ' start' : c.id === ch.to.id ? ' dest' : on.has(c.id) ? ' on' : c.id === picked ? ' pend' : live && opts.has(c.id) ? ' opt' : par.has(c.id) ? ' par' : live ? ' far' : '')
       + KEEP.filter(k => this.classList.contains(k)).map(k => ' ' + k).join(''); });
-    gLabels.selectAll('text').classed('far', c => !!reach && !reach.has(c.id) && c.id !== ch.to.id && c.id !== ch.from.id && !on.has(c.id));
-    gCities.selectAll('circle').attr('r', c => (2 + c.hub * 0.5 + (c.id === cur.id && playing && !atDest() ? 1.5 : c.id === ch.from.id || c.id === ch.to.id || on.has(c.id) || par.has(c.id) ? 1 : 0)) / k).style('stroke-width', c => ((c.id === cur.id && playing && !atDest()) ? 8 : (pendingTo && c.id === pendingTo.id) ? 6 : 1) / k);
+    gLabels.selectAll('text').classed('far', c => live && !opts.has(c.id) && c.id !== ch.to.id && c.id !== ch.from.id && !on.has(c.id));
+    gCities.selectAll('circle').attr('r', c => (2 + c.hub * 0.5 + (c.id === cur.id && live ? 1.5 : live && opts.has(c.id) ? 1.2 : c.id === ch.from.id || c.id === ch.to.id || on.has(c.id) || par.has(c.id) ? 1 : 0)) / k).style('stroke-width', c => ((c.id === cur.id && live) ? 8 : c.id === picked ? 6 : 1) / k);
     layoutLabels();
     const plinks = showPar ? M.par.path.map(e => ({ cls: 'par', d: arc(T.byId[e.from], T.byId[e.to]) })) : [];
     gPar.selectAll('path').data(plinks).join('path').attr('class', function () { return 'tv-link par' + (this.classList.contains('draw') ? ' draw' : ''); }).attr('d', d => d.d).style('stroke-width', strokeW).style('stroke-dasharray', function () { return this.classList.contains('draw') ? '1' : dashFor('par'); });
     const links = [];
     route.forEach(r => { const a = T.byId[r.from], b = T.byId[r.to]; links.push({ cls: r.leg.mode, d: arc(a, b), col: T.MODES[r.leg.mode].color }); links.push({ cls: 'flow', d: arc(a, b) }); });
-    if (pendingTo) links.push({ cls: 'ghost', d: arc(cur, pendingTo) });
-    gLinks.selectAll('path').data(links).join('path').attr('class', function (d) { return 'tv-link ' + d.cls + (this.classList.contains('draw') ? ' draw' : ''); }).attr('d', d => d.d).style('stroke', d => d.col || null).style('stroke-width', strokeW).style('stroke-dasharray', function (d) { return this.classList.contains('draw') ? '1' : dashFor(d.cls); });
+    if (picked) links.push({ cls: 'ghost', d: arc(cur, T.byId[picked]) });
+    gLinks.selectAll('path').data(links).join('path').attr('class', function (d) { return 'tv-link ' + d.cls + (this.classList.contains('draw') ? ' draw' : '') + (this.classList.contains('undraw') ? ' undraw' : ''); }).attr('d', d => d.d).style('stroke', d => d.col || null).style('stroke-width', strokeW).style('stroke-dasharray', function (d) { return this.classList.contains('draw') ? '1' : dashFor(d.cls); });
     const badges = route.map((r, i) => { const [x, y] = mid(T.byId[r.from], T.byId[r.to]); return { x, y, cls: '', txt: `${i + 1} · ${r.leg.icon} ${T.money(r.leg.cost)} · ${T.dur(r.leg.hours)}${r.leg.deal ? ' 🎟️' : ''}` }; });
-    if (pendingTo && live) { const o = usable(cur, pendingTo).slice().sort((a, b) => a.cost - b.cost)[0]; if (o) { const [x, y] = mid(cur, pendingTo); badges.push({ x, y, cls: 'pend', txt: `${o.icon} from ${T.money(o.cost)} · ${T.dur(o.hours)}` }); } }
     if (showPar) M.par.path.forEach(e => { if (route.some(r => r.from === e.from && r.to === e.to && r.leg.mode === e.mode)) return; const [x, y] = mid(T.byId[e.from], T.byId[e.to]); badges.push({ x, y: y + 14 / k, cls: 'par', txt: `${T.MODES[e.mode].icon} ${T.money(e.cost)} · ${T.dur(e.hours)}` }); });
     const bsel = gBadges.selectAll('g').data(badges).join(enter => { const gg = enter.append('g'); gg.append('rect'); gg.append('text'); return gg; });
     bsel.attr('class', d => 'tv-badge ' + d.cls).attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / k})`);
@@ -239,211 +260,115 @@
     bsel.select('rect').each(function (d) { const w = d.txt.length * 4.9 + 12; d3.select(this).attr('x', -w / 2).attr('y', -8).attr('width', w).attr('height', 16).attr('rx', 8); });
   }
 
-  /* ---------- tooltip: hovering a city reveals its fares (and any hidden deal) ---------- */
+  /* ---------- tooltip: a city's name, and the leg there when it is one of the ways onward ---------- */
   function showTip(c, ev) {
-    const cur = at(), on = onRouteIds();
     if (ev && ev.clientX !== undefined) moveTip(ev);
-    let modes = '';
-    if (playing && !atDest() && !on.has(c.id)) {
-      const ls = T.legs(cur, c, ch.seed); noteDeals(cur, c, ls);
-      modes = ls.length ? `<div class="modes">${ls.map(l => { const b = blocked(l, c); return `<span class="${b ? 'off' : ''}${l.deal ? ' deal' : ''}">${l.icon} <em>${T.money(l.cost)}</em>${l.deal ? ' 🏷️' : ''}</span>`; }).join('')}</div>` : `<div class="modes"><span>no direct link from ${T.esc(cur.name)}</span></div>`;
-    }
-    tip.innerHTML = `<b>${T.flagImg(c)} ${T.esc(c.name)}</b><small>${T.esc(c.country)}${c.id === ch.from.id ? ' · start' : c.id === ch.to.id ? ' · destination' : ''}</small>${modes}${playing && !atDest() && !on.has(c.id) && c.id !== cur.id ? '<small class="hint">tap to add as a stop</small>' : ''}`;
+    const x = choices.find(o => o.c.id === c.id);
+    tip.innerHTML = `<b>${T.flagImg(c)} ${T.esc(c.name)}</b><small>${T.esc(c.country)}</small>${x ? `<div class="modes"><span class="${x.leg.deal ? 'deal' : ''}">${x.leg.icon} ${T.esc(x.leg.name)} · <em>${T.money(x.leg.cost)}</em> · ${T.dur(x.leg.hours)}</span></div>` : ''}`;
     tip.hidden = false;
   }
-  function moveTip(e) { const r = stage.getBoundingClientRect(); tip.style.left = (e.clientX - r.left) + 'px'; tip.style.top = (e.clientY - r.top) + 'px'; }
+  function moveTip(e) { const r = stage.getBoundingClientRect(); tip.style.left = Math.min(r.width - 230, e.clientX - r.left + 14) + 'px'; tip.style.top = Math.max(8, e.clientY - r.top - 10) + 'px'; }
   function hideTip() { tip.hidden = true; }
+  function tapCity(c) {
+    if (!playing || riding || ended || atDest()) return;
+    const i = choices.findIndex(x => x.c.id === c.id);
+    if (i < 0) { markCity(c.id, 'no', 600); return; }
+    if (sel === i) travel(i); else select(i);
+  }
 
-  /* ---------- actions ---------- */
-  function pick(c) {
-    if (!playing || atDest()) return;
+  /* ---------- the choices: a few ways onward, one card each ---------- */
+  const dock = $('#tv-choices');
+  function renderChoices() {
     const cur = at();
-    if (c.id === cur.id) return;
-    if (onRouteIds().has(c.id)) { markCity(c.id, 'no', 700); return toast(c.name + ' is already on your route', 'no'); }
-    const all = T.legs(cur, c, ch.seed); noteDeals(cur, c, all);
-    if (!all.length) { markCity(c.id, 'no', 700); return toast('Nothing runs from ' + cur.name + ' to ' + c.name + ' today', 'no'); }
-    if (!all.some(l => !blocked(l, c))) { markCity(c.id, 'no', 700); return toast('Nothing from ' + cur.name + ' to ' + c.name + ' fits: the cheapest ' + why(blocked(all.slice().sort((x, y) => x.cost - y.cost)[0], c)), 'no'); }
-    pendingTo = c; selOpt = null; refresh(); fitTo([cur, c], 2.2); emit('pick', c);
-    $('#tv-plan').classList.remove('collapsed');
-    const el = $('#tv-picker'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!playing || ended || atDest() || !choices.length) { dock.hidden = true; dock.innerHTML = ''; return; }
+    dock.hidden = false;
+    dock.innerHTML = `<p class="tv-choices-h"><span>From <b>${T.esc(cur.name)}</b></span><span class="n">${choices.length === 1 ? 'the only way onward · ' : ''}${decisions} decision${decisions === 1 ? '' : 's'} left</span></p>
+      <div class="tv-cards">${choices.map((x, i) => { const l = x.leg, fin = x.c.id === ch.to.id, gain = Math.round(x.gain); return `<button class="tv-choice${sel === i ? ' sel' : ''}${fin ? ' fin' : ''}${l.deal ? ' deal' : ''}" data-i="${i}" aria-pressed="${sel === i}">
+        <span class="key">${i + 1}</span>
+        <span class="city">${T.flagImg(x.c)} <b>${T.esc(x.c.name)}</b><small>${fin ? 'Destination' : T.esc(x.c.country)}</small></span>
+        <span class="leg"><i>${l.icon}</i> ${T.esc(l.name)}${l.deal ? ' <em>secret fare</em>' : ''}</span>
+        <span class="nums"><b>${l.deal ? `<s>${T.money(l.full)}</s> ` : ''}${T.money(l.cost)}</b><span>${T.dur(l.hours)}</span></span>
+        <span class="dist ${gain >= 0 ? 'closer' : 'farther'}">${fin ? 'arrives' : (gain >= 0 ? Math.abs(gain).toLocaleString() + ' km closer' : Math.abs(gain).toLocaleString() + ' km farther')}</span>
+        <span class="go">${fin ? 'Arrive' : 'Travel'} →</span>
+      </button>`; }).join('')}</div>`;
+    dock.querySelectorAll('.tv-choice').forEach(b => { b.onclick = () => { const i = +b.dataset.i; if (sel === i) travel(i); else select(i); }; b.onmouseenter = () => { if (sel === null) preview(+b.dataset.i); }; b.onmouseleave = () => { if (sel === null) preview(null); }; });
   }
-  function commit(c, leg) {
-    if (blocked(leg, c)) return toast('That option ' + why(blocked(leg, c)), 'no');
-    route.push({ from: at().id, to: c.id, leg }); pendingTo = null; selOpt = null; refresh();
-    drawNewLeg(c.id); fresh(); saveRun();
-    if (!atDest()) { fitTo([c, ch.to], 1.8); buzz(12); emit('commit', { to: c, legs: route.length }); } else { fitRoute(); stage.classList.add('arrived'); buzz([10, 30, 10]); emit('arrive', c); }
+  let hover = null;
+  function preview(i) { hover = i; gSpokes.selectAll('path').classed('hot', (d, j) => j === i); }
+  function select(i) {
+    if (riding || ended) return; sel = i; const x = choices[i];
+    renderChoices(); drawMap(); hideTip();
+    fitTo([at(), x.c], 2.2, 600); emit('select', x);
   }
-  /* the leg you just took draws itself across the chart and the stop marker springs up */
+  function unselect() { if (sel === null) return; sel = null; renderChoices(); drawMap(); }
+  /* a step: work out the ways onward, show them, bring the chart to them; a secret fare on one of them is found by looking */
+  function step() {
+    choices = choicesFrom(at()); sel = null;
+    choices.forEach(x => noteDeals(at(), x.c, [x.leg]));
+    renderBrief(); renderChoices(); drawMap(); fresh();
+    if (!choices.length) { fail('No way onward from ' + at().name + '.'); return; }
+    fitTo([at(), ...choices.map(x => x.c)], 1.9, 800);
+    emit('step', { from: at(), choices, decisions });
+  }
+  /* travel: the leg draws itself, a rider follows it, the decision is spent, then the next step or the ending */
+  function travel(i) {
+    const x = choices[i]; if (!x || riding || ended) return;
+    riding = true; sel = null; const from = at(); decisions--;
+    route.push({ from: from.id, to: x.c.id, leg: x.leg }); choices = [];
+    renderBrief(); renderChoices(); saveRun(); buzz(12); hideTip();
+    const burn = $('#tv-brief .pips i.on:last-of-type'); if (burn) burn.classList.add('burn');
+    drawMap(); drawNewLeg(x.c.id);
+    stage.classList.add('riding');
+    const dur = reducedMotion ? 0 : 1000;
+    fitTo([from, x.c], 2.0, Math.min(dur, 700));
+    ride(from, x.c, x.leg, dur, () => {
+      stage.classList.remove('riding'); riding = false; markCity(x.c.id, 'born', 700);
+      emit('travel', { to: x.c, legs: route.length, decisions });
+      if (atDest()) arrive(); else if (decisions <= 0) fail(); else setTimeout(step, reducedMotion ? 0 : 150);
+    });
+  }
+  /* the rider: a small marker that runs along the new leg */
+  const gRider = g.append('g').attr('class', 'tv-rider').style('display', 'none');
+  gRider.append('circle').attr('r', 7); gRider.append('text').attr('y', 3.5);
+  function ride(a, b, leg, dur, done) {
+    if (!dur) { done(); return; }
+    const p = gCourse.append('path').attr('d', arc(a, b)).style('display', 'none').node(), L = p.getTotalLength();
+    gRider.style('display', null).select('text').text(leg.icon);
+    const t0r = performance.now();
+    const f = now => { const t = Math.min(1, (now - t0r) / dur), e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2, pt = p.getPointAtLength(L * e); gRider.attr('transform', `translate(${pt.x},${pt.y}) scale(${1 / k})`); if (t < 1) requestAnimationFrame(f); else { gRider.style('display', 'none'); p.remove(); done(); } };
+    requestAnimationFrame(f);
+  }
   function drawNewLeg(toId) {
-    if (reducedMotion) return;
-    const mine = gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), p = mine[mine.length - 1];
-    const flow = gLinks.selectAll('path').filter(d => d.cls === 'flow').nodes().pop();
-    if (p) { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('draw'); if (flow) flow.style.opacity = 0; setTimeout(() => { p.classList.remove('draw'); p.removeAttribute('pathLength'); if (flow) flow.style.opacity = ''; drawMap(); }, 620); }
-    setTimeout(() => markCity(toId, 'born', 700), 380);
+    const ps = gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), p = ps[ps.length - 1]; if (!p || reducedMotion) return;
+    stage.classList.add('drawing'); p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('draw');
+    setTimeout(() => { p.classList.remove('draw'); p.removeAttribute('pathLength'); stage.classList.remove('drawing'); drawMap(); }, 620);
   }
-  function refresh() { renderPlan(); drawMap(); }
-  /* newly reachable cities give one soft pulse when the picture changes */
   let freshT = null; function fresh() { if (reducedMotion) return; stage.classList.remove('fresh'); void stage.offsetWidth; stage.classList.add('fresh'); clearTimeout(freshT); freshT = setTimeout(() => stage.classList.remove('fresh'), 900); }
   let toastT; function toast(m, kind) { let t = $('.tv-toast'); if (!t) { t = document.createElement('div'); t.className = 'tv-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.classList.toggle('no', kind === 'no'); if (kind === 'no') buzz(30); t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), kind === 'no' ? 2600 : 2200); }
+  /* a stamp across the chart: you made it, or the expedition ended */
+  function stamp(text, cls) { const el = $('#tv-stamp'); el.textContent = text; el.className = 'tv-stamp ' + cls; el.hidden = false; }
 
-  /* a number glides to its new value over half a second (money and hours alike) */
-  const tweens = new WeakMap();
-  function tween(el, to, fmt) {
-    const from = tweens.has(el) ? tweens.get(el).v : to; tweens.set(el, { v: to });
-    if (reducedMotion || from === to) { el.textContent = fmt(to); return; }
-    const t0 = performance.now(), dur = 520, cur = tweens.get(el);
-    const step = now => { if (tweens.get(el) !== cur) return; const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3); cur.v = from + (to - from) * e; el.textContent = fmt(cur.v); if (p < 1) requestAnimationFrame(step); else { cur.v = to; el.textContent = fmt(to); } };
-    requestAnimationFrame(step);
+  /* ---------- the two endings ---------- */
+  function arrive() {
+    ended = true; playing = false; clearRun(); clearInterval(timer);
+    const secs = sinceStart; stage.classList.add('arrived'); buzz([10, 30, 10]); justPlayed = true;
+    stamp('You made it', 'won'); renderBrief(); renderChoices();
+    fitRoute(); emit('arrive', at());
+    setTimeout(() => finish(secs, false), reducedMotion ? 300 : 1700);
   }
-  /* ---------- planning dashboard ---------- */
-  function pace() {
-    if (!route.length) return ['', ''];
-    if (atDest()) return ['Arrived', 'good'];
-    const tt = totals(), prog = Math.max(0, Math.min(1, 1 - T.km(at(), ch.to) / T.km(ch.from, ch.to)));
-    const b = tt.cost / M.budget, h = tt.hours / M.deadline, worst = Math.max(b, h);
-    if (worst < prog - 0.05) return ['Ahead of pace', 'good'];
-    if (worst <= prog + 0.15) return ['On pace', ''];
-    return [b >= h ? 'Burning budget' : 'Running late', 'bad'];
+  function fail(reason) {
+    ended = true; playing = false; clearRun(); clearInterval(timer);
+    const secs = sinceStart; stage.classList.add('lost'); buzz([40, 60, 40]);
+    stamp(reason ? 'Expedition ended' : 'Out of decisions', 'lost'); renderBrief(); renderChoices(); drawMap();
+    fitRoute(); emit('fail', { at: at(), reason });
+    setTimeout(() => finish(secs, true, reason), reducedMotion ? 300 : 1900);
   }
-  function renderPlan() {
-    const tt = totals(), cur = at();
-    const gauge = (id, v, cap, fmt) => { const left = cap - v, el = $(id); tween(el.querySelector('b'), v, fmt); el.querySelector('small').textContent = left >= 0 ? fmt(left) + ' left of ' + fmt(cap) : fmt(-left) + ' over'; el.querySelector('.bar i').style.width = Math.min(100, 100 * v / cap) + '%'; el.classList.toggle('warn', v / cap > 0.8); el.classList.toggle('over', v > cap); };
-    gauge('#tv-g-cost', tt.cost, M.budget, T.money); gauge('#tv-g-time', tt.hours, M.deadline, T.dur);
-    const [pt, pc] = pace(); $('#tv-pace').textContent = speedNote();
-    const ts = twState(), done = tw.done(ts);
-    $('#tv-twist').innerHTML = tw.id === 'open' ? `<span>${tw.icon} ${T.esc(tw.name)}</span><small>${T.esc(tw.desc)}</small>` : `<span>${tw.icon} ${T.esc(tw.name)}</span><small class="${done ? 'good' : ''}">${T.esc(tw.status(ts))}</small>`;
-    renderCounts();
-    $('#tv-hint').disabled = !hints || found.size >= M.deals || atDest();
-    const est = atDest() ? T.score(tt.cost, tt.hours, elapsed(), M) : null;
-    $('#tv-est').hidden = est === null; $('#tv-est b').textContent = est === null ? '—' : est.toLocaleString(); $('#tv-est .bar i').style.width = (est === null ? 0 : est / 100) + '%';
-    $('#tv-plan-sub').innerHTML = atDest() ? (done ? (undos ? 'You made it. Submit, or undo a leg and try another idea.' : 'You made it. Submit when you are ready.') : 'You made it, but the twist isn\'t met: ' + T.esc(tw.status(ts)) + '.') : `You're in ${T.esc(cur.name)}.${pt ? ` <span class="pace ${pc}">${pt}</span>` : ''}`;
-    $('#tv-submit').disabled = !(atDest() && done); $('#tv-submit').classList.toggle('ready', atDest() && done); $('#tv-undo').disabled = !route.length || !undos;
-    $('#tv-undo').textContent = undos ? `Undo · ${undos} left` : 'No undos left';
-
-    let h = `<li class="start"><span class="dot"></span><div class="stop">${T.place(ch.from)}<small>start</small></div>`;
-    route.forEach((r, i) => {
-      const c = T.byId[r.to], m = T.MODES[r.leg.mode];
-      h += `<div class="leg" style="border-color:${m.color}"><span>${r.leg.icon}</span><span><b>${T.money(r.leg.cost)}</b> · ${T.dur(r.leg.hours)}${r.leg.deal ? ` <em class="deal">−${Math.round(r.leg.deal * 100)}%</em>` : ''}<br><span class="n">${m.name}${r.leg.note ? ' · ' + T.esc(r.leg.note) : ''}</span></span><span></span>${i === route.length - 1 ? `<button class="x" title="Remove this leg" data-i="${i}">✕</button>` : ''}</div></li>
-        <li class="${c.id === ch.to.id ? 'dest' : ''}"><span class="dot"></span><div class="stop">${T.place(c)}<small>${c.id === ch.to.id ? 'arrived' : 'stop ' + (i + 1)}</small></div>`;
-    });
-    if (!atDest()) h += `</li><li class="dest ghost"><span class="dot"></span><div class="stop">${T.place(ch.to)}<small>destination</small></div></li>`;
-    else h += '</li>';
-    $('#tv-stops').innerHTML = h;
-    $('#tv-stops').querySelectorAll('.x').forEach(b => (b.onclick = () => undo()));
-    renderPicker();
-  }
-
-  /* deciding fast earns a bonus; it never costs anything, and the clock says so */
-  const speedNote = () => 'bonus +' + Math.round(20 * Math.exp(-Math.max(0, elapsed() - 30) / 240)) + '%';
-  function renderCounts() { $('#tv-counts').innerHTML = `<span><b>${route.length}</b> leg${route.length === 1 ? '' : 's'}</span><span><b>${undos}</b> undo${undos === 1 ? '' : 's'}</span><span><b>${hints}</b> hint${hints === 1 ? '' : 's'}</span><span class="deals" title="Secret fares found">🎟️ ${dealDots()} <b>${found.size}</b>/${M.deals}</span>`; }
-  /* what a leg means for the twist */
-  function twNote(o) {
-    const ts = twState();
-    if (tw.id === 'oneflight' && o.mode === 'plane') return 'Uses your one flight.';
-    if (tw.id === 'ferry' && o.mode === 'ferry') return 'Satisfies the Sea legs twist.';
-    if (tw.id === 'rail' && o.mode === 'train') return `Train ${Math.min(2, ts + 1)} of 2 for Rail pass.`;
-    if (tw.id === 'threemodes' && !(ts & { plane: 1, train: 2, bus: 4, ferry: 8, ride: 16, car: 32, bike: 64, walk: 128 }[o.mode])) return 'A new kind of transport for Mix it up.';
-    return '';
-  }
-  /* the stop picker: choose the next city, then how to get there */
-  function renderPicker() {
-    const box = $('#tv-picker'), cur = at(); $('#tv-plan').classList.toggle('picking', !!pendingTo);
-    if (!playing || atDest()) { box.innerHTML = ''; return; }
-    if (pendingTo) {
-      const opts = T.legs(cur, pendingTo, ch.seed).slice().sort((a, b) => a.cost - b.cost); noteDeals(cur, pendingTo, opts);
-      const okOpts = opts.filter(o => !blocked(o, pendingTo));
-      const bc = Math.min(...okOpts.map(o => o.cost)), bt = Math.min(...okOpts.map(o => o.hours));
-      const tt = totals();
-      const card = selOpt !== null && opts[selOpt] ? (o => { const leftC = M.budget - tt.cost - o.cost, leftH = M.deadline - tt.hours - o.hours, note = twNote(o); return `<div class="tv-legcard" style="border-left-color:${T.MODES[o.mode].color}">
-          <div class="hd"><span class="ic">${o.icon}</span><div><b>${T.esc(o.name)}</b><small>${T.esc(cur.name)} → ${T.esc(pendingTo.name)} · ${Math.round(T.km(cur, pendingTo)).toLocaleString()} km</small></div></div>
-          <dl><div><dt>Cost</dt><dd>${T.money(o.cost)}${o.deal ? ` <s>${T.money(o.full)}</s>` : ''}</dd></div><div><dt>Time</dt><dd>${T.dur(o.hours)}</dd></div><div><dt>Budget after</dt><dd class="${leftC < M.budget * 0.15 ? 'warn' : ''}">${T.money(leftC)} left</dd></div><div><dt>Deadline after</dt><dd class="${leftH < M.deadline * 0.15 ? 'warn' : ''}">${T.dur(leftH)} left</dd></div></dl>
-          ${o.deal ? `<p class="dl">🎟️ Secret fare · ${Math.round(o.deal * 100)}% off</p>` : ''}${note ? `<p class="nt">${tw.icon} ${T.esc(note)}</p>` : ''}
-          <button class="btn primary" id="tv-addleg">Add this leg · ${T.money(o.cost)}</button></div>`; })(opts[selOpt]) : '';
-      box.innerHTML = `<div class="tv-pick-head"><span class="muted">How do you get to</span><b>${T.place(pendingTo)}</b><small>${Math.round(T.km(cur, pendingTo)).toLocaleString()} km</small><button class="lnk" id="tv-unpick">change stop</button></div>
-        <div class="tv-opts">${opts.map((o, i) => { const b = blocked(o, pendingTo); return `<button class="tv-opt${b ? ' off' : ''}${!b && o.cost === bc ? ' best-cost' : ''}${!b && o.hours === bt ? ' best-time' : ''}${o.deal ? ' deal' : ''}${selOpt === i ? ' sel' : ''}" data-i="${i}" ${b ? 'disabled' : ''} style="border-left-color:${b ? 'transparent' : T.MODES[o.mode].color}">
-          <span class="ic">${o.icon}</span><span class="nm">${o.name}${o.deal ? ` <em class="deal">🎟️ −${Math.round(o.deal * 100)}%</em>` : ''}<small class="${b ? 'off' : o.live ? 'live' : ''}">${b ? b : o.live ? 'avg of ' + T.esc(String(o.note).replace('avg of ', '')) + (o.nonstop ? ' · nonstop from ' + T.money(o.nonstop.cost) : '') : (o.note || 'modelled')}</small></span>
-          <span class="nums"><b>${T.money(o.cost)}${o.deal ? ` <s>${T.money(o.full)}</s>` : ''}</b><span>${T.dur(o.hours)}</span></span></button>`; }).join('')}</div>
-        ${card}${selOpt === null ? '<p class="tv-pick-hint">Tap an option to see the details, tap again to take it.</p>' : ''}`;
-      box.querySelectorAll('.tv-opt:not(.off)').forEach(b => (b.onclick = () => { const i = +b.dataset.i; if (selOpt === i) commit(pendingTo, opts[i]); else { selOpt = i; renderPicker(); emit('select', opts[i]); const c = $('.tv-legcard'); if (c) box.scrollTo({ top: Math.max(0, c.offsetTop - box.offsetTop - 8), behavior: 'smooth' }); } }));
-      const add = $('#tv-addleg'); if (add) add.onclick = () => commit(pendingTo, opts[selOpt]);
-      $('#tv-unpick').onclick = () => { pendingTo = null; selOpt = null; refresh(); };
-      return;
-    }
-    const on = onRouteIds();
-    const { reach, finish, suggested } = suggestFrom(cur);
-    const row = c => { const ls = usable(cur, c); const dealSeen = T.legs(cur, c, ch.seed).some(l => l.deal && found.has(dealKey(cur, c, l))); return `<button class="tv-stoprow${c.id === ch.to.id ? ' finish' : ''}" data-id="${c.id}"><span class="nm">${T.place(c)}<small>${c.id === ch.to.id ? 'destination' : Math.round(T.km(c, ch.to)).toLocaleString() + ' km to ' + T.esc(ch.to.name)}</small></span><span class="modes">${ls.map(l => `<i title="${l.name}">${l.icon}</i>`).join('')}${dealSeen ? '<i class="dl" title="Secret fare found here">🎟️</i>' : ''}</span><span class="from">from <b>${T.money(Math.min(...ls.map(l => l.cost)))}</b></span></button>`; };
-    const destLegs = T.legs(cur, ch.to, ch.seed);
-    box.innerHTML = `<div class="tv-pick-head"><b>Add a stop</b><small>${reach.length} places fit from ${T.esc(cur.name)}</small></div>
-      <div class="tv-search"><input type="search" id="tv-q" placeholder="Search any city…" autocomplete="off"><ul class="tv-results" id="tv-res" hidden></ul></div>
-      <div class="tv-stoplist">${finish ? row(finish) : destLegs.length ? `<div class="tv-stoprow finish off"><span class="nm">${T.place(ch.to)}<small>reachable, but the cheapest option ${T.esc(why(blocked(destLegs.slice().sort((x, y) => x.cost - y.cost)[0], ch.to) || ''))}</small></span></div>` : ''}${suggested.map(row).join('')}</div>
-      <p class="tv-pick-hint">Lit cities on the map are reachable. Secret fares only show when you look.</p>`;
-    box.querySelectorAll('.tv-stoprow[data-id]').forEach(b => (b.onclick = () => pick(T.byId[b.dataset.id])));
-    const q = $('#tv-q'), res = $('#tv-res');
-    q.oninput = () => {
-      const v = q.value.trim().toLowerCase(); if (!v) { res.hidden = true; return; }
-      const m = T.C.filter(c => !on.has(c.id) && (c.name.toLowerCase().includes(v) || c.country.toLowerCase().includes(v))).slice(0, 8);
-      res.innerHTML = m.map(c => { const all = T.legs(cur, c, ch.seed).length, ok = usable(cur, c).length; return `<li data-id="${c.id}" class="${ok ? '' : 'off'}">${T.place(c)}<span>${ok ? '' : all ? 'nothing fits' : 'no link today'}</span></li>`; }).join('') || '<li class="off">No match</li>';
-      res.hidden = false;
-      res.querySelectorAll('li[data-id]:not(.off)').forEach(li => (li.onclick = () => pick(T.byId[li.dataset.id])));
-    };
-    q.onkeydown = e => { if (e.key === 'Enter') { const li = res.querySelector('li[data-id]:not(.off)'); if (li) li.click(); } };
-  }
-  $('#tv-plan-toggle').onclick = () => $('#tv-plan').classList.toggle('collapsed');
-
-  /* ---------- flow ---------- */
-  function start() {
-    route = []; pendingTo = null; selOpt = null; playing = false; found = new Set(); showPar = false; drawn = false; undos = UNDOS; hints = HINTS;
-    const picked = resume; resume = null; if (!picked) clearRun();
-    if (picked) { route = picked.route; found = new Set(picked.found || []); undos = picked.undos; hints = picked.hints; }
-    renderBrief(); hideTip();
-    $('#tv-result').hidden = true; $('#tv-board').hidden = true; $('#tv-plan').hidden = true;
-    // the chart swoops in on today's region, then the clock starts
-    const gate = $('#tv-gate'), plan = $('#tv-plan'); gate.classList.add('off'); stage.classList.add('zooming'); stage.classList.remove('arrived'); stage.classList.remove('intro');
-    gCourse.selectAll('path').remove();
-    const dur = reducedMotion ? 0 : 1200;
-    fitTo([ch.from, ch.to], 1.8, dur, d3.easeCubicOut).on('end interrupt', () => {
-      gate.hidden = true; gate.classList.remove('off'); stage.classList.remove('zooming'); relayout();
-      plan.hidden = false; plan.classList.remove('leave'); plan.classList.toggle('collapsed', window.innerWidth <= 900); plan.classList.add('arrive');
-      playing = true; t0 = performance.now() - (picked ? picked.secs * 1000 : 0); emit('start');
-      if (picked) { if (atDest()) stage.classList.add('arrived'); toast(`Picked up where you left off: ${route.length} leg${route.length === 1 ? '' : 's'} in place.`); }
-      clearInterval(timer); timer = setInterval(() => { $('#tv-timer').textContent = T.secsF(elapsed()); $('#tv-pace').textContent = speedNote(); if (atDest()) { const tt = totals(); const est = T.score(tt.cost, tt.hours, elapsed(), M); $('#tv-est b').textContent = est.toLocaleString(); $('#tv-est .bar i').style.width = est / 100 + '%'; } }, 250);
-      refresh(); fresh();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  }
-  $('#tv-start').onclick = start;
-  function undo() {
-    if (!route.length) return;
-    if (!undos) return toast('No undos left, so this route is final.');
-    undos--; pendingTo = null;
-    const finish = () => { route.pop(); stage.classList.remove('arrived'); refresh(); saveRun(); if (!undos) toast('That was your last undo.'); emit('undo', route.length); };
-    if (reducedMotion) return finish();
-    // the last leg retreats along its line and its stop fades before the route shrinks
-    const mine = gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), p = mine[mine.length - 1];
-    const flow = gLinks.selectAll('path').filter(d => d.cls === 'flow').nodes().pop();
-    if (p) { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('undraw'); if (flow) flow.style.opacity = 0; }
-    const lis = $('#tv-stops').querySelectorAll('li'); const last = lis[lis.length - (atDest() ? 1 : 2)]; if (last) last.classList.add('gone');
-    const badge = gBadges.selectAll('g').nodes().pop(); if (badge) badge.style.opacity = 0;
-    setTimeout(finish, 420);
-  }
-  $('#tv-undo').onclick = undo;
-  $('#tv-hint').onclick = () => {
-    if (!hints || !playing) return;
-    const hidden = M.dealKeys.filter(k => !found.has(k)); if (!hidden.length) return toast('You have found every deal.');
-    const k = hidden[Math.floor(T.rng(T.hash(ch.seed + '|hint|' + hints))() * hidden.length)];
-    const [pair, modeId] = k.split('|'), [fa, tb] = pair.split('-'); const a = T.byId[fa], b = T.byId[tb], m = T.MODES[modeId];
-    const leg = T.legs(a, b, ch.seed).find(l => l.mode === modeId);
-    hints--; t0 -= HINT_SECS * 1000; found.add(k); if (leg) dealReveal(a, b, leg); renderBrief(); refresh();
-    toast(`Hint used: +${HINT_SECS}s on your clock.`); saveRun();
-    fitTo([a, b], 2.4);
-  };
-  $('#tv-submit').onclick = () => {
-    if (!atDest() || !tw.done(twState())) return;
-    const secs = elapsed(); clearInterval(timer); playing = false; clearRun(); emit('submit');
-    $('#tv-plan').classList.add('leave'); hideTip();
-    const tt = totals(); const sc = T.score(tt.cost, tt.hours, secs, M), tr = T.tier(sc, M);
+  let sinceStart = 0, timer = null, justPlayed = false;
+  function finish(secs, failed, reason) {
+    const tt = totals(); const sc = failed ? 0 : T.score(tt.cost, tt.hours, secs, M), tr = failed ? { name: 'Stranded', icon: '🧭' } : T.tier(sc, M);
     const res = { from: ch.from.id, score: sc, tier: tr.name, cost: Math.round(tt.cost), hours: tt.hours, secs: Math.round(secs * 10) / 10, route: route.map(r => ({ to: r.to, mode: r.leg.mode, cost: r.leg.cost, hours: r.leg.hours, deal: r.leg.deal || 0 })),
-      deals: { found: found.size, total: M.deals, used: route.filter(r => r.leg.deal).length }, hints: HINTS - hints, undos: UNDOS - undos, par: { cost: M.par.cost, hours: M.par.hours, legs: M.par.legs }, parMatch: tt.cost <= M.par.cost + 1 && tt.hours <= M.par.hours + 0.05, twist: tw.id, at: Date.now() };
+      deals: { found: found.size, total: M.deals, used: route.filter(r => r.leg.deal).length }, decisions: DEC - decisions, decisionsTotal: DEC, par: { cost: M.par.cost, hours: M.par.hours, legs: M.par.legs }, parMatch: !failed && tt.cost <= M.par.cost + 1 && tt.hours <= M.par.hours + 0.05, twist: tw.id, at: Date.now() };
+    if (failed) { res.failed = true; res.endedAt = at().id; res.kmShort = kmToGo(); res.reason = reason || null; }
     if (!practice) {
       st = T.load(); st.results = st.results || {};
       const before = T.progression(st.results), prior = Object.assign({}, st.results);
@@ -451,7 +376,29 @@
       practice = true;
       showResult(res, false, T.progression(st.results).xp - before.xp, false, T.newlyEarned(prior, st.results));
     } else showResult(res, true, 0);
-  };
+  }
+
+  /* ---------- flow ---------- */
+  function start() {
+    route = []; sel = null; choices = []; playing = false; ended = false; riding = false; found = new Set(); showPar = false; drawn = false; decisions = DEC;
+    const picked = resume; resume = null; if (!picked) clearRun();
+    if (picked) { route = picked.route; found = new Set(picked.found || []); decisions = Math.max(1, picked.decisions); }
+    stage.classList.remove('arrived', 'lost', 'intro'); $('#tv-stamp').hidden = true; hideTip();
+    $('#tv-result').hidden = true; $('#tv-board').hidden = true; dock.hidden = true;
+    const gate = $('#tv-gate'); gate.classList.add('off'); stage.classList.add('zooming');
+    gCourse.selectAll('path').remove();
+    const dur = reducedMotion ? 0 : 1100;
+    fitTo([ch.from, ch.to], 1.8, dur, d3.easeCubicOut).on('end interrupt', () => {
+      gate.hidden = true; gate.classList.remove('off'); stage.classList.remove('zooming'); relayout();
+      playing = true; t0 = performance.now() - (picked ? picked.secs * 1000 : 0); emit('start');
+      clearInterval(timer); timer = setInterval(() => { sinceStart = elapsed(); }, 250);
+      renderBrief();
+      if (picked) toast(`Picked up where you left off: ${route.length} leg${route.length === 1 ? '' : 's'} in place.`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (atDest()) arrive(); else setTimeout(step, reducedMotion ? 0 : 200);
+    });
+  }
+  $('#tv-start').onclick = start;
 
   /* ---------- the expedition report: journey, performance, route vs planner, score breakdown ---------- */
   const factors = res => {
@@ -492,7 +439,7 @@
         <p class="lab">Your journey</p>
         <div class="chain">${chain}</div>
         <p class="rs-dist"><b data-count="${km}" data-fmt="km">${km.toLocaleString()} km</b> across <b>${nations} ${nations === 1 ? 'country' : 'countries'}</b></p>
-        <div class="rs-stats"><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.route.length}</b><span>legs</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>secret fares</span></div></div>
+        <div class="rs-stats"><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.decisions || res.route.length}/${res.decisionsTotal || DEC}</b><span>decisions</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>secret fares</span></div></div>
       </section>
       <section class="rs-top">
         <div class="rs-rating ${tr.name.toLowerCase()}"><span class="ic">${tr.icon}</span><div><b>${tr.name}</b><small>${ofPar}% of the planner's score (${M.par.score.toLocaleString()})${isPractice ? ' · practice' : ''}</small></div></div>
@@ -506,7 +453,7 @@
       </section>
       <section class="rs-vs"><p class="lab">You vs the planner</p>
         <div class="duel">
-          <div class="side you"><h5>Your route</h5><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>${T.dur(res.hours)} · ${res.route.length} legs</span></div>
+          <div class="side you"><h5>Your route</h5><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>${T.dur(res.hours)} · ${res.route.length} leg${res.route.length === 1 ? '' : 's'}</span></div>
           <span class="vs">vs</span>
           <div class="side par"><h5>The planner</h5><b data-count="${Math.round(M.par.cost)}" data-fmt="money">${T.money(M.par.cost)}</b><span>${T.dur(M.par.hours)} · ${M.par.legs} legs</span></div>
         </div>
@@ -529,7 +476,7 @@
     root.querySelectorAll('.tv-share').forEach(b => (b.onclick = () => share(res)));
     root.querySelectorAll('.tv-map').forEach(b => (b.onclick = () => { closeModal(); $('#tv-stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
     root.querySelectorAll('.tv-stats').forEach(b => (b.onclick = showStats));
-    root.querySelectorAll('.tv-again').forEach(b => (b.onclick = () => { closeModal(); start(); }));
+    root.querySelectorAll('.tv-again').forEach(b => (b.onclick = () => { closeModal(); stage.classList.remove('lost'); $('#tv-stamp').hidden = true; start(); }));
   }
   /* the shareable card: performance without the solution */
   function shareText(res) {
@@ -539,7 +486,7 @@
     const dc = res.cost - M.par.cost, dh = res.hours - M.par.hours, ps = res.score, pp = M.par.score;
     const vs = parMatchOf(res) ? "🎯 Matched the planner's route" : ps > pp + 5 ? `🧠 Beat the planner${dc < -0.5 ? ' · ' + T.money(-dc) + ' cheaper' : ''}${dh < -0.05 ? ' · ' + T.dur(-dh) + ' faster' : ''}` : `🧭 Planner wins${dc > 0.5 ? ' · ' + T.money(dc) + ' behind' : dh > 0.05 ? ' · ' + T.dur(dh) + ' slower' : ''}`;
     const S = mode === 'today' ? T.stats((st && st.results) || {}, today) : null, streak = S && S.streak > 1 ? `\n🔥 ${S.streak}-day streak` : '';
-    return `🌎 TRAVERSLE ${ch.n ? '#' + String(ch.n).padStart(3, '0') : 'EXPEDITION'}\n${ch.from.name} → ${ch.to.name}\n💰 ${T.money(res.cost)} · ⏱️ ${T.dur(res.hours)} · 🎟️ ${res.deals ? res.deals.found : 0}/${M.deals} deals\n${tr.icon} ${tr.name.toUpperCase()} · ${res.score.toLocaleString()}\n💰 ${bar(f.mF)}\n⏱️ ${bar(f.tF)}\n🎟️ ${bar(f.dF)}\n${vs}\n${res.route.length} legs · ${modes}${streak}\ntraversledaily.com`;
+    return `🌎 TRAVERSLE ${ch.n ? '#' + String(ch.n).padStart(3, '0') : 'EXPEDITION'}\n${ch.from.name} → ${ch.to.name}\n💰 ${T.money(res.cost)} · ⏱️ ${T.dur(res.hours)} · 🎟️ ${res.deals ? res.deals.found : 0}/${M.deals} deals\n${tr.icon} ${tr.name.toUpperCase()} · ${res.score.toLocaleString()}\n💰 ${bar(f.mF)}\n⏱️ ${bar(f.tF)}\n🎟️ ${bar(f.dF)}\n${vs}\n${res.decisions || res.route.length}/${res.decisionsTotal || DEC} decisions · ${modes}${streak}\ntraversledaily.com`;
   }
   function share(res) {
     const txt = shareText(res);
@@ -613,9 +560,44 @@
   }
   { const b = $('#td-stats'); if (b) b.onclick = showStats; }
 
+
+  /* ---------- the other ending: out of decisions ---------- */
+  function buildFail(res, isPractice, full) {
+    const endAt = T.byId[res.endedAt] || ch.from, stops = [ch.from, ...res.route.map(r => T.byId[r.to])];
+    const chain = stops.map(c => `<span>${T.esc(c.name)}</span>`).join('<i>→</i>');
+    const km = Math.round(stops.slice(1).reduce((a, c, i) => a + T.km(stops[i], c), 0)), short = res.kmShort != null ? res.kmShort : Math.round(T.km(endAt, ch.to));
+    return `
+      <p class="kicker"><b>Expedition ended</b> · ${isPractice ? 'practice run' : 'official result · ' + dayLabel}</p>
+      <section class="rs-top lost">
+        <div class="rs-rating stranded"><span class="ic">🧭</span><div><b>Out of decisions</b><small>${res.reason ? T.esc(res.reason) : `You used all ${res.decisionsTotal || DEC} decisions before reaching ${T.esc(ch.to.name)}.`}</small></div></div>
+        <div class="rs-big"><b>${short.toLocaleString()}<small class="u">km</small></b><small>short of ${T.esc(ch.to.name)}</small></div>
+      </section>
+      <section class="rs-journey">
+        <p class="lab">Where you got to</p>
+        <div class="chain">${chain}<i>→</i><span class="x">✕ ${T.esc(ch.to.name)}</span></div>
+        <div class="rs-stats"><div><b data-count="${km}" data-fmt="km">${km.toLocaleString()} km</b><span>travelled</span></div><div><b>${res.decisions || res.route.length}/${res.decisionsTotal || DEC}</b><span>decisions</span></div><div><b>${T.esc(endAt.name)}</b><span>final stop</span></div><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div></div>
+      </section>
+      <section class="rs-vs"><p class="lab">What the planner did</p><p class="rs-note">The planner reached ${T.esc(ch.to.name)} in ${M.par.legs} legs for ${T.money(M.par.cost)} and ${T.dur(M.par.hours)}. ${isPractice || mode !== 'today' ? '' : 'Today counts as played, so your streak is safe. '}Try again as practice and see if you can find a way.</p></section>
+      <div class="actions"><button class="btn primary big tv-again">Try again</button><button class="btn ghost tv-map">See the map</button>${!isPractice && mode === 'today' ? '<button class="btn ghost tv-par">Show the planner\'s route</button>' : ''}${full && mode !== 'today' ? '<a class="btn ghost" href="play.html">Today\'s puzzle</a>' : ''}</div>`;
+  }
+  function showFail(res, isPractice, quiet) {
+    route = res.route.map((r, i) => ({ from: i ? res.route[i - 1].to : ch.from.id, to: r.to, leg: { mode: r.mode, cost: r.cost, hours: r.hours, icon: T.MODES[r.mode].icon, deal: r.deal } }));
+    stage.classList.add('lost'); drawMap();
+    const wire = root => { root.querySelectorAll('.tv-again').forEach(b => (b.onclick = () => { closeModal(); stage.classList.remove('lost'); $('#tv-stamp').hidden = true; start(); })); root.querySelectorAll('.tv-map').forEach(b => (b.onclick = () => { closeModal(); $('#tv-stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); })); root.querySelectorAll('.tv-par').forEach(b => (b.onclick = () => { closeModal(); showPar = true; drawMap(); animateRoutes('par'); })); };
+    $('#tv-result').innerHTML = `<div class="rs">${buildFail(res, isPractice, true)}</div>`; $('#tv-result').hidden = false; wire($('#tv-result'));
+    st = T.load(); st.results = st.results || {}; if (mode === 'today') showBoard();
+    if (quiet) { fitRoute(); return; }
+    $('#tv-modal').innerHTML = `<div class="tv-modal-card rs" role="dialog" aria-modal="true" aria-label="Expedition ended"><button class="tv-modal-x" id="tv-modal-close" aria-label="Close">✕</button>${buildFail(res, isPractice)}</div>`;
+    $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
+    $('#tv-modal-close').onclick = closeModal; $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
+    wire($('#tv-modal')); animateReport($('#tv-modal .rs')); emit('report', res);
+    $('#tv-modal-close').focus({ preventScroll: true });
+  }
+
   function showResult(res, isPractice, xpGain, quiet, earned) {
-    const planEl = $('#tv-plan'); if (quiet || reducedMotion) planEl.hidden = true; else setTimeout(() => { planEl.hidden = true; }, 450);
-    pendingTo = null; selOpt = null; drawn = false; stage.classList.remove('arrived');
+    dock.hidden = true; sel = null; choices = []; drawn = false; ended = true; playing = false; stage.classList.remove('arrived'); $('#tv-stamp').hidden = true;
+    if (res.decisionsTotal) decisions = Math.max(0, res.decisionsTotal - res.decisions); renderBrief();
+    if (res.failed) { showFail(res, isPractice, quiet); return; }
     showPar = !!quiet; parPending = !quiet; // on a fresh submit the planner's route waits until the report closes
     route = res.route.map((r, i) => ({ from: i ? res.route[i - 1].to : ch.from.id, to: r.to, leg: { mode: r.mode, cost: r.cost, hours: r.hours, icon: T.MODES[r.mode].icon, deal: r.deal } }));
     drawMap();
@@ -626,7 +608,7 @@
     st = T.load(); st.results = st.results || {}; showBoard();
     if (quiet) { setTimeout(() => animateRoutes('both'), 150); return; }
     // your finished route draws itself across the chart, then the report arrives
-    const wait = animateRoutes('mine');
+    const wait = justPlayed ? (fitRoute(), drawn = true, 500) : animateRoutes('mine'); justPlayed = false;
     setTimeout(() => showModal(res, isPractice, xpGain, earned), Math.max(0, wait - 400));
   }
 
@@ -648,8 +630,6 @@
     // the chart opens on the whole world, then carries you to today's region; the course line draws once it lands
     gCourse.append('path').attr('class', 'tv-course').attr('d', arc(ch.from, ch.to)).attr('pathLength', 1);
     stage.classList.add('zooming'); stage.classList.add('intro');
-    let introRan = false;
-    const intro = () => { if (introRan) return; introRan = true; setTimeout(() => fitTo([ch.from, ch.to], 3.2, reducedMotion ? 0 : 2300, d3.easeCubicInOut, reducedMotion ? 0 : 450, window.innerWidth >= 1100 ? 250 : 120).on('end interrupt', () => { stage.classList.remove('zooming'); relayout(); stage.classList.add('landed'); }), 50); };
-    intro(); // a first visit gets the coach (js/coach.js) riding along with the real game; the guide stays behind the ? button
+    setTimeout(() => fitTo([ch.from, ch.to], 3.2, reducedMotion ? 0 : 2300, d3.easeCubicInOut, reducedMotion ? 0 : 450, window.innerWidth >= 1100 ? 250 : 120).on('end interrupt', () => { stage.classList.remove('zooming'); relayout(); stage.classList.add('landed'); }), 50);
   }
 })();

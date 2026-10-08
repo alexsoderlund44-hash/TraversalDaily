@@ -42,7 +42,11 @@ def shell(design, page, body, scripts, prefix, css):
 var how=document.getElementById('hm-howmodal');if(how){{window.tdHow=function(o){{if(window.tdTutorial)return window.tdTutorial(o);how.hidden=!o;}};['hm-how','td-help'].forEach(function(id){{var el=document.getElementById(id);if(el)el.onclick=function(){{tdHow(true);}};}});window.addEventListener('hashchange',function(){{if(location.hash==='#how')tdHow(true);}});if(location.hash==='#how')tdHow(true);}}}})();</script>
 </body></html>'''
 
-HOW_MODAL = '''<div class="td-modal" id="hm-howmodal" hidden></div>'''
+HOW_MODAL = '''<div class="td-modal" id="hm-howmodal" hidden><div class="td-modal-card how" role="dialog" aria-modal="true" aria-label="How to play"><button class="td-modal-x" onclick="tdHow(false)" aria-label="Close">✕</button>
+  <p class="kicker">How to play</p>
+  <ol class="hm-how"><li><b>Get from A to B.</b> Every day has one start and one destination, the same for everyone.</li><li><b>Each step shows a few ways onward.</b> Pick one and you travel there. Every pick costs a decision, and you only have a handful.</li><li><b>Reach the destination before the decisions run out.</b> Spend less and arrive sooner than the planner for a better score.</li></ol>
+  <p class="sub">Some legs are secretly cheap. You find them by looking.</p>
+</div></div>'''
 
 # ----- shared page bodies (design-neutral markup; themes do the rest) -----
 HOME = '''
@@ -65,14 +69,13 @@ HOME = '''
   </section>
   <section class="hm-panels">
     <article class="hm-panel" id="how"><h2>How to play</h2>
-      <ol class="hm-how"><li><b>Tap a city</b> on the chart to add a stop, then choose train, bus, ferry, car or plane.</li><li><b>Reach the destination</b> under budget and before the deadline. There are hidden deals along the way if you look for them.</li><li><b>Beat the planner.</b> You're scored on money, time and how quickly you decide, and everyone playing today is up against the same planner.</li></ol>
-      <button class="btn" id="hm-how">Walk me through it</button></article>
+      <ol class="hm-how"><li><b>Get from A to B.</b> One start, one destination, the same for everyone today.</li><li><b>Each step shows a few ways onward.</b> Pick one and you travel there. Every pick costs a decision, and you only have a handful.</li><li><b>Reach the destination before the decisions run out.</b> Spend less and arrive sooner than the planner for a better score.</li></ol></article>
     <article class="hm-panel hm-week" aria-label="The week"><h2>Every day has its own rule</h2><ol id="hm-week"></ol></article>
     <article class="hm-panel hm-plus"><h2>Traversle +</h2><p>Today's puzzle is always free. Traversle + lets you play every puzzle since day one, shows you the planner's route for each one, and keeps your archive stats on your profile.</p><a class="btn" href="plus.html">See Traversle +</a><a class="lnk" href="archive.html">Browse past puzzles</a></article>
   </section>
   @HOW@
 </main>'''
-HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/data/tutorial-map.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script><script src="@/js/chart-bg.js" defer></script>'
+HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script><script src="@/js/chart-bg.js" defer></script>'
 
 PLAY = '''
 <main class="tv">
@@ -83,6 +86,8 @@ PLAY = '''
     <div class="tv-maptools"><button id="tv-zin" aria-label="Zoom in">+</button><button id="tv-zout" aria-label="Zoom out">−</button><button id="tv-zfit" aria-label="Fit route" title="Fit the route">⤢</button></div>
     <div class="tv-tip" id="tv-tip" hidden></div>
     <div class="tv-deal" id="tv-deal" hidden aria-live="polite"></div>
+    <div class="tv-stamp" id="tv-stamp" hidden></div>
+    <div class="tv-choices" id="tv-choices" hidden aria-live="polite"></div>
     <div class="tv-gate" id="tv-gate"><div class="tv-gate-card">
       <p class="tv-gate-kicker" id="tv-gate-day"></p>
       <h1 id="tv-gate-title"></h1>
@@ -93,27 +98,13 @@ PLAY = '''
       <p class="tv-gate-note" id="tv-gate-note"></p>
     </div></div>
   </section>
-  <aside class="tv-plan" id="tv-plan" hidden>
-    <header class="tv-plan-head"><div><h2>Your journey</h2><p class="tv-plan-sub" id="tv-plan-sub"></p></div><button class="tv-plan-collapse" id="tv-plan-toggle" aria-label="Collapse">▾</button></header>
-    <div class="tv-gauges">
-      <div class="tv-gauge" id="tv-g-cost"><span class="lab">Budget</span><b>$0</b><small></small><div class="bar"><i></i></div></div>
-      <div class="tv-gauge" id="tv-g-time"><span class="lab">Deadline</span><b>0h</b><small></small><div class="bar"><i></i></div></div>
-      <div class="tv-gauge clock"><span class="lab">Deciding</span><b id="tv-timer">0s</b><small id="tv-pace">bonus +20%</small></div>
-    </div>
-    <div class="tv-twist" id="tv-twist"></div>
-    <div class="tv-counts" id="tv-counts"></div>
-    <div class="tv-estimate" id="tv-est" hidden><span>Score estimate</span><b>—</b><div class="bar"><i style="width:0"></i></div></div>
-    <ol class="tv-stops" id="tv-stops"></ol>
-    <div class="tv-picker" id="tv-picker"></div>
-    <footer class="tv-plan-foot"><button class="btn ghost" id="tv-undo" title="Remove the last leg">Undo</button><button class="btn ghost" id="tv-hint" title="Reveal a hidden deal. Adds 45 seconds to your clock.">Hint · +45 s</button><button class="btn primary" id="tv-submit" disabled>Submit journey</button></footer>
-  </aside>
   <div class="tv-modal" id="tv-modal" hidden></div>
   <section id="tv-result" class="tv-result" hidden></section>
   <section id="tv-board" class="tv-board" hidden></section>
   <p class="tv-source" id="tv-source"></p>
   @HOW@
 </main>'''
-PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/world-lite.js"></script><script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/data/tutorial-map.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/traverse-ui.js"></script><script src="@/js/coach.js"></script>'
+PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/world-lite.js"></script><script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/traverse-ui.js"></script>'
 
 ACH = '''
 <main class="td-page">

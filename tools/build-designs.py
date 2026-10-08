@@ -58,7 +58,7 @@ HOME = '''
     <div class="route" id="hm-route"></div>
     <p class="hm-theme" id="hm-theme" hidden></p>
     <div class="mission" id="hm-mission"></div>
-    <a class="btn primary big wide" href="play.html" id="hm-play">Begin the journey</a>
+    <a class="btn primary big wide" href="play.html" id="hm-play">Play today's puzzle</a>
     <p class="sub" id="hm-sub">You get one attempt. Make it count.</p>
     <div id="hm-level" class="hm-level" hidden></div>
     <p class="meta" id="hm-meta"></p>
@@ -66,7 +66,7 @@ HOME = '''
   <section class="hm-panels">
     <article class="hm-panel" id="how"><h2>How to play</h2>
       <ol class="hm-how"><li><b>Tap a city</b> on the chart to add a stop, then choose train, bus, ferry, car or plane.</li><li><b>Reach the destination</b> under budget and before the deadline. Hidden deals cut the cost.</li><li><b>Beat the planner.</b> Money, time and how fast you decide all count towards your score.</li></ol>
-      <button class="lnk" id="hm-how">Walk me through it</button></article>
+      <button class="btn" id="hm-how">Walk me through it</button></article>
     <article class="hm-panel hm-week" aria-label="The week"><h2>Every day has its own rule</h2><ol id="hm-week"></ol></article>
     <article class="hm-panel hm-plus"><h2>Traversle +</h2><p>Today's puzzle is free, always. Traversle + opens every past puzzle since day one, with the planner's route revealed, plus archive stats on your profile.</p><a class="btn" href="plus.html">See Traversle +</a><a class="lnk" href="archive.html">Browse past puzzles</a></article>
   </section>
@@ -88,7 +88,7 @@ PLAY = '''
       <p class="tv-gate-sub" id="tv-gate-sub"></p>
       <div class="tv-mission" id="tv-gate-mission"></div>
       <ul class="tv-gate-rules" id="tv-gate-rules"></ul>
-      <button class="btn primary big" id="tv-start">Start the clock</button>
+      <button class="btn primary big" id="tv-start">Begin the journey</button>
       <p class="tv-gate-note" id="tv-gate-note"></p>
     </div></div>
   </section>

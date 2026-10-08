@@ -72,7 +72,7 @@
   $('#tv-gate-rules').innerHTML = `<li>Tap a city to add a stop, then pick how to get there. Anything over budget or past the deadline is greyed out.</li>
     <li>Fares show when you look at a city, and so do hidden deals. ${!parDeals ? '' : parDeals === M.deals ? (M.deals === 1 ? 'The deal is' : M.deals === 2 ? 'Both deals are' : 'All ' + word(M.deals) + ' deals are') + " on the planner's route." : word(parDeals).replace(/^./, c => c.toUpperCase()) + ' of the ' + word(M.deals) + ' deals ' + (parDeals === 1 ? 'is' : 'are') + " on the planner's route."}</li>
     <li>Money, time and how fast you decide all count. ${mode === 'today' ? 'One attempt.' : 'This one is practice.'}</li>`;
-  $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'The clock starts when you press start.';
+  $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'The clock starts the moment you begin.';
   const locked = mode === 'archive' && T.dayLocked(ch.n);
   if (locked) {
     $('#tv-gate-mission').innerHTML = `<div class="tv-lock"><span class="ic">🔒</span><b>This puzzle is in the Traversle + archive</b><p>The last ${T.FREE_DAYS} days are free to replay. Traversle + opens every puzzle since day one.</p><a class="btn primary" href="plus.html">See Traversle +</a> <a class="btn ghost" href="archive.html">Back to the archive</a></div>`;
@@ -91,6 +91,12 @@
   g.append('path').attr('class', 'tv-sphere').attr('d', path({ type: 'Sphere' }));
   // an old chart: graticule, water lines along the coast, then the land
   g.append('path').attr('class', 'tv-grat').attr('d', path(d3.geoGraticule().step([10, 10])()));
+  // rhumb lines radiating from compass roses out at sea, as on a portolan chart
+  const ROSES = [[-40, 25], [-30, -30], [70, -15], [170, 10], [-150, -30], [20, 60]];
+  const rh = g.append('g');
+  ROSES.forEach(([lo, la]) => { const [x, y] = proj([lo, la]); for (let a = 0; a < 32; a++) { const t = a * Math.PI / 16; rh.append('line').attr('class', 'tv-rhumb').attr('x1', x).attr('y1', y).attr('x2', x + Math.cos(t) * 700).attr('y2', y + Math.sin(t) * 700); } });
+  rh.attr('clip-path', null);
+  ROSES.slice(0, 4).forEach(([lo, la]) => { const [x, y] = proj([lo, la]); const r = 9; let d = ''; for (let i = 0; i < 16; i++) { const t = i * Math.PI / 8, L = i % 2 ? r * .55 : r, w = i % 2 ? r * .08 : r * .14; d += `M${x + Math.cos(t) * L},${y + Math.sin(t) * L}L${x + Math.cos(t + Math.PI / 2) * w},${y + Math.sin(t + Math.PI / 2) * w}L${x + Math.cos(t - Math.PI / 2) * w},${y + Math.sin(t - Math.PI / 2) * w}Z`; } g.append('path').attr('class', 'tv-rose').attr('d', d); });
   const landAll = topojson.merge(WORLD_TOPO, WORLD_TOPO.objects.countries.geometries);
   ['tv-coast c3', 'tv-coast c2', 'tv-coast'].forEach(c => g.append('path').attr('class', c).attr('d', path(landAll)));
   g.append('g').selectAll('path').data(feats).join('path').attr('class', 'tv-land').attr('d', path);

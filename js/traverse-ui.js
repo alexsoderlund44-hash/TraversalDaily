@@ -16,6 +16,9 @@
 
   /* ---------- state ---------- */
   let route = [], pendingTo = null, selOpt = null, t0 = 0, timer = null, playing = false, found = new Set(), showPar = false, drawn = false, dealT = null, parPending = false;
+  /* events for the guided first play (js/coach.js): start, pick, select, commit, deal, arrive, submit, report */
+  const subs = {}; const emit = (e, d) => (subs[e] || []).forEach(f => { try { f(d); } catch (x) {} });
+  window.tdGame = { on: (e, f) => { (subs[e] = subs[e] || []).push(f); }, mode: () => mode, dest: () => ch.to, deals: () => M.deals };
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   /* a short-lived class on one city marker (born, pop, no), kept across redraws */
   const KEEP = ['born', 'pop', 'no'];
@@ -45,10 +48,10 @@
   /* finding a secret fare should feel like finding something */
   function dealReveal(a, b, l) {
     const el = $('#tv-deal'), full = l.full || l.cost, saved = full - l.cost;
-    el.innerHTML = `<div class="ticket"><p class="k">🎟️ Secret fare found</p><b><s>${T.money(full)}</s><i>→</i>${T.money(l.cost)}</b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>You saved ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em><span class="dots">${dealDots()} ${found.size}/${M.deals} found</span></div>`;
+    el.innerHTML = `<div class="ticket"><p class="k">🎟️ Secret fare found</p><b><s>${T.money(full)}</s><i>→</i><span class="new">${T.money(l.cost)}</span></b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>Save ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em><span class="dots">${dealDots()} ${found.size}/${M.deals} found</span></div>`;
     el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(dealT); dealT = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 350); }, 3200);
-    markCity(b.id, 'pop', 1600);
+    clearTimeout(dealT); dealT = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 350); }, 3600);
+    markCity(b.id, 'pop', 1600); emit('deal', { from: a, to: b, leg: l, found: found.size });
   }
 
   /* ---------- static bits ---------- */
@@ -248,19 +251,19 @@
     if (!playing || atDest()) return;
     const cur = at();
     if (c.id === cur.id) return;
-    if (onRouteIds().has(c.id)) return toast(c.name + ' is already on your route');
+    if (onRouteIds().has(c.id)) { markCity(c.id, 'no', 700); return toast(c.name + ' is already on your route', 'no'); }
     const all = T.legs(cur, c, ch.seed); noteDeals(cur, c, all);
-    if (!all.length) { markCity(c.id, 'no', 700); return toast('Nothing runs from ' + cur.name + ' to ' + c.name + ' today'); }
-    if (!all.some(l => !blocked(l, c))) { markCity(c.id, 'no', 700); return toast('Nothing from ' + cur.name + ' to ' + c.name + ' fits: the cheapest ' + why(blocked(all.slice().sort((x, y) => x.cost - y.cost)[0], c))); }
-    pendingTo = c; selOpt = null; refresh(); fitTo([cur, c], 2.2);
+    if (!all.length) { markCity(c.id, 'no', 700); return toast('Nothing runs from ' + cur.name + ' to ' + c.name + ' today', 'no'); }
+    if (!all.some(l => !blocked(l, c))) { markCity(c.id, 'no', 700); return toast('Nothing from ' + cur.name + ' to ' + c.name + ' fits: the cheapest ' + why(blocked(all.slice().sort((x, y) => x.cost - y.cost)[0], c)), 'no'); }
+    pendingTo = c; selOpt = null; refresh(); fitTo([cur, c], 2.2); emit('pick', c);
     $('#tv-plan').classList.remove('collapsed');
     const el = $('#tv-picker'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function commit(c, leg) {
-    if (blocked(leg, c)) return toast('That option ' + why(blocked(leg, c)));
+    if (blocked(leg, c)) return toast('That option ' + why(blocked(leg, c)), 'no');
     route.push({ from: at().id, to: c.id, leg }); pendingTo = null; selOpt = null; refresh();
-    drawNewLeg(c.id);
-    if (!atDest()) fitTo([c, ch.to], 1.8); else { fitRoute(); stage.classList.add('arrived'); }
+    drawNewLeg(c.id); fresh();
+    if (!atDest()) { fitTo([c, ch.to], 1.8); emit('commit', { to: c, legs: route.length }); } else { fitRoute(); stage.classList.add('arrived'); emit('arrive', c); }
   }
   /* the leg you just took draws itself across the chart and the stop marker springs up */
   function drawNewLeg(toId) {
@@ -271,8 +274,19 @@
     setTimeout(() => markCity(toId, 'born', 700), 380);
   }
   function refresh() { renderPlan(); drawMap(); }
-  let toastT; function toast(m) { let t = $('.tv-toast'); if (!t) { t = document.createElement('div'); t.className = 'tv-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+  /* newly reachable cities give one soft pulse when the picture changes */
+  let freshT = null; function fresh() { if (reducedMotion) return; stage.classList.remove('fresh'); void stage.offsetWidth; stage.classList.add('fresh'); clearTimeout(freshT); freshT = setTimeout(() => stage.classList.remove('fresh'), 900); }
+  let toastT; function toast(m, kind) { let t = $('.tv-toast'); if (!t) { t = document.createElement('div'); t.className = 'tv-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.classList.toggle('no', kind === 'no'); t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), kind === 'no' ? 2600 : 2200); }
 
+  /* a number glides to its new value over half a second (money and hours alike) */
+  const tweens = new WeakMap();
+  function tween(el, to, fmt) {
+    const from = tweens.has(el) ? tweens.get(el).v : to; tweens.set(el, { v: to });
+    if (reducedMotion || from === to) { el.textContent = fmt(to); return; }
+    const t0 = performance.now(), dur = 520, cur = tweens.get(el);
+    const step = now => { if (tweens.get(el) !== cur) return; const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3); cur.v = from + (to - from) * e; el.textContent = fmt(cur.v); if (p < 1) requestAnimationFrame(step); else { cur.v = to; el.textContent = fmt(to); } };
+    requestAnimationFrame(step);
+  }
   /* ---------- planning dashboard ---------- */
   function pace() {
     if (!route.length) return ['', ''];
@@ -285,7 +299,7 @@
   }
   function renderPlan() {
     const tt = totals(), cur = at();
-    const gauge = (id, v, cap, fmt) => { const left = cap - v, el = $(id); el.querySelector('b').textContent = fmt(v); el.querySelector('small').textContent = left >= 0 ? fmt(left) + ' left of ' + fmt(cap) : fmt(-left) + ' over'; el.querySelector('.bar i').style.width = Math.min(100, 100 * v / cap) + '%'; el.classList.toggle('warn', v / cap > 0.8); el.classList.toggle('over', v > cap); };
+    const gauge = (id, v, cap, fmt) => { const left = cap - v, el = $(id); tween(el.querySelector('b'), v, fmt); el.querySelector('small').textContent = left >= 0 ? fmt(left) + ' left of ' + fmt(cap) : fmt(-left) + ' over'; el.querySelector('.bar i').style.width = Math.min(100, 100 * v / cap) + '%'; el.classList.toggle('warn', v / cap > 0.8); el.classList.toggle('over', v > cap); };
     gauge('#tv-g-cost', tt.cost, M.budget, T.money); gauge('#tv-g-time', tt.hours, M.deadline, T.dur);
     const [pt, pc] = pace(); $('#tv-pace').textContent = speedNote();
     const ts = twState(), done = tw.done(ts);
@@ -342,7 +356,7 @@
           <span class="ic">${o.icon}</span><span class="nm">${o.name}${o.deal ? ` <em class="deal">🎟️ −${Math.round(o.deal * 100)}%</em>` : ''}<small class="${b ? 'off' : o.live ? 'live' : ''}">${b ? b : o.live ? 'avg of ' + T.esc(String(o.note).replace('avg of ', '')) + (o.nonstop ? ' · nonstop from ' + T.money(o.nonstop.cost) : '') : (o.note || 'modelled')}</small></span>
           <span class="nums"><b>${T.money(o.cost)}${o.deal ? ` <s>${T.money(o.full)}</s>` : ''}</b><span>${T.dur(o.hours)}</span></span></button>`; }).join('')}</div>
         ${card}${selOpt === null ? '<p class="tv-pick-hint">Tap an option to see the details, tap again to take it.</p>' : ''}`;
-      box.querySelectorAll('.tv-opt:not(.off)').forEach(b => (b.onclick = () => { const i = +b.dataset.i; if (selOpt === i) commit(pendingTo, opts[i]); else { selOpt = i; renderPicker(); const c = $('.tv-legcard'); if (c) box.scrollTo({ top: Math.max(0, c.offsetTop - box.offsetTop - 8), behavior: 'smooth' }); } }));
+      box.querySelectorAll('.tv-opt:not(.off)').forEach(b => (b.onclick = () => { const i = +b.dataset.i; if (selOpt === i) commit(pendingTo, opts[i]); else { selOpt = i; renderPicker(); emit('select', opts[i]); const c = $('.tv-legcard'); if (c) box.scrollTo({ top: Math.max(0, c.offsetTop - box.offsetTop - 8), behavior: 'smooth' }); } }));
       const add = $('#tv-addleg'); if (add) add.onclick = () => commit(pendingTo, opts[selOpt]);
       $('#tv-unpick').onclick = () => { pendingTo = null; selOpt = null; refresh(); };
       return;
@@ -380,9 +394,9 @@
     fitTo([ch.from, ch.to], 1.8, dur, d3.easeCubicOut).on('end interrupt', () => {
       gate.hidden = true; gate.classList.remove('off'); stage.classList.remove('zooming'); relayout();
       plan.hidden = false; plan.classList.remove('leave'); plan.classList.toggle('collapsed', window.innerWidth <= 900); plan.classList.add('arrive');
-      playing = true; t0 = performance.now();
+      playing = true; t0 = performance.now(); emit('start');
       clearInterval(timer); timer = setInterval(() => { $('#tv-timer').textContent = T.secsF(elapsed()); $('#tv-pace').textContent = speedNote(); if (atDest()) { const tt = totals(); const est = T.score(tt.cost, tt.hours, elapsed(), M); $('#tv-est b').textContent = est.toLocaleString(); $('#tv-est .bar i').style.width = est / 100 + '%'; } }, 250);
-      refresh();
+      refresh(); fresh();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
@@ -390,8 +404,16 @@
   function undo() {
     if (!route.length) return;
     if (!undos) return toast('No undos left, so this route is final.');
-    undos--; route.pop(); pendingTo = null; refresh();
-    if (!undos) toast('That was your last undo.');
+    undos--; pendingTo = null;
+    const finish = () => { route.pop(); stage.classList.remove('arrived'); refresh(); if (!undos) toast('That was your last undo.'); emit('undo', route.length); };
+    if (reducedMotion) return finish();
+    // the last leg retreats along its line and its stop fades before the route shrinks
+    const mine = gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), p = mine[mine.length - 1];
+    const flow = gLinks.selectAll('path').filter(d => d.cls === 'flow').nodes().pop();
+    if (p) { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('undraw'); if (flow) flow.style.opacity = 0; }
+    const lis = $('#tv-stops').querySelectorAll('li'); const last = lis[lis.length - (atDest() ? 1 : 2)]; if (last) last.classList.add('gone');
+    const badge = gBadges.selectAll('g').nodes().pop(); if (badge) badge.style.opacity = 0;
+    setTimeout(finish, 420);
   }
   $('#tv-undo').onclick = undo;
   $('#tv-hint').onclick = () => {
@@ -406,7 +428,7 @@
   };
   $('#tv-submit').onclick = () => {
     if (!atDest() || !tw.done(twState())) return;
-    const secs = elapsed(); clearInterval(timer); playing = false;
+    const secs = elapsed(); clearInterval(timer); playing = false; emit('submit');
     $('#tv-plan').classList.add('leave'); hideTip();
     const tt = totals(); const sc = T.score(tt.cost, tt.hours, secs, M), tr = T.tier(sc, M);
     const res = { from: ch.from.id, score: sc, tier: tr.name, cost: Math.round(tt.cost), hours: tt.hours, secs: Math.round(secs * 10) / 10, route: route.map(r => ({ to: r.to, mode: r.leg.mode, cost: r.leg.cost, hours: r.leg.hours, deal: r.leg.deal || 0 })),
@@ -435,6 +457,11 @@
     return { cls: 'lose', h: '🧭 The planner wins this one', t: dc > 0.5 ? `You were ${T.money(dc)} more expensive${dh > 0.05 ? ' and ' + T.dur(dh) + ' slower' : ''}.` : dh > 0.05 ? `You were ${T.dur(dh)} slower.` : 'Just behind on the balance of money and time.' };
   }
   const routeCol = (title, rt, cost, hours, cls) => `<div class="col ${cls}"><h5>${title}</h5><ol>${[ch.from, ...rt.map(r => T.byId[r.to])].map((c, i) => (i ? `<li class="lg"><span class="ar">↓</span><span>${T.MODES[rt[i - 1].mode].icon} ${T.MODES[rt[i - 1].mode].name}${rt[i - 1].deal ? ' 🎟️' : ''}</span><small>${T.money(rt[i - 1].cost)} · ${T.dur(rt[i - 1].hours)}</small></li>` : '') + `<li class="st${i === 0 ? ' s' : i === rt.length ? ' d' : ''}">${T.esc(c.name)}</li>`).join('')}</ol><div class="tot"><b>${T.money(cost)}</b><span>${T.dur(hours)}</span><span>${rt.length} legs</span></div></div>`;
+  /* the daily loop: what tomorrow brings, when, and how the streak stands */
+  function tomorrowLine() {
+    const R = (st && st.results) || {}, S = T.stats(R, today), nx = ch.n ? T.rhythmOf(ch.n + 1) : null;
+    return `${nx ? `Tomorrow is <b>${T.esc(nx.label)}</b> · ` : ''}next puzzle in <b>${resetIn()}</b>${S.streak > 1 ? ` · <b>${S.streak}-day</b> streak` : ''}`;
+  }
   function buildSummary(res, isPractice, xpGain, earned, full) {
     const tr = T.tier(res.score, M), ofPar = Math.round(100 * res.score / Math.max(1, M.par.score)), f = factors(res), v = verdict(res);
     const prog = T.progression(T.load().results || {}), lvlPct = prog.next ? Math.round(100 * prog.into / prog.span) : 100;
@@ -448,17 +475,16 @@
     const bar = (lab, val, cls) => `<div class="brow ${cls || ''}"><span>${lab}</span><div class="bar"><i style="width:${val}%" data-w="${val}"></i></div><b><span data-count="${val}">${val}</span> <small>/ 100</small></b></div>`;
     const tags = [res.cost < M.par.cost - 0.5 ? ['you', 'Cheaper'] : res.cost > M.par.cost + 0.5 ? ['par', 'Planner cheaper'] : ['tie', 'Same cost'], res.hours < M.par.hours - 0.05 ? ['you', 'Faster'] : res.hours > M.par.hours + 0.05 ? ['par', 'Planner faster'] : ['tie', 'Same time'], res.route.length < M.par.legs ? ['you', 'Fewer legs'] : res.route.length > M.par.legs ? ['par', 'Planner fewer legs'] : ['tie', 'Same legs'], [found >= parDeals ? 'you' : 'par', `Deals ${res.deals ? res.deals.used : 0} vs ${parDeals} used`]];
     return `
-      <p class="kicker">${isPractice ? (mode === 'today' ? 'Practice run · not scored' : mode === 'archive' ? 'Archive practice · not scored' : 'Random expedition · not scored') : 'Official result · ' + dayLabel}</p>
-      <section class="rs-top">
-        <div class="rs-rating ${tr.name.toLowerCase()}"><span class="ic">${tr.icon}</span><div><b>${tr.name}</b><small>${ofPar}% of the planner's score (${M.par.score.toLocaleString()})${isPractice ? ' · practice' : ''}</small></div></div>
-        <div class="rs-big"><b data-count="${res.score}">${res.score.toLocaleString()}</b><small>score</small>${!isPractice && mode === 'today' ? `<span>Next puzzle in <b>${resetIn()}</b></span>` : ''}</div>
-        <p class="rs-verdict ${v.cls}"><b>${v.h}</b> ${v.t}</p>
-      </section>
+      <p class="kicker"><b>Journey complete</b> · ${isPractice ? (mode === 'today' ? 'practice run, not scored' : mode === 'archive' ? 'archive practice, not scored' : 'random expedition, not scored') : 'official result · ' + dayLabel}</p>
       <section class="rs-journey">
         <p class="lab">Your journey</p>
         <div class="chain">${chain}</div>
         <p class="rs-dist"><b data-count="${km}" data-fmt="km">${km.toLocaleString()} km</b> across <b>${nations} ${nations === 1 ? 'country' : 'countries'}</b></p>
-        <div class="rs-stats"><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.route.length}</b><span>legs</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>deals</span></div></div>
+        <div class="rs-stats"><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.route.length}</b><span>legs</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>secret fares</span></div></div>
+      </section>
+      <section class="rs-top">
+        <div class="rs-rating ${tr.name.toLowerCase()}"><span class="ic">${tr.icon}</span><div><b>${tr.name}</b><small>${ofPar}% of the planner's score (${M.par.score.toLocaleString()})${isPractice ? ' · practice' : ''}</small></div></div>
+        <div class="rs-big"><b data-count="${res.score}">${res.score.toLocaleString()}</b><small>score</small>${!isPractice && mode === 'today' ? `<span>${tomorrowLine()}</span>` : ''}</div>
       </section>
       ${earned && earned.length ? `<section class="rs-badges"><p class="lab">New badge${earned.length === 1 ? '' : 's'}</p><div>${earned.map(a => `<a href="achievements.html" class="nb${a.tier ? ' t-' + a.tier.toLowerCase() : ''}"><span>${a.ic}</span><b>${T.esc(a.name)}</b><small>${a.tier || (a.secret ? 'Secret badge' : 'Unlocked')}</small></a>`).join('')}</div></section>` : ''}
       <section class="rs-perf"><p class="lab">Your performance</p>
@@ -466,9 +492,17 @@
         ${perf('Time', T.dur(res.hours), T.dur(M.fastest), res.hours <= M.fastest + 0.05, '+' + T.dur(res.hours - M.fastest))}
         ${perf('Deals', found + '/' + M.deals, M.deals + '/' + M.deals, found >= M.deals, (M.deals - found) + ' missed')}
       </section>
-      <section class="rs-vs"><p class="lab">Your route vs the planner</p>
-        <div class="cols">${routeCol('Your route', res.route, res.cost, res.hours, 'you')}<span class="vs">vs</span>${routeCol("Planner's route", parRoute, M.par.cost, M.par.hours, 'par')}</div>
-        <div class="tags">${tags.map(t => `<span class="${t[0]}">${t[1]}</span>`).join('')}</div>
+      <section class="rs-vs"><p class="lab">You vs the planner</p>
+        <div class="duel">
+          <div class="side you"><h5>Your route</h5><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>${T.dur(res.hours)} · ${res.route.length} legs</span></div>
+          <span class="vs">vs</span>
+          <div class="side par"><h5>The planner</h5><b data-count="${Math.round(M.par.cost)}" data-fmt="money">${T.money(M.par.cost)}</b><span>${T.dur(M.par.hours)} · ${M.par.legs} legs</span></div>
+        </div>
+        <p class="verdict ${v.cls}"><b>${v.h}</b><small>${v.t}</small></p>
+        <details class="rs-legs"><summary>Compare the routes leg by leg</summary>
+          <div class="cols">${routeCol('Your route', res.route, res.cost, res.hours, 'you')}<span class="vs">vs</span>${routeCol("Planner's route", parRoute, M.par.cost, M.par.hours, 'par')}</div>
+          <div class="tags">${tags.map(t => `<span class="${t[0]}">${t[1]}</span>`).join('')}</div>
+        </details>
       </section>
       <section class="rs-score"><p class="lab">Score breakdown</p>
         <div class="final"><b data-count="${res.score}">${res.score.toLocaleString()}</b><span>final score</span></div>
@@ -476,7 +510,7 @@
         <div class="brow bonus"><span>Speed bonus</span><div class="bar"><i style="width:${f.speed * 5}%" data-w="${f.speed * 5}"></i></div><b>+${f.speed}%</b></div>
         <p class="note">Cost and time are measured against the best routes that fit today's mission. Efficiency rewards doing well at both. Deciding quickly adds a bonus, up to 20%, and never takes anything away.</p>
       </section>
-      ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+${xpGain} XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%" data-w="${lvlPct}"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
+      ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+<span data-count="${xpGain}">${xpGain}</span> XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%" data-w="${lvlPct}"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
       <div class="actions"><button class="btn primary big tv-share">Share result</button><button class="btn ghost tv-map">See the map</button><button class="btn ghost tv-stats">Stats</button>${full ? `<button class="btn ghost tv-again">Practice again</button>${mode !== 'today' ? '<a class="btn ghost" href="play.html">Today\'s puzzle</a>' : `<a class="btn ghost" href="play.html?seed=${Math.random().toString(36).slice(2, 8)}">Random expedition</a>`}` : ''}</div>`;
   }
   function wireSummary(root, res) {
@@ -503,23 +537,26 @@
     $('#tv-modal-close').onclick = closeModal;
     $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
     wireSummary($('#tv-modal'), res);
-    animateReport($('#tv-modal .rs'));
+    animateReport($('#tv-modal .rs')); emit('report', res);
     $('#tv-modal-close').focus({ preventScroll: true });
   }
   /* the report reveals itself: sections in turn, numbers counting up, bars filling, badges springing in */
   function animateReport(root) {
     if (reducedMotion || !root) return;
-    Array.from(root.children).filter(el => el.tagName !== 'BUTTON').forEach((el, i) => { el.classList.add('rv'); el.style.animationDelay = (0.05 + i * 0.11) + 's'; });
-    root.querySelectorAll('.rs-badges .nb').forEach((el, i) => { el.style.animationDelay = (0.5 + i * 0.12) + 's'; });
+    const STEP = 0.2, delays = new Map();
+    Array.from(root.children).filter(el => el.tagName !== 'BUTTON').forEach((el, i) => { const d = 0.1 + i * STEP; el.classList.add('rv'); el.style.animationDelay = d + 's'; delays.set(el, d); });
+    const delayOf = el => { let n = el; while (n && n !== root) { if (delays.has(n)) return delays.get(n); n = n.parentElement; } return 0; };
+    root.querySelectorAll('.rs-badges .nb').forEach((el, i) => { el.style.animationDelay = (delayOf(el) + 0.2 + i * 0.12) + 's'; });
     const fmt = (v, f) => f === 'money' ? T.money(v) : f === 'km' ? v.toLocaleString() + ' km' : v.toLocaleString();
-    root.querySelectorAll('[data-count]').forEach((el, i) => {
-      const to = +el.dataset.count, f = el.dataset.fmt, dur = 900, begin = performance.now() + 250 + i * 60;
+    root.querySelectorAll('[data-count]').forEach(el => {
+      const to = +el.dataset.count, f = el.dataset.fmt, dur = 800, begin = performance.now() + delayOf(el) * 1000 + 150;
       el.textContent = fmt(0, f);
       const step = now => { const p = Math.max(0, Math.min(1, (now - begin) / dur)), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(Math.round(to * e), f); if (p < 1) requestAnimationFrame(step); };
       requestAnimationFrame(step);
     });
+    const verdict = root.querySelector('.rs-vs .verdict'); if (verdict) verdict.style.animationDelay = (delayOf(verdict) + 0.55) + 's';
     root.querySelectorAll('.bar i[data-w]').forEach(el => { el.style.transition = 'none'; el.style.width = '0%'; });
-    requestAnimationFrame(() => requestAnimationFrame(() => root.querySelectorAll('.bar i[data-w]').forEach((el, i) => { el.style.transition = 'width .9s cubic-bezier(.2,.8,.2,1) ' + (0.35 + i * 0.08) + 's'; el.style.width = el.dataset.w + '%'; })));
+    requestAnimationFrame(() => requestAnimationFrame(() => root.querySelectorAll('.bar i[data-w]').forEach((el, i) => { el.style.transition = 'width .9s cubic-bezier(.2,.8,.2,1) ' + (delayOf(el) + 0.2 + i * 0.06) + 's'; el.style.width = el.dataset.w + '%'; })));
   }
   function closeModal() {
     $('#tv-modal').hidden = true; document.body.classList.remove('tv-modal-open');
@@ -583,6 +620,7 @@
     const R = st.results || {}, S = T.stats(R, today);
     const days = []; for (let i = 6; i >= 0; i--) { const n = today - i; if (n < 1) continue; const key = T.dayKey(n), r = R[key]; days.push(`<a class="d ${r ? 'p' : ''}" href="play.html${n === today ? '' : '?day=' + n}" title="${key}${r ? ' · ' + r.score.toLocaleString() : ''}">#${n}<small>${r ? r.score.toLocaleString() : '—'}</small></a>`); }
     $('#tv-board').innerHTML = `<div class="card"><h3>Your week</h3><p class="sub">🔥 ${S.streak}-day streak · best ${S.maxStreak} · ${S.played} day${S.played === 1 ? '' : 's'} played. Tap a day to replay it.</p>
+      ${mode === 'today' ? `<p class="sub tomorrow">${tomorrowLine()}</p>` : ''}
       <div class="tv-hist">${days.join('')}</div>
       <p class="sub"><a href="profile.html">Your profile</a> · <a href="achievements.html">Badges</a> · <a href="archive.html">Past puzzles</a></p></div>`;
     $('#tv-board').hidden = false;
@@ -597,11 +635,6 @@
     stage.classList.add('zooming'); stage.classList.add('intro');
     let introRan = false;
     const intro = () => { if (introRan) return; introRan = true; setTimeout(() => fitTo([ch.from, ch.to], 3.2, reducedMotion ? 0 : 2300, d3.easeCubicInOut, reducedMotion ? 0 : 450, window.innerWidth >= 1100 ? 250 : 120).on('end interrupt', () => { stage.classList.remove('zooming'); relayout(); stage.classList.add('landed'); }), 50); };
-    let firstTime = false; try { firstTime = !localStorage.getItem('traverse.seen'); } catch (e) {}
-    if (firstTime && window.tdTutorial) {
-      // the first visit gets the tutorial first; the chart's arrival waits until it closes
-      const tut = window.tdTutorial; window.tdTutorial = o => { tut(o); if (!o) intro(); }; tut(true);
-      try { localStorage.setItem('traverse.seen', '1'); } catch (e) {}
-    } else intro();
+    intro(); // a first visit gets the coach (js/coach.js) riding along with the real game; the guide stays behind the ? button
   }
 })();

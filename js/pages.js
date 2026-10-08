@@ -35,7 +35,7 @@
     // leaving for the game: the page lifts away and the globe comes closer before the mission screen arrives
     g('hm-play').addEventListener('click', e => { if (e.metaKey || e.ctrlKey || e.shiftKey || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; e.preventDefault(); document.body.classList.add('leaving'); setTimeout(() => { location.href = g('hm-play').href; }, 380); });
     setTimeout(() => { const M = T.mission(ch); g('hm-mission').innerHTML = mis(M); g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> for under <em>${T.money(M.budget)}</em>?`; }, 30);
-    const meta = () => g('hm-meta').innerHTML = `<span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>next puzzle in <b>${resetIn()}</b></span>`; meta(); setInterval(meta, 30000);
+    const meta = () => g('hm-meta').innerHTML = `<span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>next puzzle in <b>${resetIn()}</b></span>${R[ch.key] ? `<span>tomorrow is <b>${T.esc(T.rhythmOf(ch.n + 1).label)}</b></span>` : ''}`; meta(); setInterval(meta, 30000);
     if (R[ch.key]) { g('hm-play').textContent = 'See your expedition report'; g('hm-sub').innerHTML = `${R[ch.key].tier ? R[ch.key].tier + ' · ' : ''}you scored <b>${R[ch.key].score.toLocaleString()}</b> today`; }
     else if (streak) g('hm-sub').textContent = `🔥 ${streak} days in a row. Keep it going.`;
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }

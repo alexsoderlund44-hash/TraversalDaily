@@ -698,7 +698,7 @@ body.td-modal-open{overflow:hidden}
   .rs-vs .cols{grid-template-columns:1fr 1fr;gap:8px}.rs-vs .vs{display:none}.rs-vs .col{padding:10px}.rs-vs .st{font-size:1rem}
   .rs-score .brow{grid-template-columns:76px 1fr 64px;font-size:.66rem}
   .td-modal-card.tut{padding:18px 16px}.tut-foot .btns .btn{padding:10px 14px}
-  .tv-deal{top:14%;width:calc(100% - 24px)}.tv-deal .ticket{min-width:0}
+  .tv-deal{top:34%;width:calc(100% - 24px);z-index:7}.tv-deal .ticket{min-width:0;background-color:var(--panel-2)}
 }
 
 /* ---------- profile v2, tiered badges, new-badge line ---------- */
@@ -807,7 +807,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible,[
 .td-home-min{transition:opacity .4s ease,transform .45s cubic-bezier(.4,0,.6,1)}
 body.leaving .td-home-min{opacity:0;transform:translateY(-24px) scale(.97)}
 body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
-.tv-gate-card{animation:tvgate .7s cubic-bezier(.2,.8,.2,1) both}
+.tv-stage.landed .tv-gate-card{animation:tvgate .7s cubic-bezier(.2,.8,.2,1) both}
 @keyframes tvgate{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:none}}
 .tv-brief{animation:tvbrief .6s cubic-bezier(.2,.8,.2,1) .25s both}
 @keyframes tvbrief{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
@@ -829,8 +829,8 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 @keyframes tvmark{from{opacity:0;transform:scale(0)}to{opacity:1;transform:none}}
 @keyframes tdfadein{from{opacity:0}to{opacity:1}}
 /* the mission card reads itself out line by line */
-.tv-gate-card > *{animation:tdrise .5s cubic-bezier(.2,.8,.2,1) both}
-.tv-gate-card > *:nth-child(1){animation-delay:.3s}.tv-gate-card > *:nth-child(2){animation-delay:0.42s}.tv-gate-card > *:nth-child(3){animation-delay:0.54s}.tv-gate-card > *:nth-child(4){animation-delay:0.66s}.tv-gate-card > *:nth-child(5){animation-delay:0.78s}.tv-gate-card > *:nth-child(6){animation-delay:0.90s}.tv-gate-card > *:nth-child(7){animation-delay:1.02s}.tv-gate-card > *:nth-child(8){animation-delay:1.14s}
+.tv-stage.landed .tv-gate-card > *{animation:tdrise .5s cubic-bezier(.2,.8,.2,1) both}
+.tv-stage.landed .tv-gate-card > *:nth-child(1){animation-delay:0.30s}.tv-stage.landed .tv-gate-card > *:nth-child(2){animation-delay:0.42s}.tv-stage.landed .tv-gate-card > *:nth-child(3){animation-delay:0.54s}.tv-stage.landed .tv-gate-card > *:nth-child(4){animation-delay:0.66s}.tv-stage.landed .tv-gate-card > *:nth-child(5){animation-delay:0.78s}.tv-stage.landed .tv-gate-card > *:nth-child(6){animation-delay:0.90s}.tv-stage.landed .tv-gate-card > *:nth-child(7){animation-delay:1.02s}.tv-stage.landed .tv-gate-card > *:nth-child(8){animation-delay:1.14s}
 /* a new stop springs up; a stop you cannot take flinches */
 .tv-city.born{animation:tvmark .5s cubic-bezier(.2,1.4,.3,1) both}
 .tv-city.no{animation:tvno .5s ease}
@@ -853,4 +853,65 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 @keyframes tvbadge{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
 .rs-dist{margin:8px 0 0;color:var(--ink-2);font-size:.92rem}.rs-dist b{color:var(--brass-2);font-variant-numeric:tabular-nums}
 .rs-stats b,.rs-score .final b{font-variant-numeric:tabular-nums}
-@media(prefers-reduced-motion:reduce){.tv-stage.landed .tv-course,.tv-stage.intro.landed .tv-city.start,.tv-stage.intro.landed .tv-city.dest,.tv-stage.intro.landed .tv-pulse-g,.tv-gate-card > *,.tv-city.born,.tv-city.no,.btn.primary.ready,.tv-plan.leave,.rs .rv,.rs-badges .nb{animation:none}.tv-course{stroke-dashoffset:0}.tv-stage.intro:not(.landed) .tv-city.start,.tv-stage.intro:not(.landed) .tv-city.dest,.tv-stage.intro:not(.landed) .tv-pulse-g{opacity:1}}
+@media(prefers-reduced-motion:reduce){.tv-stage.landed .tv-course,.tv-stage.intro.landed .tv-city.start,.tv-stage.intro.landed .tv-city.dest,.tv-stage.intro.landed .tv-pulse-g,.tv-stage.landed .tv-gate-card,.tv-stage.landed .tv-gate-card > *,.tv-stage.intro:not(.landed) .tv-gate,.tv-city.born,.tv-city.no,.btn.primary.ready,.tv-plan.leave,.rs .rv,.rs-badges .nb{animation:none}.tv-course{stroke-dashoffset:0}.tv-stage.intro:not(.landed) .tv-city.start,.tv-stage.intro:not(.landed) .tv-city.dest,.tv-stage.intro:not(.landed) .tv-pulse-g{opacity:1}}
+/* ===================== game feel, pass two: every action answers back ===================== */
+/* the mission card waits until the chart has landed, then reads itself out; Begin asks for the tap once the lines are in */
+.tv-stage.intro:not(.landed) .tv-gate{opacity:0;pointer-events:none}
+.tv-stage.landed .tv-gate-card > .btn.primary{animation:tdrise .5s cubic-bezier(.2,.8,.2,1) .9s both,tvready 1.3s ease-in-out 1.9s 2}
+/* cities answer the pointer, and the places you can reach next pulse once when they become available */
+.tv-city{transition:transform .18s cubic-bezier(.2,.8,.2,1),fill .18s}
+.tv-city.reach:hover,.tv-city.start:hover{transform:scale(1.4)}
+.tv-stage.fresh .tv-city.reach{animation:tvreach .7s cubic-bezier(.2,.8,.2,1) .25s}
+.tv-stage.coach-reach .tv-city.reach{animation:tvreach 1.6s ease-in-out .3s infinite}
+@keyframes tvreach{35%{transform:scale(1.7);fill:var(--brass)}}
+/* undo runs the leg backwards: the line unwinds and the stop folds away */
+.tv-link.undraw{animation:tvundraw .4s ease forwards;filter:none}
+@keyframes tvundraw{to{stroke-dashoffset:1}}
+.tv-stops li.gone{animation:tvgone .4s ease forwards}
+@keyframes tvgone{to{opacity:0;transform:translateX(-10px);max-height:0;margin:0;padding-top:0;padding-bottom:0}}
+.tv-stops li{max-height:120px}
+/* a refusal shakes its head and says why */
+.tv-toast.no{background:var(--red);color:#FFF4DC;animation:tvshake .5s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes tvshake{10%,90%{transform:translateX(calc(-50% - 1px))}20%,80%{transform:translateX(calc(-50% + 2px))}30%,50%,70%{transform:translateX(calc(-50% - 4px))}40%,60%{transform:translateX(calc(-50% + 4px))}}
+/* transport cards lift when chosen and press when tapped */
+.tv-opt{transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .16s,border-color .16s,background .16s;position:relative}
+.tv-opt:hover{transform:translateY(-1px)}
+.tv-opt:active,.tv-stoprow:active{transform:scale(.985)}
+.tv-opt.sel{transform:translateY(-2px);box-shadow:3px 3px 0 var(--ink),inset 0 0 0 1px rgba(183,132,58,0.25);border-color:var(--ink)}
+.tv-opt.sel:after{content:"✓";position:absolute;right:-7px;top:-7px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#FFF4DC;font:800 .72rem/20px var(--ui);text-align:center;border:2px solid var(--panel-2);animation:tvmark .35s cubic-bezier(.2,1.4,.3,1) both}
+.tv-stoprow{transition:transform .16s cubic-bezier(.2,.8,.2,1)}
+/* the secret fare: the ticket arrives, the old price falls, the new one lands, and the saving stamps itself */
+.tv-deal.show .ticket>*{animation:tdrise .4s cubic-bezier(.2,.8,.2,1) both}
+.tv-deal.show .k{animation-delay:.1s}.tv-deal.show b{animation-delay:.25s}.tv-deal.show small{animation-delay:.75s}.tv-deal.show em{animation-delay:.95s}.tv-deal.show .dots{animation-delay:1.15s}
+.tv-deal b s,.tv-deal b i,.tv-deal b .new{display:inline-block}
+.tv-deal.show b s{animation:tvold .5s ease .3s both}
+.tv-deal.show b i{animation:tdfadein .3s ease .55s both}
+.tv-deal.show b .new{animation:tvnew .55s cubic-bezier(.2,1.4,.3,1) .7s both;color:var(--brass-2)}
+.tv-deal.show em{animation:tvstamp .5s cubic-bezier(.2,1.15,.3,1) .95s both}
+@keyframes tvold{from{opacity:0;transform:translateY(-6px)}60%{opacity:1;text-decoration-color:transparent}to{opacity:1;transform:none}}
+@keyframes tvnew{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.tv-deal.show .ticket{animation:tvglow 1.4s ease .6s}
+@keyframes tvglow{30%{box-shadow:4px 4px 0 var(--ink),0 0 0 10px rgba(183,132,58,.25),0 0 40px rgba(183,132,58,.45)}}
+/* the coach: one tip at a time, a ring around the thing it talks about */
+.coach-cap{position:fixed;z-index:121;max-width:300px;background:var(--red);color:#FFF4DC;font:700 .82rem/1.35 var(--ui);padding:8px 12px;border-radius:4px;box-shadow:2px 2px 0 var(--ink);animation:tvmodal .4s cubic-bezier(.2,.8,.2,1) both;pointer-events:none;transition:left .2s,top .2s}
+.coach-cap span{display:block}
+.coach-cap .coach-skip{pointer-events:auto;margin:6px 0 0;border:0;background:none;color:#FFF4DC;opacity:.75;font:700 .68rem var(--ui);letter-spacing:.08em;text-transform:uppercase;padding:0;cursor:pointer;text-decoration:underline}
+.coach-cap .coach-skip:hover{opacity:1}
+.coach-ring{position:fixed;z-index:120;pointer-events:none;border:2.5px solid var(--red);border-radius:6px;box-shadow:0 0 0 3px rgba(255,244,220,.7);animation:tuthl .5s cubic-bezier(.2,.8,.2,1) both,tvring 1.6s ease-in-out .6s infinite;transition:left .2s,top .2s,width .2s,height .2s}
+@keyframes tvring{50%{box-shadow:0 0 0 6px rgba(161,58,42,.18)}}
+@media(max-width:900px){.coach-cap{max-width:min(300px,calc(100vw - 24px));font-size:.78rem}}
+/* the report: you versus the planner in two numbers, then the verdict */
+.rs .kicker b{color:var(--ink);font-weight:800;letter-spacing:.14em}
+.rs-vs .duel{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.rs-vs .side{border:1px solid var(--line);border-radius:4px;padding:12px 14px;background:rgba(43,29,18,0.05);text-align:center}
+.rs-vs .side.you{border-color:rgba(47,127,132,0.5)}.rs-vs .side.par{border-color:rgba(154,107,31,0.6);background:linear-gradient(160deg,rgba(154,107,31,0.08),rgba(43,29,18,0.05))}
+.rs-vs .side h5{margin:0 0 6px}.rs-vs .side b{display:block;font:500 1.7rem var(--disp);line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}.rs-vs .side.par b{color:var(--brass-2)}
+.rs-vs .side span{display:block;margin-top:4px;font-size:.78rem;color:var(--ink-3)}
+.rs-vs .verdict{animation:tvstamp .55s cubic-bezier(.2,1.15,.3,1) both}
+.rs-vs .verdict small{display:block;margin-top:2px}
+.rs-legs{margin-top:10px}.rs-legs summary{cursor:pointer;font:700 .72rem var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--brass);list-style:none;padding:6px 0}.rs-legs summary::-webkit-details-marker{display:none}.rs-legs summary:before{content:"▸ ";}
+.rs-legs[open] summary:before{content:"▾ "}.rs-legs .cols{margin-top:6px}.rs-legs .tags{margin-top:10px}
+.rs-top .rs-big span{line-height:1.5}
+.tv-board .sub.tomorrow b{color:var(--ink)}
+@media(max-width:560px){.rs-vs .duel{gap:6px}.rs-vs .side{padding:10px 8px}.rs-vs .side b{font-size:1.4rem}.rs-vs .duel .vs{font-size:.9rem}}
+@media(prefers-reduced-motion:reduce){.tv-stage.landed .tv-gate-card > .btn.primary,.tv-stage.fresh .tv-city.reach,.tv-stage.coach-reach .tv-city.reach,.tv-link.undraw,.tv-stops li.gone,.tv-toast.no,.tv-opt.sel:after,.tv-deal.show .ticket>*,.tv-deal.show b s,.tv-deal.show b i,.tv-deal.show b .new,.tv-deal.show em,.tv-deal.show .ticket,.coach-cap,.coach-ring,.rs-vs .verdict{animation:none}.tv-city,.tv-opt,.tv-stoprow,.coach-cap,.coach-ring{transition:none}.tv-stage.intro:not(.landed) .tv-gate{opacity:1}.tv-link.undraw{opacity:0}}

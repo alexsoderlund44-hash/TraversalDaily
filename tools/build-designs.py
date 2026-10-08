@@ -113,7 +113,7 @@ PLAY = '''
   <p class="tv-source" id="tv-source"></p>
   @HOW@
 </main>'''
-PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/world-lite.js"></script><script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/data/tutorial-map.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/traverse-ui.js"></script>'
+PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/world-lite.js"></script><script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/data/tutorial-map.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/traverse-ui.js"></script><script src="@/js/coach.js"></script>'
 
 ACH = '''
 <main class="td-page">

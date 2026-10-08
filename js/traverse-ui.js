@@ -15,7 +15,11 @@
   let practice = mode !== 'today' || !!official;
 
   /* ---------- state ---------- */
-  let route = [], pendingTo = null, selOpt = null, t0 = 0, timer = null, playing = false, found = new Set(), showPar = false, drawn = false, dealT = null;
+  let route = [], pendingTo = null, selOpt = null, t0 = 0, timer = null, playing = false, found = new Set(), showPar = false, drawn = false, dealT = null, parPending = false;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* a short-lived class on one city marker (born, pop, no), kept across redraws */
+  const KEEP = ['born', 'pop', 'no'];
+  function markCity(id, cls, ms) { gCities.selectAll('circle').filter(c => c.id === id).classed(cls, true); setTimeout(() => gCities.selectAll('circle').filter(c => c.id === id).classed(cls, false), ms); }
   const UNDOS = 3, HINTS = 2, HINT_SECS = 45; let undos = UNDOS, hints = HINTS;
   const at = () => route.length ? T.byId[route[route.length - 1].to] : ch.from;
   const atDest = () => at().id === ch.to.id;
@@ -43,7 +47,7 @@
     el.innerHTML = `<div class="ticket"><p class="k">🎟️ Secret fare found</p><b><s>${T.money(full)}</s><i>→</i>${T.money(l.cost)}</b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>You saved ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em><span class="dots">${dealDots()} ${found.size}/${M.deals} found</span></div>`;
     el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     clearTimeout(dealT); dealT = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 350); }, 3200);
-    gCities.selectAll('circle').filter(c => c.id === b.id).classed('pop', true); setTimeout(() => gCities.selectAll('circle').classed('pop', false), 1600);
+    markCity(b.id, 'pop', 1600);
   }
 
   /* ---------- static bits ---------- */
@@ -103,7 +107,7 @@
   const gCountry = g.append('g');
   gCountry.selectAll('text').data(feats.filter(f => path.area(f) > 60)).join('text').attr('class', 'tv-cname')
     .attr('transform', f => { const c = path.centroid(f); return `translate(${c[0]},${c[1]})`; }).text(f => (f.properties.name || '').toUpperCase()).style('display', 'none');
-  const gSpokes = g.append('g'), gPar = g.append('g'), gLinks = g.append('g'), gBadges = g.append('g'), gHits = g.append('g'), gCities = g.append('g'), gLabels = g.append('g');
+  const gSpokes = g.append('g'), gCourse = g.append('g'), gPar = g.append('g'), gLinks = g.append('g'), gBadges = g.append('g'), gHits = g.append('g'), gCities = g.append('g'), gLabels = g.append('g');
   const pos = c => proj([c.lon, c.lat]);
   const tip = $('#tv-tip'), stage = $('#tv-stage');
   g.append('g').attr('class', 'tv-pulse-g').attr('transform', `translate(${pos(ch.to)[0]},${pos(ch.to)[1]})`).append('circle').attr('class', 'tv-pulse');
@@ -138,6 +142,10 @@
   const zoom = d3.zoom().scaleExtent([1, 14]).translateExtent([[-80, -40], [1040, 540]]).on('zoom', e => {
     g.attr('transform', e.transform); k = e.transform.k;
     if (!stage.classList.contains('zooming')) relayout();
+    else { // mid-swoop: only the cheap bits follow the zoom, so markers keep their size while the chart moves
+      gCities.selectAll('circle').attr('r', c => (2 + c.hub * 0.5 + (c.id === ch.from.id || c.id === ch.to.id ? 1 : 0)) / k).style('stroke-width', 1 / k);
+      g.select('.tv-pulse-g').attr('transform', `translate(${pos(ch.to)[0]},${pos(ch.to)[1]}) scale(${1 / k})`);
+    }
   }).on('start', () => { svg.classed('dragging', true); hideTip(); }).on('end', () => svg.classed('dragging', false));
   svg.call(zoom);
 
@@ -157,15 +165,15 @@
   $('#tv-zout').onclick = () => svg.transition().call(zoom.scaleBy, 1 / 1.6);
   $('#tv-zfit').onclick = () => fitRoute();
   document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === '+' || e.key === '=') $('#tv-zin').click(); else if (e.key === '-') $('#tv-zout').click(); else if (e.key === 'Escape') { if (!$('#tv-modal').hidden) closeModal(); else if (pendingTo) { pendingTo = null; refresh(); } } });
-  function fitTo(points, pad, dur, ease) {
+  function fitTo(points, pad, dur, ease, delay, offset) {
     const xs = points.map(p => pos(p)[0]), ys = points.map(p => pos(p)[1]);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
     const r = stage.getBoundingClientRect(); const aspect = r.width / r.height;
     const vw = aspect > 960 / 500 ? 960 : 500 * aspect, vh = aspect > 960 / 500 ? 960 / aspect : 500;
     const w = Math.max(60, (x1 - x0) * (pad || 1.6)), h = Math.max(40, (y1 - y0) * (pad || 1.6));
     const kk = Math.min(12, Math.max(1, Math.min(vw / w, vh / h) * 0.9));
-    const cx = (x0 + x1) / 2 + (window.innerWidth > 900 ? 120 / kk : 0);
-    return svg.transition().duration(dur == null ? 750 : dur).ease(ease || d3.easeCubicOut).call(zoom.transform, d3.zoomIdentity.translate(480 - kk * cx, 250 - kk * (y0 + y1) / 2).scale(kk));
+    const cx = (x0 + x1) / 2 + (window.innerWidth > 900 ? (offset == null ? 120 : offset) / kk : 0);
+    return svg.transition().delay(delay || 0).duration(dur == null ? 750 : dur).ease(ease || d3.easeCubicOut).call(zoom.transform, d3.zoomIdentity.translate(480 - kk * cx, 250 - kk * (y0 + y1) / 2).scale(kk));
   }
   function fitRoute() { fitTo([ch.from, ch.to, ...route.map(r => T.byId[r.to]), ...(showPar ? M.par.path.map(e => T.byId[e.to]) : [])], 1.8); }
   const arc = (a, b) => path({ type: 'LineString', coordinates: [[a.lon, a.lat], [b.lon, b.lat]] });
@@ -187,8 +195,9 @@
     if (live) { const sg = suggestFrom(cur); (sg.finish ? [sg.finish] : []).concat(sg.suggested).forEach(c => { if (pendingTo && c.id === pendingTo.id) return; const hasDeal = T.legs(cur, c, ch.seed).some(l => l.deal && found.has(dealKey(cur, c, l))); spokes.push({ cls: 'spoke' + (pendingTo ? ' dim' : '') + (hasDeal ? ' deal' : '') + (c.id === ch.to.id ? ' fin' : ''), d: arc(cur, c) }); }); }
     gSpokes.selectAll('path').data(spokes).join('path').attr('class', d => 'tv-spoke ' + d.cls).attr('d', d => d.d).style('stroke-width', 0.9 / k).style('stroke-dasharray', dashFor('spoke'));
     const reach = live ? new Set(T.C.filter(c => !on.has(c.id) && c.id !== cur.id && usable(cur, c).length).map(c => c.id)) : null;
-    gCities.selectAll('circle').attr('class', c => 'tv-city'
-      + (c.id === cur.id && live ? ' cur' : c.id === ch.from.id ? ' start' : c.id === ch.to.id ? ' dest' : on.has(c.id) ? ' on' : pendingTo && c.id === pendingTo.id ? ' pend' : par.has(c.id) ? ' par' : reach ? (reach.has(c.id) ? ' reach' : ' far') : ''));
+    gCities.selectAll('circle').attr('class', function (c) { return 'tv-city'
+      + (c.id === cur.id && live ? ' cur' : c.id === ch.from.id ? ' start' : c.id === ch.to.id ? ' dest' : on.has(c.id) ? ' on' : pendingTo && c.id === pendingTo.id ? ' pend' : par.has(c.id) ? ' par' : reach ? (reach.has(c.id) ? ' reach' : ' far') : '')
+      + KEEP.filter(k => this.classList.contains(k)).map(k => ' ' + k).join(''); });
     gLabels.selectAll('text').classed('far', c => !!reach && !reach.has(c.id) && c.id !== ch.to.id && c.id !== ch.from.id && !on.has(c.id));
     gCities.selectAll('circle').attr('r', c => (2 + c.hub * 0.5 + (c.id === cur.id && playing && !atDest() ? 1.5 : c.id === ch.from.id || c.id === ch.to.id || on.has(c.id) || par.has(c.id) ? 1 : 0)) / k).style('stroke-width', c => ((c.id === cur.id && playing && !atDest()) ? 8 : (pendingTo && c.id === pendingTo.id) ? 6 : 1) / k);
     layoutLabels();
@@ -229,8 +238,8 @@
     if (c.id === cur.id) return;
     if (onRouteIds().has(c.id)) return toast(c.name + ' is already on your route');
     const all = T.legs(cur, c, ch.seed); noteDeals(cur, c, all);
-    if (!all.length) return toast('Nothing runs from ' + cur.name + ' to ' + c.name + ' today');
-    if (!all.some(l => !blocked(l, c))) return toast('Nothing from ' + cur.name + ' to ' + c.name + ' fits: ' + blocked(all.slice().sort((x, y) => x.cost - y.cost)[0], c));
+    if (!all.length) { markCity(c.id, 'no', 700); return toast('Nothing runs from ' + cur.name + ' to ' + c.name + ' today'); }
+    if (!all.some(l => !blocked(l, c))) { markCity(c.id, 'no', 700); return toast('Nothing from ' + cur.name + ' to ' + c.name + ' fits: ' + blocked(all.slice().sort((x, y) => x.cost - y.cost)[0], c)); }
     pendingTo = c; selOpt = null; refresh(); fitTo([cur, c], 2.2);
     $('#tv-plan').classList.remove('collapsed');
     const el = $('#tv-picker'); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -238,7 +247,16 @@
   function commit(c, leg) {
     if (blocked(leg, c)) return toast('That option is ' + blocked(leg, c));
     route.push({ from: at().id, to: c.id, leg }); pendingTo = null; selOpt = null; refresh();
-    if (!atDest()) fitTo([c, ch.to], 1.8); else fitRoute();
+    drawNewLeg(c.id);
+    if (!atDest()) fitTo([c, ch.to], 1.8); else { fitRoute(); stage.classList.add('arrived'); }
+  }
+  /* the leg you just took draws itself across the chart and the stop marker springs up */
+  function drawNewLeg(toId) {
+    if (reducedMotion) return;
+    const mine = gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), p = mine[mine.length - 1];
+    const flow = gLinks.selectAll('path').filter(d => d.cls === 'flow').nodes().pop();
+    if (p) { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('draw'); if (flow) flow.style.opacity = 0; setTimeout(() => { p.classList.remove('draw'); p.removeAttribute('pathLength'); if (flow) flow.style.opacity = ''; drawMap(); }, 620); }
+    setTimeout(() => markCity(toId, 'born', 700), 380);
   }
   function refresh() { renderPlan(); drawMap(); }
   let toastT; function toast(m) { let t = $('.tv-toast'); if (!t) { t = document.createElement('div'); t.className = 'tv-toast'; document.body.appendChild(t); } t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
@@ -265,7 +283,7 @@
     const est = atDest() ? T.score(tt.cost, tt.hours, elapsed(), M) : null;
     $('#tv-est').hidden = est === null; $('#tv-est b').textContent = est === null ? '—' : est.toLocaleString(); $('#tv-est .bar i').style.width = (est === null ? 0 : est / 100) + '%';
     $('#tv-plan-sub').textContent = atDest() ? (done ? 'You made it. Submit, or undo a leg and try another idea.' : 'You made it, but the twist isn\'t met: ' + tw.status(ts) + '.') : `You're in ${cur.name}.`;
-    $('#tv-submit').disabled = !(atDest() && done); $('#tv-undo').disabled = !route.length || !undos;
+    $('#tv-submit').disabled = !(atDest() && done); $('#tv-submit').classList.toggle('ready', atDest() && done); $('#tv-undo').disabled = !route.length || !undos;
 
     let h = `<li class="start"><span class="dot"></span><div class="stop">${T.place(ch.from)}<small>start</small></div>`;
     route.forEach((r, i) => {
@@ -341,11 +359,12 @@
     renderBrief(); hideTip();
     $('#tv-result').hidden = true; $('#tv-board').hidden = true; $('#tv-plan').hidden = true;
     // the chart swoops in on today's region, then the clock starts
-    const gate = $('#tv-gate'), plan = $('#tv-plan'); gate.classList.add('off'); stage.classList.add('zooming');
-    const dur = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 2600;
+    const gate = $('#tv-gate'), plan = $('#tv-plan'); gate.classList.add('off'); stage.classList.add('zooming'); stage.classList.remove('arrived'); stage.classList.remove('intro');
+    gCourse.selectAll('path').remove();
+    const dur = reducedMotion ? 0 : 2600;
     fitTo([ch.from, ch.to], 1.8, dur, d3.easeCubicInOut).on('end interrupt', () => {
       gate.hidden = true; gate.classList.remove('off'); stage.classList.remove('zooming'); relayout();
-      plan.hidden = false; plan.classList.toggle('collapsed', window.innerWidth <= 900); plan.classList.add('arrive');
+      plan.hidden = false; plan.classList.remove('leave'); plan.classList.toggle('collapsed', window.innerWidth <= 900); plan.classList.add('arrive');
       playing = true; t0 = performance.now();
       clearInterval(timer); timer = setInterval(() => { $('#tv-timer').textContent = T.secsF(elapsed()); if (atDest()) { const tt = totals(); const est = T.score(tt.cost, tt.hours, elapsed(), M); $('#tv-est b').textContent = est.toLocaleString(); $('#tv-est .bar i').style.width = est / 100 + '%'; } }, 250);
       refresh();
@@ -373,6 +392,7 @@
   $('#tv-submit').onclick = () => {
     if (!atDest() || !tw.done(twState())) return;
     const secs = elapsed(); clearInterval(timer); playing = false;
+    $('#tv-plan').classList.add('leave'); hideTip();
     const tt = totals(); const sc = T.score(tt.cost, tt.hours, secs, M), tr = T.tier(sc, M);
     const res = { from: ch.from.id, score: sc, tier: tr.name, cost: Math.round(tt.cost), hours: tt.hours, secs: Math.round(secs * 10) / 10, route: route.map(r => ({ to: r.to, mode: r.leg.mode, cost: r.leg.cost, hours: r.leg.hours, deal: r.leg.deal || 0 })),
       deals: { found: found.size, total: M.deals, used: route.filter(r => r.leg.deal).length }, hints: HINTS - hints, undos: UNDOS - undos, par: { cost: M.par.cost, hours: M.par.hours, legs: M.par.legs }, parMatch: tt.cost <= M.par.cost + 1 && tt.hours <= M.par.hours + 0.05, twist: tw.id, at: Date.now() };
@@ -406,16 +426,19 @@
     const parRoute = M.par.path.map(e => ({ to: e.to, mode: e.mode, cost: e.cost, hours: e.hours, deal: e.deal }));
     const found = res.deals ? res.deals.found : 0, parDeals = M.par.path.filter(e => e.deal).length;
     const modesUsed = Object.keys(T.MODES).filter(m => res.route.some(r => r.mode === m)).map(m => T.MODES[m].icon).join(' ');
-    const chain = [ch.from, ...res.route.map(r => T.byId[r.to])].map(c => `<span>${T.esc(c.name)}</span>`).join('<i>→</i>');
+    const stops = [ch.from, ...res.route.map(r => T.byId[r.to])];
+    const chain = stops.map(c => `<span>${T.esc(c.name)}</span>`).join('<i>→</i>');
+    const km = Math.round(stops.slice(1).reduce((a, c, i) => a + T.km(stops[i], c), 0)), nations = new Set(stops.map(c => c.country)).size;
     const perf = (lab, you, best, ok, delta) => `<div class="prow ${ok ? 'good' : 'bad'}"><span class="l">${lab}</span><span class="y"><small>You</small><b>${you}</b></span><span class="b"><small>Best</small><b>${best}</b></span><i>${ok ? '✓' : delta}</i></div>`;
-    const bar = (lab, val, cls) => `<div class="brow ${cls || ''}"><span>${lab}</span><div class="bar"><i style="width:${val}%"></i></div><b>${val} <small>/ 100</small></b></div>`;
+    const bar = (lab, val, cls) => `<div class="brow ${cls || ''}"><span>${lab}</span><div class="bar"><i style="width:${val}%" data-w="${val}"></i></div><b><span data-count="${val}">${val}</span> <small>/ 100</small></b></div>`;
     const tags = [res.cost < M.par.cost - 0.5 ? ['you', 'Cheaper'] : res.cost > M.par.cost + 0.5 ? ['par', 'Planner cheaper'] : ['tie', 'Same cost'], res.hours < M.par.hours - 0.05 ? ['you', 'Faster'] : res.hours > M.par.hours + 0.05 ? ['par', 'Planner faster'] : ['tie', 'Same time'], res.route.length < M.par.legs ? ['you', 'Fewer legs'] : res.route.length > M.par.legs ? ['par', 'Planner fewer legs'] : ['tie', 'Same legs'], [found >= parDeals ? 'you' : 'par', `Deals ${res.deals ? res.deals.used : 0} vs ${parDeals} used`]];
     return `
       <p class="kicker">${isPractice ? (mode === 'today' ? 'Practice run · not scored' : mode === 'archive' ? 'Archive practice · not scored' : 'Random expedition · not scored') : 'Official result · ' + ch.key}</p>
       <section class="rs-journey">
         <p class="lab">Your journey</p>
         <div class="chain">${chain}</div>
-        <div class="rs-stats"><div><b>${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.route.length}</b><span>legs</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>deals</span></div><div class="sc"><b>${res.score.toLocaleString()}</b><span>score</span></div></div>
+        <p class="rs-dist"><b data-count="${km}" data-fmt="km">${km.toLocaleString()} km</b> across <b>${nations} ${nations === 1 ? 'country' : 'countries'}</b></p>
+        <div class="rs-stats"><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.route.length}</b><span>legs</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>deals</span></div><div class="sc"><b data-count="${res.score}">${res.score.toLocaleString()}</b><span>score</span></div></div>
         <div class="rs-rating ${tr.name.toLowerCase()}"><span class="ic">${tr.icon}</span><div><b>${tr.name}</b><small>${ofPar}% of the planner's score (${M.par.score.toLocaleString()})${isPractice ? ' · practice' : ''}</small></div></div>
       </section>
       ${earned && earned.length ? `<section class="rs-badges"><p class="lab">New badge${earned.length === 1 ? '' : 's'}</p><div>${earned.map(a => `<a href="achievements.html" class="nb${a.tier ? ' t-' + a.tier.toLowerCase() : ''}"><span>${a.ic}</span><b>${T.esc(a.name)}</b><small>${a.tier || (a.secret ? 'Secret badge' : 'Unlocked')}</small></a>`).join('')}</div></section>` : ''}
@@ -430,12 +453,12 @@
         <div class="tags">${tags.map(t => `<span class="${t[0]}">${t[1]}</span>`).join('')}</div>
       </section>
       <section class="rs-score"><p class="lab">Score breakdown</p>
-        <div class="final"><b>${res.score.toLocaleString()}</b><span>final score</span></div>
+        <div class="final"><b data-count="${res.score}">${res.score.toLocaleString()}</b><span>final score</span></div>
         ${bar('Cost', f.cost)}${bar('Time', f.time)}${bar('Deals', f.deals)}${bar('Efficiency', f.eff)}
-        <div class="brow bonus"><span>Speed bonus</span><div class="bar"><i style="width:${f.speed * 5}%"></i></div><b>+${f.speed}%</b></div>
+        <div class="brow bonus"><span>Speed bonus</span><div class="bar"><i style="width:${f.speed * 5}%" data-w="${f.speed * 5}"></i></div><b>+${f.speed}%</b></div>
         <p class="note">Cost and time are measured against the best routes that fit today's mission. Efficiency rewards doing well at both. Deciding quickly adds a bonus, up to 20%, and never takes anything away.</p>
       </section>
-      ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+${xpGain} XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
+      ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+${xpGain} XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%" data-w="${lvlPct}"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
       <div class="actions"><button class="btn primary big tv-share">Share result</button><button class="btn ghost tv-map">See the map</button><button class="btn ghost tv-stats">Stats</button><button class="btn ghost tv-again">Practice again</button>${mode !== 'today' ? '<a class="btn ghost" href="play.html">Today\'s puzzle</a>' : `<a class="btn ghost" href="play.html?seed=${Math.random().toString(36).slice(2, 8)}">Random expedition</a>`}</div>`;
   }
   function wireSummary(root, res) {
@@ -462,16 +485,39 @@
     $('#tv-modal-close').onclick = closeModal;
     $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
     wireSummary($('#tv-modal'), res);
+    animateReport($('#tv-modal .rs'));
   }
-  function closeModal() { $('#tv-modal').hidden = true; document.body.classList.remove('tv-modal-open'); if (showPar && !drawn) animateRoutes(); else fitRoute(); }
-  /* draw your route, then the planner's, across the map */
-  function animateRoutes() {
+  /* the report reveals itself: sections in turn, numbers counting up, bars filling, badges springing in */
+  function animateReport(root) {
+    if (reducedMotion || !root) return;
+    Array.from(root.children).filter(el => el.tagName !== 'BUTTON').forEach((el, i) => { el.classList.add('rv'); el.style.animationDelay = (0.05 + i * 0.11) + 's'; });
+    root.querySelectorAll('.rs-badges .nb').forEach((el, i) => { el.style.animationDelay = (0.5 + i * 0.12) + 's'; });
+    const fmt = (v, f) => f === 'money' ? T.money(v) : f === 'km' ? v.toLocaleString() + ' km' : v.toLocaleString();
+    root.querySelectorAll('[data-count]').forEach((el, i) => {
+      const to = +el.dataset.count, f = el.dataset.fmt, dur = 900, begin = performance.now() + 250 + i * 60;
+      el.textContent = fmt(0, f);
+      const step = now => { const p = Math.max(0, Math.min(1, (now - begin) / dur)), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(Math.round(to * e), f); if (p < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+    root.querySelectorAll('.bar i[data-w]').forEach(el => { el.style.transition = 'none'; el.style.width = '0%'; });
+    requestAnimationFrame(() => requestAnimationFrame(() => root.querySelectorAll('.bar i[data-w]').forEach((el, i) => { el.style.transition = 'width .9s cubic-bezier(.2,.8,.2,1) ' + (0.35 + i * 0.08) + 's'; el.style.width = el.dataset.w + '%'; })));
+  }
+  function closeModal() {
+    $('#tv-modal').hidden = true; document.body.classList.remove('tv-modal-open');
+    if (parPending) { parPending = false; showPar = true; drawMap(); const t = $('#tv-par-toggle'); if (t) t.textContent = "Hide the planner's route on the map"; animateRoutes('par'); }
+    else if (showPar && !drawn) animateRoutes('both'); else fitRoute();
+  }
+  /* draw your route and/or the planner's across the map, leg by leg; returns how long it takes */
+  function animateRoutes(which) {
     drawn = true; fitRoute();
-    const mine = gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), par = gPar.selectAll('path').nodes();
+    if (reducedMotion) return 0;
+    const mine = which === 'par' ? [] : gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), par = which === 'mine' ? [] : gPar.selectAll('path').nodes();
     stage.classList.add('drawing');
-    mine.forEach((p, i) => { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('draw'); p.style.animationDelay = (0.3 + i * 0.5) + 's'; });
-    par.forEach((p, i) => { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('draw'); p.style.animationDelay = (0.9 + mine.length * 0.5 + i * 0.5) + 's'; });
-    setTimeout(() => { mine.concat(par).forEach(p => { p.classList.remove('draw'); p.removeAttribute('pathLength'); p.style.animationDelay = ''; }); stage.classList.remove('drawing'); drawMap(); }, ((mine.length + par.length) * 0.5 + 1.8) * 1000);
+    mine.forEach((p, i) => { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('draw'); p.style.animationDelay = (0.5 + i * 0.45) + 's'; });
+    par.forEach((p, i) => { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('draw'); p.style.animationDelay = (0.5 + mine.length * 0.45 + (mine.length ? 0.5 : 0) + i * 0.45) + 's'; });
+    const total = ((mine.length + par.length) * 0.45 + (mine.length && par.length ? 0.5 : 0) + 1.1) * 1000;
+    setTimeout(() => { mine.concat(par).forEach(p => { p.classList.remove('draw'); p.removeAttribute('pathLength'); p.style.animationDelay = ''; }); stage.classList.remove('drawing'); drawMap(); }, total);
+    return total;
   }
 
   /* personal stats pop-up (the thing people screenshot) */
@@ -497,15 +543,20 @@
   { const b = $('#td-stats'); if (b) b.onclick = showStats; }
 
   function showResult(res, isPractice, xpGain, quiet, earned) {
-    $('#tv-plan').hidden = true; pendingTo = null; selOpt = null; showPar = true; drawn = false;
+    const planEl = $('#tv-plan'); if (quiet || reducedMotion) planEl.hidden = true; else setTimeout(() => { planEl.hidden = true; }, 450);
+    pendingTo = null; selOpt = null; drawn = false; stage.classList.remove('arrived');
+    showPar = !!quiet; parPending = !quiet; // on a fresh submit the planner's route waits until the report closes
     route = res.route.map((r, i) => ({ from: i ? res.route[i - 1].to : ch.from.id, to: r.to, leg: { mode: r.mode, cost: r.cost, hours: r.hours, icon: T.MODES[r.mode].icon, deal: r.deal } }));
     drawMap();
-    $('#tv-result').innerHTML = `<div class="rs">${buildSummary(res, isPractice, xpGain, earned)}<p class="rs-maptoggle"><button class="lnk" id="tv-par-toggle">Hide the planner's route on the map</button></p></div>`;
+    $('#tv-result').innerHTML = `<div class="rs">${buildSummary(res, isPractice, xpGain, earned)}<p class="rs-maptoggle"><button class="lnk" id="tv-par-toggle">${showPar ? 'Hide' : 'Show'} the planner's route on the map</button></p></div>`;
     $('#tv-result').hidden = false;
     wireSummary($('#tv-result'), res);
-    $('#tv-par-toggle').onclick = () => { showPar = !showPar; $('#tv-par-toggle').textContent = (showPar ? 'Hide' : 'Show') + " the planner's route on the map"; drawMap(); fitRoute(); };
+    $('#tv-par-toggle').onclick = () => { showPar = !showPar; parPending = false; $('#tv-par-toggle').textContent = (showPar ? 'Hide' : 'Show') + " the planner's route on the map"; drawMap(); fitRoute(); };
     st = T.load(); st.results = st.results || {}; showBoard();
-    if (!quiet) showModal(res, isPractice, xpGain, earned); else setTimeout(animateRoutes, 150);
+    if (quiet) { setTimeout(() => animateRoutes('both'), 150); return; }
+    // your finished route draws itself across the chart, then the report arrives
+    const wait = animateRoutes('mine');
+    setTimeout(() => showModal(res, isPractice, xpGain, earned), Math.max(0, wait - 400));
   }
 
   /* your week: the last seven puzzles, played or not, with links to replay them */
@@ -520,9 +571,12 @@
 
   /* ---------- initial ---------- */
   drawMap();
-  if (official) { $('#tv-gate').hidden = true; showResult(official, false, 0, true); }
+  if (official) { $('#tv-gate').hidden = true; stage.classList.add('landed'); showResult(official, false, 0, true); }
   else {
-    setTimeout(() => fitTo([ch.from, ch.to], 7, 0), 50);
+    // the chart opens on the whole world, then carries you to today's region; the course line draws once it lands
+    gCourse.append('path').attr('class', 'tv-course').attr('d', arc(ch.from, ch.to)).attr('pathLength', 1);
+    stage.classList.add('zooming'); stage.classList.add('intro');
+    setTimeout(() => fitTo([ch.from, ch.to], 3.2, reducedMotion ? 0 : 2300, d3.easeCubicInOut, reducedMotion ? 0 : 450, window.innerWidth >= 1100 ? 250 : 120).on('end interrupt', () => { stage.classList.remove('zooming'); relayout(); stage.classList.add('landed'); }), 50);
     try { if (!localStorage.getItem('traverse.seen')) { if (window.tdTutorial) window.tdTutorial(true); localStorage.setItem('traverse.seen', '1'); } } catch (e) {}
   }
 })();

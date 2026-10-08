@@ -1,0 +1,127 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css">
+<style>
+#dim{position:absolute;inset:0;background:rgba(43,31,20,.66)}
+.hook{position:absolute;left:70px;right:150px;font-family:'Alfa Slab One';line-height:1;color:var(--card)}
+.meter{position:absolute;left:70px;right:150px;top:215px;background:var(--card);border:6px solid var(--ink);box-shadow:10px 10px 0 #000;border-radius:20px;padding:16px 24px 22px}
+.meter .row{display:flex;justify-content:space-between;align-items:baseline}
+.meter .k{font-weight:900;letter-spacing:5px;font-size:34px;color:var(--brass)}
+.meter .v{font-family:'Alfa Slab One';font-size:64px}
+.pipz{display:flex;gap:12px;margin-top:10px}
+.pipz i{flex:1;height:38px;border-radius:9px;background:var(--teal);border:5px solid var(--ink)}
+.pipz i.off{background:transparent;border-color:rgba(43,31,20,.25)}
+.receipt{position:absolute;left:90px;width:810px;top:470px;background:#FBF6EA;padding:34px 40px 46px;box-shadow:16px 16px 0 rgba(0,0,0,.55);transform-origin:50% 0}
+.receipt h3{font-family:'Alfa Slab One';font-size:52px;text-align:center;margin-bottom:6px}
+.receipt .meta{text-align:center;font-weight:800;letter-spacing:5px;font-size:28px;color:var(--brass);margin-bottom:22px}
+.line{display:flex;align-items:baseline;font-size:38px;font-weight:700;padding:5px 0;white-space:nowrap;border-bottom:3px dashed rgba(43,31,20,.3)}
+.line .no{width:52px;font-family:'Alfa Slab One';font-size:34px;color:var(--brass)}
+.line .em{width:64px;font-size:40px}
+.line .nm{flex:1}
+.line .pr{font-family:'Alfa Slab One';font-size:44px}
+.line .dt{font-size:26px;font-weight:900;background:var(--red);color:var(--card);border-radius:8px;padding:2px 10px;margin-right:14px;letter-spacing:2px}
+.line .dl{font-size:26px;font-weight:900;background:var(--brass);color:var(--card);border-radius:8px;padding:2px 10px;margin-right:14px;letter-spacing:2px}
+.tot{display:flex;justify-content:space-between;font-family:'Alfa Slab One';font-size:58px;padding-top:14px}
+.zig{position:absolute;left:0;right:0;bottom:-28px;height:30px;background:linear-gradient(-45deg,transparent 16px,#FBF6EA 0) 0 0/32px 30px,linear-gradient(45deg,transparent 16px,#FBF6EA 0) 0 0/32px 30px}
+.stampx{display:block;width:fit-content;margin:26px auto 0;font-family:'Alfa Slab One';font-size:104px;line-height:1.05;border:12px solid;border-radius:24px;padding:6px 34px 14px;white-space:nowrap}
+.cap{z-index:5}
+</style></head><body>
+<div class="stage">
+  <svg class="chart" id="chart" viewBox="0 0 1080 1920"></svg>
+  <div class="grain"></div><div class="vig"></div><div id="dim"></div>
+  <div id="hookwrap">
+    <div class="hook" id="h1" style="top:360px;font-size:104px">I bought the<br>cheapest<br>ticket.</div>
+    <div class="hook" id="h2" style="top:760px;right:200px;font-size:98px;color:#E36A55">Big<br>mistake. 💀</div>
+    <div id="h3" style="position:absolute;left:70px;top:1090px"><span class="pill" style="font-size:42px">6 decisions · Cancún → SF</span></div>
+  </div>
+  <div class="meter" id="meter"><div class="row"><span class="k">DECISIONS LEFT</span><span class="v" id="left">6</span></div><div class="pipz" id="pipz"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div class="receipt" id="rc1"><h3>MY EXPEDITION</h3><div class="meta">TRAVERSLE #8 · 6 DECISIONS</div><div id="l1"></div><div class="tot" id="tot1"><span>2d 6h 40m</span><span>$313</span></div><div class="stampx" id="bust" style="color:var(--red);border-color:var(--red);font-size:72px;text-align:center">$51 OVER<br>9 HRS SLOWER</div><div class="zig"></div></div>
+  <div class="receipt" id="rc2"><h3>THE PLANNER'S ROUTE</h3><div class="meta">SAME PUZZLE · SAME 6 DECISIONS</div><div id="l2"></div><div class="tot" id="tot2"><span>1d 21h 30m</span><span>$262</span></div><div class="stampx" id="perf" style="color:var(--teal);border-color:var(--teal);font-size:84px">PERFECT 🏆</div><div class="zig"></div></div>
+  <div class="cap" id="c1" style="top:1330px;font-size:58px" data-words="Made it. The *expensive way 🥲"></div>
+  <div class="cap" id="c2" style="top:235px;font-size:62px" data-words="Just go to *Houston 🤫"></div>
+  <div id="end" style="position:absolute;inset:0">
+    <div class="hook" id="e1" style="top:380px;font-size:120px">Think<br>you'd make<br>it?</div>
+    <div id="e2" style="position:absolute;left:70px;top:820px"><span class="pill" style="font-size:44px;background:var(--card);color:var(--ink)">traversledaily.com</span></div>
+    <div id="e3" data-qa style="position:absolute;top:960px;left:74px;color:var(--card);font-family:'Alegreya';font-style:italic;font-weight:700;font-size:50px">A new route every day. Free.</div>
+    <div id="e4" style="position:absolute;left:70px;top:1150px"><span class="pill" style="font-size:44px">Follow for daily routes</span></div>
+  </div>
+</div>
+<script src="d3.min.js"></script><script src="topojson-client.min.js"></script><script src="world-lite.js"></script><script src="lib.js"></script>
+<script>
+window.DUR = 16.5;
+const chart = makeChart($('#chart'), [[-125, 14], [-74, 50]]);
+const caps = {}; $$('.cap').forEach(c => caps[c.id] = buildCaption(c));
+// a real run on puzzle #8 (game v18), every option as the game offered it: the cheapest first ticket (New Orleans),
+// then the card that gets closest each time. It arrives in 5 decisions but $51 over and 9h 10m slower than the planner.
+const MINE = [['🚌', 'Cancún → New Orleans', 53, 'cheap'], ['🚌', 'New Orleans → Dallas', 44], ['🚌', 'Dallas → Albuquerque', 44], ['🚆', 'Albuquerque → Sacramento', 158], ['🚌', 'Sacramento → SF', 14]];
+const mk = (host, rows) => rows.map(r => {
+  const d = document.createElement('div'); d.className = 'line';
+  d.innerHTML = `<span class="no">${rows.indexOf(r) + 1}</span><span class="em">${r[0]}</span><span class="nm">${r[1]}</span>${r[3] === 'cheap' ? '<span class="dt">CHEAPEST</span>' : r[3] ? '<span class="dl">DEAL</span>' : ''}<span class="pr">$${r[2]}</span>`;
+  $(host).appendChild(d); return d;
+});
+const L1 = mk('#l1', MINE);
+const L2 = mk('#l2', PERFECT.map(L => [L.mode, `${CITY[L.a].n.replace('Los Angeles', 'LA').replace('San Francisco', 'SF')} → ${CITY[L.b].n.replace('Los Angeles', 'LA').replace('San Francisco', 'SF')}`, L.cost, L.deal]));
+const R1 = 2.35, PER1 = .72, R2 = 10.3, PER2 = .4;
+// the caption sits just under the printed receipt
+$('#c1').style.top = '250px'; $('#c1').style.right = '50px'; // takes the meter's place once the decisions are gone
+// receipts grow as they print: [time, height in px] steps, eased between
+const RH1 = $('#rc1').offsetHeight, RH2 = $('#rc2').offsetHeight; // measured before render() hides them
+const bottomOf = el => el.offsetTop + el.offsetHeight + 14;
+const REV1 = [[R1, bottomOf($('#rc1 .meta'))]].concat(L1.map((d, i) => [R1 + .3 + i * PER1, bottomOf(d)]), [[R1 + .3 + L1.length * PER1, bottomOf($('#tot1'))], [7.4, RH1 + 40]]);
+const REV2 = [[R2 - .2, bottomOf($('#rc2 .meta'))]].concat(L2.map((d, i) => [R2 + .2 + i * PER2, bottomOf(d)]), [[R2 + .2 + L2.length * PER2, bottomOf($('#tot2'))], [12.95, RH2 + 40]]);
+function reveal(t, steps) {
+  let h = steps[0][1];
+  for (let i = 1; i < steps.length; i++) h = lerp(h, steps[i][1], E.out(P(t, steps[i][0], .3)));
+  return h;
+}
+
+window.render = function (t) {
+  // background chart drifts slowly across the route
+  const a = chart.proj([-100, 33]), b = chart.proj([-92, 30]), f = t / window.DUR;
+  camXY(chart, lerp(a[0], b[0], f), lerp(a[1], b[1], f), lerp(1.5, 1.8, f));
+
+  // hook: line 1 readable on frame 0
+  const hOut = E.in(P(t, 2.0, .35));
+  css($('#hookwrap'), { opacity: 1 - hOut, transform: `translateY(${-hOut * 200}px)` });
+  css($('#h1'), { transform: `scale(${lerp(.92, 1, E.spring(P(t, 0, .4)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  const h2 = P(t, .55, .35);
+  css($('#h2'), { opacity: h2 > 0 ? 1 : 0, transform: `scale(${lerp(1.4, 1, E.out5(h2))}) rotate(-4deg) translateX(${h2 > 0 && h2 < 1 ? Math.sin(t * 90) * 10 : 0}px)`, transformOrigin: '0 50%' });
+  css($('#h3'), { opacity: P(t, 1.1, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, 1.1, .45)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+
+  // meter
+  const mIn = E.spring(P(t, 2.2, .5)), mOut = E.in(P(t, 7.6, .25));
+  const used = MINE.filter((r, i) => t >= R1 + .3 + i * PER1 + .15).length, left = 6 - used;
+  $('#left').textContent = left;
+  $('#left').style.color = left <= 2 ? 'var(--red)' : 'var(--ink)';
+  $$('#pipz i').forEach((p, j) => { p.className = j >= left ? 'off' : ''; p.style.background = j < left && left <= 2 ? 'var(--red)' : ''; });
+  css($('#meter'), { opacity: P(t, 2.2, .05) * (1 - mOut), transform: `translateY(${(1 - mIn) * -300 - mOut * 300}px)` });
+
+  // receipt 1 prints, then BUSTED
+  const r1 = E.out(P(t, R1, .5)), r1Out = E.inOut(P(t, 9.75, .5));
+  css($('#rc1'), { display: t > R1 && t < 10.3 ? 'block' : 'none', transform: `translate(${r1Out * -1200}px,${(1 - r1) * -500}px) rotate(${lerp(-4, -1.5, r1) - r1Out * 25}deg)`, clipPath: `inset(0 -60px ${RH1 + 40 - reveal(t, REV1)}px -60px)` });
+  L1.forEach((d, i) => { const p = P(t, R1 + .3 + i * PER1, .3); css(d, { opacity: p, transform: `translateX(${(1 - E.out(p)) * -60}px)` }); });
+  const bs = P(t, 7.4, .35);
+  css($('#bust'), { opacity: bs > 0 ? 1 : 0, transform: `rotate(-5deg) scale(${lerp(2.2, 1, E.out5(bs))}) translateX(${bs > 0 && bs < 1 ? Math.sin(t * 95) * 14 : 0}px)` });
+  revealWords(caps.c1, t, 7.85, .11);
+  css($('#c1'), { opacity: 1 - P(t, 9.75, .2) });
+
+  // receipt 2: the planner's route
+  const r2 = E.out(P(t, R2 - .2, .5)), r2Out = E.in(P(t, 13.4, .35));
+  css($('#rc2'), { display: t > R2 - .2 && t < 13.8 ? 'block' : 'none', top: '370px', clipPath: `inset(0 -60px ${RH2 + 40 - reveal(t, REV2)}px -60px)`, transform: `translate(${(1 - r2) * 1200}px,${r2Out * 1400}px) rotate(${lerp(10, 1.2, r2)}deg)` });
+  L2.forEach((d, i) => { const p = P(t, R2 + .2 + i * PER2, .25); css(d, { opacity: p, transform: `translateX(${(1 - E.out(p)) * 60}px)` }); });
+  css($('#tot2'), { opacity: P(t, R2 + .2 + L2.length * PER2, .2) });
+  css($('#tot1'), { opacity: P(t, R1 + .3 + L1.length * PER1, .2) });
+  const ps = P(t, 12.95, .35);
+  css($('#perf'), { opacity: ps > 0 ? 1 : 0, transform: `rotate(-4deg) scale(${lerp(2.2, 1, E.out5(ps))})` });
+  revealWords(caps.c2, t, 10.5, .13);
+  css($('#c2'), { opacity: 1 - P(t, 13.4, .2) });
+
+  // end
+  css($('#end'), { display: t > 13.6 ? 'block' : 'none' });
+  css($('#e1'), { transform: `scale(${lerp(.8, 1, E.spring(P(t, 13.65, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%', opacity: P(t, 13.65, .1) });
+  css($('#e2'), { opacity: P(t, 14.2, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, 14.2, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  css($('#e3'), { opacity: P(t, 14.6, .3) });
+  css($('#e4'), { opacity: P(t, 15.0, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, 15.0, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  $('#dim').style.background = `rgba(43,31,20,${t > 13.5 ? lerp(.72, .82, P(t, 13.5, .4)) : .72})`;
+};
+window.render(0);
+</script></body></html>

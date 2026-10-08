@@ -1,0 +1,126 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css">
+<style>
+body{background:var(--page)}
+svg#g{position:absolute;inset:0;width:1080px;height:1920px}
+#ticket{position:absolute;left:70px;right:150px;top:215px;display:flex;align-items:center;gap:20px;background:var(--card);border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink);border-radius:18px;padding:16px 24px;transform-origin:50% 0}
+#ticket .no{font-family:'Alfa Slab One';font-size:64px;color:var(--red);white-space:nowrap}
+#ticket .mid{flex:1;min-width:0}
+#ticket .route{font-family:'Alegreya';font-weight:700;font-size:52px;white-space:nowrap;line-height:1.1}
+#ticket .tw{font-size:30px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--brass);white-space:nowrap}
+#count{position:absolute;left:70px;top:1370px;font-weight:900;font-size:38px;letter-spacing:4px;color:var(--ink);text-transform:uppercase;background:var(--card);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);border-radius:12px;padding:8px 18px}
+#end{position:absolute;inset:0;background:var(--teal)}
+#end .big{position:absolute;left:70px;right:150px;top:300px;font-family:'Alfa Slab One';font-size:110px;line-height:1;color:var(--card)}
+</style></head><body>
+<div class="stage">
+  <svg id="g" viewBox="0 0 1080 1920"></svg>
+  <div class="grain"></div><div class="vig"></div>
+  <div class="cap" id="hook" style="top:230px;font-size:72px" data-words="🌍 Race Across the World, but it's a *daily *puzzle"></div>
+  <div id="ticket" data-qa><div class="no" id="tNo"></div><div class="mid"><div class="route" id="tR"></div><div class="tw" id="tT"></div></div></div>
+  <div id="count" data-qa></div>
+  <div class="cap" id="sum" style="top:230px;font-size:76px" data-words="*8 days. *8 routes. 5 continents."></div>
+  <div id="end">
+    <div class="big" id="e1">A new route every day.</div>
+    <div class="cap" id="e2" style="top:700px;font-size:70px" data-words="Where should we go *next? 👇"></div>
+    <div id="e3" style="position:absolute;left:70px;top:1000px"><span class="pill" style="font-size:44px">Follow for daily routes</span></div>
+    <div id="e4" style="position:absolute;left:70px;top:1140px"><span class="pill" style="font-size:44px;background:var(--card);color:var(--ink)">traversledaily.com</span></div>
+  </div>
+</div>
+<script src="d3.min.js"></script><script src="topojson-client.min.js"></script><script src="world-lite.js"></script><script src="lib.js"></script>
+<script>
+window.DUR = 16.5;
+// puzzles #1–#8 as published (data/schedule.js), toured west to east
+const R = [
+  { n: 1, a: 'Seattle', A: [-122.33, 47.61], b: 'Denver', B: [-104.99, 39.74], tw: 'No flights' },
+  { n: 8, a: 'Cancún', A: [-86.85, 21.16], b: 'San Francisco', B: [-122.42, 37.77], tw: 'No flights' },
+  { n: 6, a: 'Rio', A: [-43.17, -22.91], b: 'Buenos Aires', B: [-58.38, -34.6], tw: 'No flying in' },
+  { n: 4, a: 'Cairo', A: [31.24, 30.04], b: 'Madrid', B: [-3.7, 40.42], tw: 'One flight at most' },
+  { n: 7, a: 'Athens', A: [23.73, 37.98], b: 'Barcelona', B: [2.17, 41.39], tw: 'At least one ferry' },
+  { n: 3, a: 'Stockholm', A: [18.07, 59.33], b: 'Milan', B: [9.19, 45.46], tw: 'Two trains or more' },
+  { n: 5, a: 'Cape Town', A: [18.42, -33.92], b: 'Dar es Salaam', B: [39.28, -6.79], tw: 'No extra rule' },
+  { n: 2, a: 'Tokyo', A: [139.69, 35.68], b: 'Seoul', B: [126.98, 37.57], tw: 'Three kinds of transport' },
+];
+R.forEach(r => { r.mid = d3.geoInterpolate(r.A, r.B)(.5); r.k = clamp(430 / (d3.geoDistance(r.A, r.B) * 400), 1, 3.4); });
+const CX = 500, CY = 900, RAD = 400;
+const proj = d3.geoOrthographic().translate([CX, CY + 40]).scale(RAD).clipAngle(90).precision(.4);
+const path = d3.geoPath(proj);
+const T = window.WORLD_LITE, land = topojson.feature(T, T.objects.countries);
+const ns = 'http://www.w3.org/2000/svg', svg = $('#g');
+const mk = (tag, a) => { const e = document.createElementNS(ns, tag); for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
+mk('circle', { cx: CX + 18, cy: CY + 58, r: RAD, fill: '#2B1F14' });                       // hard shadow
+const sea = mk('circle', { cx: CX, cy: CY + 40, r: RAD, fill: '#D8BE84', stroke: '#2B1F14', 'stroke-width': 7 });
+const grat = mk('path', { fill: 'none', stroke: 'rgba(43,31,20,.18)', 'stroke-width': 1.5 });
+const landP = mk('path', { fill: '#EFE0B8', stroke: '#5E4A35', 'stroke-width': 1.6 });
+const arcs = R.map(() => mk('path', { fill: 'none', stroke: '#8E2A1E', 'stroke-width': 7, 'stroke-linecap': 'round' }));
+const lbls = R.map(r => [r.a, r.b].map(nm => { const e = mk('text', { 'font-family': 'Alegreya Sans', 'font-weight': 900, 'font-size': 40, fill: '#2B1F14', stroke: '#F7EEDB', 'stroke-width': 10, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }); e.textContent = nm; return e; }));
+const dots = R.map(() => [mk('circle', { r: 11, fill: '#26696D', stroke: '#F7EEDB', 'stroke-width': 4 }), mk('circle', { r: 11, fill: '#8E2A1E', stroke: '#F7EEDB', 'stroke-width': 4 })]);
+const graticule = d3.geoGraticule().step([15, 15])();
+const caps = {}; $$('.cap').forEach(c => caps[c.id] = buildCaption(c));
+const TOUR0 = 2.6, STEP = 1.3, TOUR_END = TOUR0 + R.length * STEP, END0 = 14.2;
+// rotation path: keep the view centered on the current route's midpoint, unwrapped so it always spins east
+const LONS = []; R.forEach((r, i) => { let l = -r.mid[0]; if (i) while (l > LONS[i - 1]) l -= 360; LONS.push(l); });
+const angleLerp = (a, b, f) => a + (b - a) * f;
+
+window.render = function (t) {
+  // rotation
+  let rot;
+  if (t < TOUR0) rot = [lerp(LONS[0] - 50, LONS[0], E.out(P(t, 0, TOUR0))), -20];
+  else if (t < TOUR_END) {
+    const i = Math.min(R.length - 1, Math.floor((t - TOUR0) / STEP)), s = TOUR0 + i * STEP;
+    const prev = i ? [LONS[i - 1], -R[i - 1].mid[1] * .7] : [LONS[0], -20];
+    const f = E.inOut(P(t, s, .55));
+    rot = [angleLerp(prev[0], LONS[i], f), lerp(prev[1], -R[i].mid[1] * .7, f)];
+  } else { // swing round to the Atlantic so every continent from the tour is in view
+    const last = LONS[R.length - 1]; let tgt = 25; while (tgt > last) tgt -= 360;
+    const f = E.inOut(P(t, TOUR_END, 1.6)); rot = [lerp(last, tgt, f) - P(t, TOUR_END + 1.6, 2) * 12, lerp(-R[R.length - 1].mid[1] * .7, -18, f)]; }
+  proj.rotate(rot);
+  // zoom: a touch closer during the tour
+  let z;
+  if (t < TOUR0) z = lerp(.92, 1, E.out(P(t, 0, TOUR0)));
+  else if (t < TOUR_END) {
+    const i = Math.min(R.length - 1, Math.floor((t - TOUR0) / STEP)), f = E.inOut(P(t, TOUR0 + i * STEP, .55));
+    const kp = i ? R[i - 1].k : 1;
+    z = lerp(kp, R[i].k, f) * (1 - .4 * Math.sin(Math.PI * f));
+  } else z = lerp(R[R.length - 1].k, .9, E.inOut(P(t, TOUR_END, .8)));
+  proj.scale(RAD * z); sea.setAttribute('r', RAD * z); svg.children[0].setAttribute('r', RAD * z);
+  grat.setAttribute('d', path(graticule) || '');
+  landP.setAttribute('d', path(land) || '');
+  R.forEach((r, i) => {
+    const s = TOUR0 + i * STEP + .45, f = E.inOut(P(t, s, .6));
+    const pts = d3.range(0, 41).map(k => d3.geoInterpolate(r.A, r.B)(k / 40 * f));
+    arcs[i].setAttribute('d', f > 0 ? path({ type: 'LineString', coordinates: pts }) || '' : '');
+    [[r.A, 0], [r.B, 1]].forEach(([ll, j]) => {
+      const vis = d3.geoDistance(ll, [-rot[0], -rot[1]]) < Math.PI / 2 - .02, on = j === 0 ? t > s - .1 : f >= 1;
+      const [x, y] = proj(ll); const c = dots[i][j];
+      c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('opacity', vis && on ? 1 : 0);
+      // name sits on the far side from the other end of the route
+      const [ox, oy] = proj(j ? r.A : r.B), dx = x - ox, dy = y - oy, L = Math.hypot(dx, dy) || 1, l = lbls[i][j];
+      const lx = x + dx / L * 34, ly = y + dy / L * 34 + (dy > 0 ? 30 : -6);
+      l.setAttribute('x', lx); l.setAttribute('y', ly); l.setAttribute('text-anchor', Math.abs(dx) < L * .4 ? 'middle' : dx > 0 ? 'start' : 'end');
+      const cur = t >= TOUR0 + i * STEP && t < TOUR0 + (i + 1) * STEP + .2 && t < TOUR_END;
+      l.setAttribute('opacity', vis && on && cur ? Math.min(P(t, j ? s + .6 : s - .1, .2), 1 - P(t, TOUR0 + (i + 1) * STEP - .1, .2)) : 0);
+    });
+  });
+
+  // hook
+  revealWords(caps.hook, t + .75, 0, .08);
+  css($('#hook'), { opacity: 1 - P(t, TOUR0 - .3, .25) });
+  // ticket for the route on screen
+  const i = Math.max(0, Math.min(R.length - 1, Math.floor((t - TOUR0) / STEP))), r = R[i];
+  $('#tNo').textContent = '#' + r.n; $('#tR').textContent = `${r.a} → ${r.b}`; $('#tT').textContent = r.tw;
+  const flip = P(t, TOUR0 + i * STEP, .3), tin = E.spring(P(t, TOUR0 - .1, .5)), tout = E.in(P(t, TOUR_END - .1, .3));
+  css($('#ticket'), { display: t > TOUR0 - .1 && t < TOUR_END + .25 ? 'flex' : 'none', opacity: 1 - tout, transform: `translateY(${(1 - tin) * -140 - tout * 140}px) rotateX(${i > 0 && flip < 1 ? (1 - E.out(flip)) * 80 : 0}deg)` });
+  $('#count').textContent = `${r.n === 8 ? 6 : r.n === 3 ? 5 : 4} decisions · route ${i + 1} of 8`; // decisionsFor(): planner legs + 1, at least 4
+  css($('#count'), { opacity: P(t, TOUR0 + .2, .3) * (1 - P(t, TOUR_END, .3)) });
+  revealWords(caps.sum, t, TOUR_END + .2, .12);
+  css($('#sum'), { opacity: 1 - P(t, END0 - .2, .2) });
+
+  // end
+  const e = E.inOut(P(t, END0, .5));
+  css($('#end'), { display: t > END0 ? 'block' : 'none', clipPath: `circle(${e * 140}% at 50% 47%)` });
+  css($('#e1'), { transform: `scale(${lerp(.85, 1, E.spring(P(t, END0 + .2, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  revealWords(caps.e2, t, END0 + .6, .1);
+  [['#e3', END0 + 1.1], ['#e4', END0 + 1.4]].forEach(([id, s]) => css($(id), { opacity: P(t, s, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, s, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' }));
+};
+window.render(0);
+</script></body></html>

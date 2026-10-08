@@ -1,0 +1,28 @@
+name: IndexNow
+on:
+  push:
+    branches: [main]
+    paths: ['**.html', 'sitemap.xml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  HOST: traversledaily.com
+  KEY: 326e4309ecf54cace14c491f1d010117
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      # Tells Bing, Yandex and other IndexNow engines (not Google) which URLs changed.
+      # Skips quietly until the site is live and serves the key file.
+      - name: Submit sitemap URLs
+        run: |
+          if ! curl -sf "https://$HOST/$KEY.txt" | grep -q "$KEY"; then echo "Key file not live yet; skipping."; exit 0; fi
+          if [ ! -f sitemap.xml ]; then echo "No sitemap.xml yet; skipping."; exit 0; fi
+          urls=$(grep -o '<loc>[^<]*</loc>' sitemap.xml | sed 's/<[^>]*>//g' | head -10000 | jq -R . | jq -s .)
+          jq -n --arg host "$HOST" --arg key "$KEY" --argjson urls "$urls" \
+            '{host:$host,key:$key,keyLocation:("https://"+$host+"/"+$key+".txt"),urlList:$urls}' > body.json
+          curl -sS -o /dev/null -w "IndexNow HTTP %{http_code}\n" -X POST https://api.indexnow.org/indexnow \
+            -H 'Content-Type: application/json; charset=utf-8' --data @body.json

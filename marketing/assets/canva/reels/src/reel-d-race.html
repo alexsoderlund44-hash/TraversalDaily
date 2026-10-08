@@ -1,0 +1,103 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css">
+<style>
+body{background:var(--page)}
+#title{position:absolute;left:70px;right:150px;top:215px;font-family:'Alfa Slab One';font-size:70px;line-height:1;white-space:nowrap}
+#tags{position:absolute;left:70px;top:315px;display:flex;gap:16px}
+#tags span{font-weight:900;font-size:34px;letter-spacing:3px;text-transform:uppercase;background:var(--card);border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink);border-radius:12px;padding:6px 16px;white-space:nowrap}
+#tags span.hot{background:var(--teal);color:var(--card)}
+#count{position:absolute;left:800px;top:400px;width:110px;height:110px;border-radius:50%;background:var(--red);color:var(--card);border:6px solid var(--ink);box-shadow:6px 6px 0 var(--ink);display:grid;place-items:center;font-family:'Alfa Slab One';font-size:64px}
+.opt{position:absolute;left:70px;width:850px;height:270px;perspective:1600px}
+.opt .face{position:absolute;inset:0;border:6px solid var(--ink);box-shadow:12px 12px 0 var(--ink);border-radius:24px;backface-visibility:hidden;padding:26px 30px}
+.opt .front{background:var(--card)}
+.opt .n{position:absolute;left:28px;top:28px;width:74px;height:74px;border-radius:50%;background:var(--ink);color:var(--card);display:grid;place-items:center;font-family:'Alfa Slab One';font-size:44px}
+.opt .c{position:absolute;left:126px;top:22px;font-family:'Alegreya';font-weight:700;font-size:66px;white-space:nowrap;line-height:1.1}
+.opt .p{position:absolute;left:126px;top:122px;font-family:'Alfa Slab One';font-size:54px;color:var(--red);white-space:nowrap}
+.opt .p small{font-family:'Alegreya Sans';font-weight:800;font-size:40px;color:var(--ink);margin-left:14px}
+.opt .g{position:absolute;left:126px;top:200px;font-weight:900;font-size:36px;white-space:nowrap}
+.opt .g.up{color:var(--teal)} .opt .g.dn{color:var(--red)}
+.opt .back{transform:rotateX(180deg);color:var(--card);display:flex;flex-direction:column;justify-content:center}
+.opt .back .kk{font-weight:900;font-size:28px;letter-spacing:4px;text-transform:uppercase;opacity:.85;margin-bottom:6px}
+.opt .back .big{font-family:'Alfa Slab One';font-size:56px;line-height:1.05}
+.opt .back .sm{font-weight:800;font-size:36px;margin-top:12px;line-height:1.15}
+#end{position:absolute;inset:0;background:var(--red)}
+#end .big{position:absolute;left:70px;right:150px;top:300px;font-family:'Alfa Slab One';font-size:112px;line-height:1;color:var(--card)}
+#end .sub2{position:absolute;left:74px;right:150px;top:560px;font-family:'Alegreya';font-style:italic;font-weight:700;font-size:58px;color:var(--card);line-height:1.2}
+</style></head><body>
+<div class="stage">
+  <div class="grain"></div>
+  <div id="title" data-qa>Phoenix → San Francisco</div>
+  <div id="tags" data-qa><span class="hot">3 decisions left</span><span>🚫✈️ No flights</span></div>
+  <div class="cap" id="hook" style="top:400px;font-size:64px;right:50px" data-words="San Francisco is one bus away. *Take it? 🤔"></div>
+  <div class="cap" id="c2" style="top:400px;font-size:64px;right:50px" data-words="Pause and *pick 👀"></div>
+  <div id="count" data-qa>3</div>
+  <div class="cap" id="c3" style="top:400px;font-size:64px;right:50px" data-words="Here's what *happens 👇"></div>
+  <div class="cap" id="c4" style="top:400px;font-size:64px;right:50px" data-words="The direct bus *wasn't the best 😳"></div>
+  <div id="opts"></div>
+  <div id="end">
+    <div class="big" id="e1">A daily travel puzzle.</div>
+    <div class="sub2" id="e2">One route. A few decisions.<br>A new one every day.</div>
+    <div class="cap" id="e3" style="top:830px;font-size:66px" data-words="Which did you pick? *Comment 👇"></div>
+    <div id="e4" style="position:absolute;left:70px;top:1070px"><span class="pill" style="font-size:44px">Follow for daily routes</span></div>
+    <div id="e5" style="position:absolute;left:70px;top:1200px"><span class="pill" style="font-size:44px;background:var(--card);color:var(--ink)">traversledaily.com</span></div>
+  </div>
+</div>
+<script src="lib.js"></script>
+<script>
+window.DUR = 15.5;
+/* puzzle #8 at Phoenix (game v18), the three places the game lights up, in its order. Each outcome was played through
+   in the game: Los Angeles is the planner's route (5 decisions, $262, PERFECT); the direct bus arrives in 4 for $246 but
+   4h 40m slower; Sacramento arrives in 5 for $245, 6h 20m slower. */
+const OPT = [
+  { c: 'San Francisco', em: '🚌', cost: 64, time: '16h', gain: '★ Arrives', up: 1, res: '😮 Made it in 4', sub: '4h 40m slower than the planner · $246', bg: 'var(--brass)', rev: 5.9 },
+  { c: 'Los Angeles', em: '🚆', cost: 44, time: '3h 5m · DEAL', gain: '▲ 492 km closer', up: 1, res: '🏆 Perfect', sub: "The planner's route · $262", bg: 'var(--teal)', rev: 8.9 },
+  { c: 'Sacramento', em: '🚌', cost: 49, time: '15h 35m', gain: '▲ 930 km closer', up: 1, res: '🙂 Made it in 5', sub: '6h 20m slower than the planner · $245', bg: '#2F5E86', rev: 7.4 },
+];
+const cards = OPT.map((o, i) => {
+  const d = document.createElement('div'); d.className = 'opt'; d.style.top = (622 + i * 284) + 'px'; d.dataset.qa = ''; d.dataset.qaName = o.c;
+  d.innerHTML = `<div class="face front"><div class="n">${i + 1}</div><div class="c">${o.em} ${o.c}</div><div class="p">$${o.cost}<small>· ${o.time}</small></div><div class="g ${o.up ? 'up' : 'dn'}">${o.gain}</div></div>
+    <div class="face back" style="background:${o.bg}"><div class="kk">${o.c}</div><div class="big">${o.res}</div><div class="sm">${o.sub}</div></div>`;
+  $('#opts').appendChild(d); return d;
+});
+const caps = {}; $$('.cap').forEach(c => caps[c.id] = buildCaption(c));
+const ASK0 = 2.6, REV0 = 5.7, HOLD0 = 10.6, END0 = 12.8;
+
+window.render = function (t) {
+  // hook: the question and the three cards are on screen from frame 0
+  revealWords(caps.hook, t + .5, 0, .08);
+  css($('#hook'), { opacity: 1 - P(t, ASK0 - .25, .2) });
+  css($('#title'), { transform: `scale(${lerp(.94, 1, E.spring(P(t + .3, 0, .4)))})`, transformOrigin: '0 50%' });
+
+  // pause-and-pick countdown
+  revealWords(caps.c2, t, ASK0, .1);
+  css($('#c2'), { opacity: 1 - P(t, REV0 - .25, .2) });
+  const n = 3 - Math.floor(P(t, ASK0 + .2, 3) * 3);
+  $('#count').textContent = Math.max(1, n);
+  const tick = (t - ASK0 - .2) % 1, cIn = E.spring(P(t, ASK0 + .1, .4));
+  css($('#count'), { display: t > ASK0 && t < REV0 - .1 ? 'grid' : 'none', transform: `scale(${cIn * (1 + (tick < .25 && t > ASK0 + .2 ? (1 - tick / .25) * .25 : 0))})` });
+
+  // reveals: worst first, best last
+  revealWords(caps.c3, t, REV0, .1);
+  css($('#c3'), { opacity: 1 - P(t, HOLD0 - .25, .2) });
+  revealWords(caps.c4, t, HOLD0, .1);
+  cards.forEach((d, i) => {
+    const o = OPT[i], intro = E.spring(P(t + .5, i * .08, .5)), flip = E.inOut(P(t, o.rev, .6));
+    const sh = 0;
+    d.style.transform = `translateX(${(1 - intro) * 1100 + sh}px)`;
+    const pop = 1 + Math.sin(P(t, o.rev + .5, .35) * Math.PI) * .04;
+    d.querySelector('.front').style.transform = `rotateX(${flip * 180}deg)`;
+    d.querySelector('.back').style.transform = `rotateX(${180 + flip * 180}deg) scale(${pop})`;
+    d.style.opacity = t > HOLD0 && i === 0 ? 1 : 1;
+  });
+
+  // end card wipes up
+  const e = E.inOut(P(t, END0, .5));
+  css($('#end'), { display: t > END0 ? 'block' : 'none', clipPath: `inset(${(1 - e) * 100}% 0 0 0)` });
+  css($('#e1'), { transform: `scale(${lerp(.85, 1, E.spring(P(t, END0 + .2, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  css($('#e2'), { opacity: P(t, END0 + .6, .3) });
+  $('#opts').style.display = e >= 1 ? 'none' : 'block';
+  revealWords(caps.e3, t, END0 + .9, .1);
+  [['#e4', END0 + 1.5], ['#e5', END0 + 1.8]].forEach(([id, s]) => css($(id), { opacity: P(t, s, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, s, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' }));
+};
+window.render(0);
+</script></body></html>

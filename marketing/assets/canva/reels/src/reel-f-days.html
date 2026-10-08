@@ -1,0 +1,107 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css">
+<style>
+body{background:var(--page)}
+#strip{position:absolute;left:70px;top:215px;display:flex;gap:12px}
+#strip .chip{width:110px;height:92px;display:grid;place-items:center;background:var(--card);border:5px solid var(--ink);box-shadow:6px 6px 0 var(--ink);border-radius:16px;font-family:'Alfa Slab One';font-size:44px}
+#strip .chip.on{background:var(--red);color:var(--card)}
+#deck{position:absolute;left:75px;top:400px;width:825px;height:900px;transform-origin:50% 0}
+.dc{position:absolute;inset:0;overflow:hidden;transform-origin:50% 100%}
+.dc .band{padding:34px 46px 30px;color:var(--card);border-bottom:6px solid var(--ink)}
+.dc .day{font-weight:900;font-size:34px;letter-spacing:8px;text-transform:uppercase;opacity:.85}
+.dc .th{font-family:'Alfa Slab One';font-size:90px;line-height:1;margin-top:8px}
+.dc .em{font-size:240px;line-height:1;padding:44px 46px 16px;white-space:nowrap}
+.dc .rule{padding:10px 46px 0;font-family:'Alegreya';font-style:italic;font-weight:700;font-size:58px;line-height:1.16}
+.dc .ex{position:absolute;left:46px;right:46px;bottom:36px;padding-top:22px;border-top:4px dashed rgba(43,31,20,.35);font-weight:900;font-size:36px;letter-spacing:2px;color:var(--brass);white-space:nowrap}
+.dc.back{background:var(--ink);display:grid;place-items:center}
+.dc.back .logo{font-family:'Alfa Slab One';font-size:110px;color:var(--card);letter-spacing:2px;transform:rotate(-6deg)}
+.dc.back .rose{position:absolute;font-size:300px;opacity:.12}
+#end{position:absolute;inset:0;background:var(--ink)}
+#end .big{position:absolute;left:70px;right:150px;top:300px;font-family:'Alfa Slab One';font-size:110px;line-height:1;color:var(--card)}
+#end .sub2{position:absolute;left:74px;right:150px;top:560px;font-family:'Alegreya';font-style:italic;font-weight:700;font-size:56px;color:var(--card);line-height:1.2}
+</style></head><body>
+<div class="stage">
+  <div class="grain"></div><div class="vig"></div>
+  <div class="cap" id="hook" style="top:230px;font-size:74px" data-words="Every day of the week is a *different *trip 🧳"></div>
+  <div id="strip"></div>
+  <div id="deck"></div>
+  <div class="cap" id="sum" style="top:1330px;font-size:64px" data-words="Which day is *yours? 👇"></div>
+  <div id="end">
+    <div class="big" id="e1">A daily travel puzzle.</div>
+    <div class="sub2" id="e2">Free. A new route every<br>midnight UTC.</div>
+    <div class="cap" id="e3" style="top:820px;font-size:66px" data-words="Which day are you? *Comment 👇"></div>
+    <div id="e4" style="position:absolute;left:70px;top:1060px"><span class="pill" style="font-size:44px">Follow for daily routes</span></div>
+    <div id="e5" style="position:absolute;left:70px;top:1190px"><span class="pill" style="font-size:44px;background:var(--card);color:var(--ink)">traversledaily.com</span></div>
+  </div>
+</div>
+<script src="lib.js"></script>
+<script>
+window.DUR = 17.5;
+// weekday themes (RHYTHM in the game) with a real published puzzle for each (#1–#8, from Oct 1)
+const D = [
+  { d: 'Monday', s: 'M', th: 'Open Road', em: '🛣️', rule: 'No extra rule. Anywhere in the world.', ex: '#5 · Cape Town → Dar es Salaam', c: 'var(--teal)' },
+  { d: 'Tuesday', s: 'T', th: 'Southern Crossing', em: '🌎', rule: 'South America or Africa, and no flying into the destination.', ex: '#6 · Rio → Buenos Aires', c: 'var(--red)' },
+  { d: 'Wednesday', s: 'W', th: 'Island Hopper', em: '⛴️', rule: 'Coast to coast, with at least one ferry.', ex: '#7 · Athens → Barcelona', c: '#2F5E86' },
+  { d: 'Thursday', s: 'T', th: 'Road Trip', em: '🚗', rule: 'The Americas with no flights at all.', ex: '#8 · Cancún → San Francisco', c: 'var(--brass)' },
+  { d: 'Friday', s: 'F', th: 'Mix It Up', em: '🚆🚌⛴️', rule: 'Asia, with three kinds of transport.', ex: '#2 · Tokyo → Seoul', c: '#6B3A6E' },
+  { d: 'Saturday', s: 'S', th: 'Eurorail', em: '🚆', rule: 'Europe by train, at least twice.', ex: '#3 · Stockholm → Milan', c: 'var(--teal)' },
+  { d: 'Sunday', s: 'S', th: 'Grand Tour', em: '🧭', rule: 'A long way to go and one flight at most.', ex: '#4 · Cairo → Madrid', c: 'var(--ink)' },
+];
+const chips = D.map(o => { const c = document.createElement('div'); c.className = 'chip'; c.textContent = o.s; $('#strip').appendChild(c); return c; });
+const back = document.createElement('div'); back.className = 'card dc back'; back.dataset.qaGroup = 'deck';
+back.innerHTML = '<div class="rose">🧭</div><div class="logo">TRAVERSLE</div>'; $('#deck').appendChild(back);
+const cards = D.map(o => {
+  const c = document.createElement('div'); c.className = 'card dc'; c.dataset.qaGroup = 'deck';
+  c.innerHTML = `<div class="band" style="background:${o.c}"><div class="day">${o.d}</div><div class="th">${o.th}</div></div>
+    <div class="em" style="font-size:${[...o.em.matchAll(/\p{Extended_Pictographic}/gu)].length > 1 ? 190 : 240}px">${o.em}</div><div class="rule">“${o.rule}”</div><div class="ex">e.g. ${o.ex}</div>`;
+  $('#deck').appendChild(c); return c;
+});
+const caps = {}; $$('.cap').forEach(c => caps[c.id] = buildCaption(c));
+const DEAL0 = 2.1, STEP = 1.5, LAST = DEAL0 + 6 * STEP, SUM0 = LAST + 1.3, END0 = 14.6;
+const TILT = [-1.2, 1, -.8, 1.2, -1, .8, -.4];
+
+window.render = function (t) {
+  // hook over the face-down deck, readable on frame 0
+  revealWords(caps.hook, t + .9, 0, .08);
+  css($('#hook'), { opacity: 1 - P(t, DEAL0 - .35, .25) });
+  const lift = E.inOut(P(t, DEAL0 - .4, .5)); // deck slides up as the hook clears
+  css($('#deck'), { transform: `translateY(${lerp(170, 0, lift)}px) scale(${lerp(.86, 1, lift)})` });
+  css(back, { transform: `rotate(${(-1 + Math.sin(t * 2.2) * .8) * (1 - lift)}deg)`, opacity: 1 });
+
+  // weekday strip drops in with the first card
+  css($('#strip'), { opacity: P(t, DEAL0 - .3, .2), transform: `translateY(${(1 - E.spring(P(t, DEAL0 - .3, .5))) * -60}px)` });
+  const cur = Math.max(-1, Math.min(6, Math.floor((t - DEAL0) / STEP)));
+  chips.forEach((c, i) => {
+    const on = t < SUM0 ? i === cur : i === Math.floor((t - SUM0) / .14) % 7; // ripple across the week at the end
+    c.classList.toggle('on', on);
+    c.style.transform = on ? 'translateY(-8px) scale(1.06)' : 'none';
+  });
+
+  // deal: each card flies in from the right; older cards sink back into the pile
+  cards.forEach((c, i) => {
+    const s = DEAL0 + i * STEP, k = E.spring(P(t, s, .55)), depth = Math.max(0, cur - i);
+    const sink = depth ? E.out(P(t, DEAL0 + (i + 1) * STEP, .4)) : 0;
+    const d = Math.min(depth - 1 + sink, 3);
+    c.style.display = t >= s && depth < 4 ? 'block' : 'none';
+    c.style.zIndex = 10 + i;
+    c.style.transform = `translateX(${(1 - k) * 1150}px) translateY(${-Math.max(0, d) * 16}px) rotate(${lerp(10, TILT[i], k)}deg) scale(${1 - Math.max(0, d) * .025})`;
+    c.style.filter = depth ? `brightness(${1 - Math.min(depth, 3) * .06})` : 'none';
+  });
+  back.style.display = t < DEAL0 + .6 ? 'grid' : 'none';
+
+  // closing ask under the deck
+  revealWords(caps.sum, t, SUM0, .12);
+  css($('#sum'), { opacity: 1 });
+
+  // end card
+  const e = E.inOut(P(t, END0, .5));
+  css($('#end'), { display: t > END0 ? 'block' : 'none', clipPath: `inset(0 ${(1 - e) * 100}% 0 0)` });
+  css($('#e1'), { transform: `scale(${lerp(.85, 1, E.spring(P(t, END0 + .2, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  css($('#e2'), { opacity: P(t, END0 + .55, .3) });
+  revealWords(caps.e3, t, END0 + .9, .1);
+  [['#e4', END0 + 1.5], ['#e5', END0 + 1.8]].forEach(([id, s]) => css($(id), { opacity: P(t, s, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, s, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' }));
+  const covered = e >= 1;
+  ['#deck', '#strip', '#sum'].forEach(id => $(id).style.visibility = covered ? 'hidden' : 'visible');
+};
+window.render(0);
+</script></body></html>

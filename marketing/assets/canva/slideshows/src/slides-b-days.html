@@ -1,0 +1,88 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="slides.css">
+<style>
+.strip{position:absolute;left:70px;top:215px;display:flex;gap:12px}
+.strip .chip{position:static;width:110px;height:92px;padding:0;display:grid;place-items:center;letter-spacing:0;border:5px solid var(--ink);box-shadow:6px 6px 0 var(--ink);border-radius:16px;font-family:'Alfa Slab One';font-size:44px;font-weight:400}
+.strip .chip.on{background:var(--red);color:var(--card);transform:translateY(-8px) scale(1.06)}
+.dc{position:absolute;left:70px;width:860px;top:345px;height:1080px;overflow:hidden}
+.dc .band{position:relative;padding:30px 40px 26px;color:var(--card);border-bottom:6px solid var(--ink)}
+.dc .day{font-weight:900;font-size:34px;letter-spacing:8px;text-transform:uppercase;opacity:.85}
+.dc .th{font-family:'Alfa Slab One';font-size:84px;line-height:1;margin-top:8px;white-space:nowrap}
+.dc .em{position:absolute;right:34px;top:34px;font-size:96px;line-height:1;white-space:nowrap}
+.dc svg{display:block;width:848px;height:560px;background:var(--sea);border-bottom:6px solid var(--ink)}
+.dc .rule{padding:26px 40px 0;font-family:'Alegreya';font-style:italic;font-weight:700;font-size:54px;line-height:1.16}
+.dc .ex{position:absolute;left:40px;right:40px;bottom:30px;padding-top:20px;border-top:4px dashed rgba(43,31,20,.35);font-weight:900;font-size:34px;letter-spacing:1px;color:var(--brass);white-space:nowrap}
+.mlbl{font-family:'Alegreya';font-weight:700;font-size:38px;paint-order:stroke;stroke:#F7EEDB;stroke-width:10px;fill:var(--ink)}
+.back{position:absolute;left:110px;width:780px;top:720px;height:620px;background:var(--ink);display:grid;place-items:center;transform:rotate(-3deg);overflow:hidden}
+.back .logo{font-family:'Alfa Slab One';font-size:110px;color:var(--card);letter-spacing:2px;transform:rotate(-6deg)}
+.back .rose{position:absolute;font-size:300px;opacity:.12}
+.inkend{background:var(--ink)}
+</style></head><body>
+<div class="stage" id="stage">
+  <div class="scene" id="cover">
+    <div class="grain"></div><div class="vig"></div>
+    <div class="cap" style="top:240px;font-size:84px" data-words="Every day of the week is a *different *trip 🧳"></div>
+    <div class="card back"><div class="rose">🧭</div><div class="logo">TRAVERSLE</div></div>
+    <div class="swipe" style="top:1390px">Which one is yours? Swipe 👉</div>
+  </div>
+</div>
+<script src="d3.min.js"></script><script src="topojson-client.min.js"></script><script src="world-lite.js"></script><script src="lib.js"></script><script src="slides-lib.js"></script>
+<script>
+// weekday themes (RHYTHM in the game), each with a real published puzzle (#1–#8, from Oct 1) and its decision count
+const D = [
+  { d: 'Monday', s: 'M', th: 'Open Road', em: '🛣️', rule: 'No extra rule. Anywhere in the world.', n: 5, a: ['Cape Town', 18.42, -33.92], b: ['Dar es Salaam', 39.28, -6.79], dec: 4, c: 'var(--teal)' },
+  { d: 'Tuesday', s: 'T', th: 'Southern Crossing', em: '🌎', rule: 'South America or Africa, and no flying into the destination.', n: 6, a: ['Rio de Janeiro', -43.17, -22.91], b: ['Buenos Aires', -58.38, -34.6], dec: 4, c: 'var(--red)' },
+  { d: 'Wednesday', s: 'W', th: 'Island Hopper', em: '⛴️', rule: 'Coast to coast, with at least one ferry.', n: 7, a: ['Athens', 23.73, 37.98], b: ['Barcelona', 2.17, 41.39], dec: 4, c: '#2F5E86' },
+  { d: 'Thursday', s: 'T', th: 'Road Trip', em: '🚗', rule: 'The Americas with no flights at all.', n: 8, a: ['Cancún', -86.85, 21.16], b: ['San Francisco', -122.42, 37.77], dec: 6, c: 'var(--brass)' },
+  { d: 'Friday', s: 'F', th: 'Mix It Up', em: '🚆🚌', rule: 'Asia, with three kinds of transport.', n: 2, a: ['Tokyo', 139.69, 35.68], b: ['Seoul', 126.98, 37.57], dec: 4, c: '#6B3A6E' },
+  { d: 'Saturday', s: 'S', th: 'Eurorail', em: '🚆', rule: 'Europe by train, at least twice.', n: 3, a: ['Stockholm', 18.07, 59.33], b: ['Milan', 9.19, 45.46], dec: 5, c: 'var(--teal)' },
+  { d: 'Sunday', s: 'S', th: 'Grand Tour', em: '🧭', rule: 'A long way to go and one flight at most.', n: 4, a: ['Cairo', 31.24, 30.04], b: ['Madrid', -3.7, 40.42], dec: 4, c: 'var(--ink)' },
+];
+const T = window.WORLD_LITE, LAND = topojson.feature(T, T.objects.countries), BORD = topojson.mesh(T, T.objects.countries, (x, y) => x !== y);
+const sv = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+// a small chart of the day's example: start, finish and an open question in between (the route stays a puzzle)
+function mini(svg, o) {
+  const w = 848, h = 560, pad = [200, 140];
+  const pr = d3.geoMercator().fitExtent([[pad[0], pad[1]], [w - pad[0], h - pad[1]]], { type: 'MultiPoint', coordinates: [[o.a[1], o.a[2]], [o.b[1], o.b[2]]] });
+  if (pr.scale() > 2600) { const c = pr.invert([w / 2, h / 2]); pr.scale(2600).center(c).translate([w / 2, h / 2]); } // don't zoom past the coastline detail
+  const path = d3.geoPath(pr);
+  sv('path', { d: path(d3.geoGraticule().step([5, 5])()), stroke: 'rgba(43,29,18,.13)', 'stroke-width': 1.2, fill: 'none', 'stroke-dasharray': '6 6' }, svg);
+  sv('path', { d: path(LAND), fill: 'none', stroke: 'rgba(94,62,12,.25)', 'stroke-width': 12, 'stroke-linejoin': 'round' }, svg);
+  sv('path', { d: path(LAND), fill: '#EFE0B8', stroke: '#5E4A35', 'stroke-width': 2.2, 'stroke-linejoin': 'round' }, svg);
+  sv('path', { d: path(BORD), fill: 'none', stroke: 'rgba(94,74,53,.45)', 'stroke-width': 1.4, 'stroke-dasharray': '5 5' }, svg);
+  const A = pr([o.a[1], o.a[2]]), B = pr([o.b[1], o.b[2]]);
+  const mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2, dx = B[0] - A[0], dy = B[1] - A[1], bend = .2;
+  const cx = mx - dy * bend, cy = my + dx * bend;
+  sv('path', { d: `M${A[0]},${A[1]} Q${cx},${cy} ${B[0]},${B[1]}`, fill: 'none', stroke: '#5E3E0C', 'stroke-width': 6, 'stroke-dasharray': '3 15', 'stroke-linecap': 'round' }, svg);
+  [[A, '#26696D'], [B, '#8E2A1E']].forEach(([p, f]) => sv('circle', { cx: p[0], cy: p[1], r: 15, fill: f, stroke: '#F7EEDB', 'stroke-width': 6 }, svg));
+  const q = [.25 * A[0] + .5 * cx + .25 * B[0], .25 * A[1] + .5 * cy + .25 * B[1]];
+  sv('circle', { cx: q[0], cy: q[1], r: 36, fill: '#F7EEDB', stroke: '#2B1F14', 'stroke-width': 5 }, svg);
+  sv('text', { x: q[0], y: q[1] + 14, 'text-anchor': 'middle', 'font-size': 40 }, svg).textContent = '❓';
+  // names sit on the outer side of each pin, kept inside the frame
+  [[A, o.a[0], B], [B, o.b[0], A]].forEach(([p, name, other]) => {
+    const t = sv('text', { class: 'mlbl', x: p[0], y: p[1] }, svg); t.textContent = name;
+    const bw = t.getBBox().width, vert = Math.abs(other[1] - p[1]) > Math.abs(other[0] - p[0]);
+    let x = vert ? p[0] - bw / 2 : (p[0] < other[0] ? p[0] - bw - 34 : p[0] + 34), y = vert ? (p[1] < other[1] ? p[1] - 28 : p[1] + 50) : p[1] + 12;
+    x = Math.max(16, Math.min(w - 16 - bw, x)); y = Math.max(46, Math.min(h - 18, y));
+    t.setAttribute('x', x); t.setAttribute('y', y);
+  });
+}
+D.forEach((o, i) => {
+  const sc = document.createElement('div'); sc.className = 'scene'; sc.style.display = 'block';
+  sc.innerHTML = `<div class="grain"></div><div class="vig"></div>
+    <div class="strip">${D.map((x, j) => `<div class="chip${j === i ? ' on' : ''}">${x.s}</div>`).join('')}</div>
+    <div class="card dc"><div class="band" style="background:${o.c}"><div class="day">${o.d}</div><div class="th" style="font-size:${o.th.length > 14 ? 60 : 84}px">${o.th}</div><div class="em" style="font-size:${o.th.length > 14 ? 76 : 96}px">${o.em}</div></div>
+    <svg viewBox="0 0 848 560"></svg><div class="rule">“${o.rule}”</div>
+    <div class="ex">e.g. #${o.n} · ${o.a[0]} → ${o.b[0]} · ${o.dec} decisions</div></div>`;
+  $('#stage').appendChild(sc); mini(sc.querySelector('svg'), o);
+});
+$('#stage').insertAdjacentHTML('beforeend', `<div class="scene end inkend">
+    <div class="grain"></div>
+    <div class="big">A daily travel puzzle.</div>
+    <div class="sub2" style="top:560px">Same route for everyone, every day. Compare how you did with your friends.</div>
+    <div class="cap" style="top:870px;font-size:66px" data-words="Which day are you? *Comment 👇"></div>
+    <div style="position:absolute;left:70px;top:1110px"><span class="pill" style="font-size:44px;transform:rotate(-2deg);display:inline-block">Follow for daily routes</span></div>
+    <div style="position:absolute;left:70px;top:1240px"><span class="pill" style="font-size:44px;background:var(--card);color:var(--ink);transform:rotate(-2deg);display:inline-block">traversledaily.com</span></div>
+  </div>`);
+showSlides();
+</script></body></html>

@@ -24,6 +24,13 @@
   const KEEP = ['born', 'pop', 'no'];
   function markCity(id, cls, ms) { gCities.selectAll('circle').filter(c => c.id === id).classed(cls, true); setTimeout(() => gCities.selectAll('circle').filter(c => c.id === id).classed(cls, false), ms); }
   const UNDOS = 3, HINTS = 2, HINT_SECS = 45; let undos = UNDOS, hints = HINTS;
+  /* a run in progress survives a refresh or an accidental back swipe: saved after every move, picked up from the mission card */
+  const RUN_KEY = 'traverse.run'; let resume = null;
+  try { const r = JSON.parse(localStorage.getItem(RUN_KEY) || 'null'); if (r && r.key === ch.key && mode === 'today' && !official && Array.isArray(r.route) && r.route.length) resume = r; } catch (e) {}
+  function saveRun() { if (mode !== 'today' || practice || !playing) return; try { localStorage.setItem(RUN_KEY, JSON.stringify({ key: ch.key, route, found: [...found], secs: elapsed(), undos, hints })); } catch (e) {} }
+  function clearRun() { try { localStorage.removeItem(RUN_KEY); } catch (e) {} }
+  /* a small nudge on phones that have one: a tap for a leg, a double for a secret fare, a buzz for a refusal */
+  const buzz = pat => { try { if (navigator.vibrate && !reducedMotion) navigator.vibrate(pat); } catch (e) {} };
   const at = () => route.length ? T.byId[route[route.length - 1].to] : ch.from;
   const atDest = () => at().id === ch.to.id;
   const totals = () => route.reduce((a, r) => ({ cost: a.cost + r.leg.cost, hours: a.hours + r.leg.hours }), { cost: 0, hours: 0 });
@@ -42,7 +49,7 @@
   const usable = (a, b) => T.legs(a, b, ch.seed).filter(l => !blocked(l, b));
   const why = b => b === 'over budget' ? 'is over budget' : b === 'misses deadline' ? 'misses the deadline' : 'breaks the ' + b;
   function noteDeals(a, b, ls) {
-    ls.forEach(l => { if (l.deal) { const k = dealKey(a, b, l); if (!found.has(k)) { found.add(k); if (playing) { dealReveal(a, b, l); renderBrief(); renderCounts(); } } } });
+    ls.forEach(l => { if (l.deal) { const k = dealKey(a, b, l); if (!found.has(k)) { found.add(k); if (playing) { dealReveal(a, b, l); renderBrief(); renderCounts(); saveRun(); } } } });
   }
   const dealDots = () => Array.from({ length: M.deals }, (_, j) => `<i class="${j < found.size ? 'on' : ''}"></i>`).join('');
   /* finding a secret fare should feel like finding something */
@@ -51,7 +58,7 @@
     el.innerHTML = `<div class="ticket"><p class="k">🎟️ Secret fare found</p><b><s>${T.money(full)}</s><i>→</i><span class="new">${T.money(l.cost)}</span></b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>Save ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em><span class="dots">${dealDots()} ${found.size}/${M.deals} found</span></div>`;
     el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     clearTimeout(dealT); dealT = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 350); }, 3600);
-    markCity(b.id, 'pop', 1600); emit('deal', { from: a, to: b, leg: l, found: found.size });
+    markCity(b.id, 'pop', 1600); buzz([15, 40, 25]); emit('deal', { from: a, to: b, leg: l, found: found.size });
   }
 
   /* ---------- static bits ---------- */
@@ -81,6 +88,7 @@
     <li>Fares show when you look at a city, and so do hidden deals. ${!parDeals ? '' : parDeals === M.deals ? (M.deals === 1 ? 'The deal is' : M.deals === 2 ? 'Both deals are' : 'All ' + word(M.deals) + ' deals are') + " on the planner's route." : word(parDeals).replace(/^./, c => c.toUpperCase()) + ' of the ' + word(M.deals) + ' deals ' + (parDeals === 1 ? 'is' : 'are') + " on the planner's route."}</li>
     <li>You're scored on money, time and how quickly you decide. ${mode === 'today' ? 'Everyone playing today has this same puzzle, and you get one scored attempt.' : 'This one is just practice.'}</li>`;
   $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'The timer starts when you press Begin.';
+  if (resume) { $('#tv-start').textContent = 'Continue the journey'; $('#tv-gate-note').textContent = `You left with ${resume.route.length} leg${resume.route.length === 1 ? '' : 's'} in place. The clock picks up where it stopped.`; }
   const locked = mode === 'archive' && T.dayLocked(ch.n);
   if (locked) {
     $('#tv-gate-mission').innerHTML = `<div class="tv-lock"><span class="ic">🔒</span><b>This puzzle is in the Traversle + archive</b><p>The last ${T.FREE_DAYS} days are free to replay. Traversle + opens every puzzle since day one.</p><a class="btn primary" href="plus.html">See Traversle +</a> <a class="btn ghost" href="archive.html">Back to the archive</a></div>`;
@@ -262,8 +270,8 @@
   function commit(c, leg) {
     if (blocked(leg, c)) return toast('That option ' + why(blocked(leg, c)), 'no');
     route.push({ from: at().id, to: c.id, leg }); pendingTo = null; selOpt = null; refresh();
-    drawNewLeg(c.id); fresh();
-    if (!atDest()) { fitTo([c, ch.to], 1.8); emit('commit', { to: c, legs: route.length }); } else { fitRoute(); stage.classList.add('arrived'); emit('arrive', c); }
+    drawNewLeg(c.id); fresh(); saveRun();
+    if (!atDest()) { fitTo([c, ch.to], 1.8); buzz(12); emit('commit', { to: c, legs: route.length }); } else { fitRoute(); stage.classList.add('arrived'); buzz([10, 30, 10]); emit('arrive', c); }
   }
   /* the leg you just took draws itself across the chart and the stop marker springs up */
   function drawNewLeg(toId) {
@@ -276,7 +284,7 @@
   function refresh() { renderPlan(); drawMap(); }
   /* newly reachable cities give one soft pulse when the picture changes */
   let freshT = null; function fresh() { if (reducedMotion) return; stage.classList.remove('fresh'); void stage.offsetWidth; stage.classList.add('fresh'); clearTimeout(freshT); freshT = setTimeout(() => stage.classList.remove('fresh'), 900); }
-  let toastT; function toast(m, kind) { let t = $('.tv-toast'); if (!t) { t = document.createElement('div'); t.className = 'tv-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.classList.toggle('no', kind === 'no'); t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), kind === 'no' ? 2600 : 2200); }
+  let toastT; function toast(m, kind) { let t = $('.tv-toast'); if (!t) { t = document.createElement('div'); t.className = 'tv-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.classList.toggle('no', kind === 'no'); if (kind === 'no') buzz(30); t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), kind === 'no' ? 2600 : 2200); }
 
   /* a number glides to its new value over half a second (money and hours alike) */
   const tweens = new WeakMap();
@@ -339,7 +347,7 @@
   }
   /* the stop picker: choose the next city, then how to get there */
   function renderPicker() {
-    const box = $('#tv-picker'), cur = at();
+    const box = $('#tv-picker'), cur = at(); $('#tv-plan').classList.toggle('picking', !!pendingTo);
     if (!playing || atDest()) { box.innerHTML = ''; return; }
     if (pendingTo) {
       const opts = T.legs(cur, pendingTo, ch.seed).slice().sort((a, b) => a.cost - b.cost); noteDeals(cur, pendingTo, opts);
@@ -385,6 +393,8 @@
   /* ---------- flow ---------- */
   function start() {
     route = []; pendingTo = null; selOpt = null; playing = false; found = new Set(); showPar = false; drawn = false; undos = UNDOS; hints = HINTS;
+    const picked = resume; resume = null; if (!picked) clearRun();
+    if (picked) { route = picked.route; found = new Set(picked.found || []); undos = picked.undos; hints = picked.hints; }
     renderBrief(); hideTip();
     $('#tv-result').hidden = true; $('#tv-board').hidden = true; $('#tv-plan').hidden = true;
     // the chart swoops in on today's region, then the clock starts
@@ -394,7 +404,8 @@
     fitTo([ch.from, ch.to], 1.8, dur, d3.easeCubicOut).on('end interrupt', () => {
       gate.hidden = true; gate.classList.remove('off'); stage.classList.remove('zooming'); relayout();
       plan.hidden = false; plan.classList.remove('leave'); plan.classList.toggle('collapsed', window.innerWidth <= 900); plan.classList.add('arrive');
-      playing = true; t0 = performance.now(); emit('start');
+      playing = true; t0 = performance.now() - (picked ? picked.secs * 1000 : 0); emit('start');
+      if (picked) { if (atDest()) stage.classList.add('arrived'); toast(`Picked up where you left off: ${route.length} leg${route.length === 1 ? '' : 's'} in place.`); }
       clearInterval(timer); timer = setInterval(() => { $('#tv-timer').textContent = T.secsF(elapsed()); $('#tv-pace').textContent = speedNote(); if (atDest()) { const tt = totals(); const est = T.score(tt.cost, tt.hours, elapsed(), M); $('#tv-est b').textContent = est.toLocaleString(); $('#tv-est .bar i').style.width = est / 100 + '%'; } }, 250);
       refresh(); fresh();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -405,7 +416,7 @@
     if (!route.length) return;
     if (!undos) return toast('No undos left, so this route is final.');
     undos--; pendingTo = null;
-    const finish = () => { route.pop(); stage.classList.remove('arrived'); refresh(); if (!undos) toast('That was your last undo.'); emit('undo', route.length); };
+    const finish = () => { route.pop(); stage.classList.remove('arrived'); refresh(); saveRun(); if (!undos) toast('That was your last undo.'); emit('undo', route.length); };
     if (reducedMotion) return finish();
     // the last leg retreats along its line and its stop fades before the route shrinks
     const mine = gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), p = mine[mine.length - 1];
@@ -423,12 +434,12 @@
     const [pair, modeId] = k.split('|'), [fa, tb] = pair.split('-'); const a = T.byId[fa], b = T.byId[tb], m = T.MODES[modeId];
     const leg = T.legs(a, b, ch.seed).find(l => l.mode === modeId);
     hints--; t0 -= HINT_SECS * 1000; found.add(k); if (leg) dealReveal(a, b, leg); renderBrief(); refresh();
-    toast(`Hint used: +${HINT_SECS}s on your clock.`);
+    toast(`Hint used: +${HINT_SECS}s on your clock.`); saveRun();
     fitTo([a, b], 2.4);
   };
   $('#tv-submit').onclick = () => {
     if (!atDest() || !tw.done(twState())) return;
-    const secs = elapsed(); clearInterval(timer); playing = false; emit('submit');
+    const secs = elapsed(); clearInterval(timer); playing = false; clearRun(); emit('submit');
     $('#tv-plan').classList.add('leave'); hideTip();
     const tt = totals(); const sc = T.score(tt.cost, tt.hours, secs, M), tr = T.tier(sc, M);
     const res = { from: ch.from.id, score: sc, tier: tr.name, cost: Math.round(tt.cost), hours: tt.hours, secs: Math.round(secs * 10) / 10, route: route.map(r => ({ to: r.to, mode: r.leg.mode, cost: r.leg.cost, hours: r.leg.hours, deal: r.leg.deal || 0 })),
@@ -460,7 +471,8 @@
   /* the daily loop: what tomorrow brings, when, and how the streak stands */
   function tomorrowLine() {
     const R = (st && st.results) || {}, S = T.stats(R, today), nx = ch.n ? T.rhythmOf(ch.n + 1) : null;
-    return `${nx ? `Tomorrow is <b>${T.esc(nx.label)}</b> · ` : ''}next puzzle in <b>${resetIn()}</b>${S.streak > 1 ? ` · <b>${S.streak}-day</b> streak` : ''}`;
+    const y = ch.n > 1 ? R[T.dayKey(ch.n - 1)] : null, t = R[ch.key], yd = y && t ? t.score - y.score : 0;
+    return `${nx ? `Tomorrow is <b>${T.esc(nx.label)}</b> · ` : ''}next puzzle in <b>${resetIn()}</b>${S.streak > 1 ? ` · <b>${S.streak}-day</b> streak` : ''}${y && t ? `<br>Yesterday you scored <b>${y.score.toLocaleString()}</b>${yd ? ` · today <b>${yd > 0 ? '+' : '−'}${Math.abs(yd).toLocaleString()}</b>` : ''}` : ''}`;
   }
   function buildSummary(res, isPractice, xpGain, earned, full) {
     const tr = T.tier(res.score, M), ofPar = Math.round(100 * res.score / Math.max(1, M.par.score)), f = factors(res), v = verdict(res);
@@ -524,11 +536,14 @@
     const tr = T.tier(res.score, M), f = factors(res);
     const bar = x => { const n = Math.round(Math.max(0, Math.min(1, x)) * 10); return '█'.repeat(n) + '░'.repeat(10 - n); };
     const modes = Object.keys(T.MODES).filter(m => res.route.some(r => r.mode === m)).map(m => T.MODES[m].icon).join(' ');
-    return `🌎 TRAVERSLE ${ch.n ? '#' + String(ch.n).padStart(3, '0') : 'EXPEDITION'}\n${ch.from.name} → ${ch.to.name}\n💰 ${T.money(res.cost)} · ⏱️ ${T.dur(res.hours)} · 🎟️ ${res.deals ? res.deals.found : 0}/${M.deals} deals\n${tr.icon} ${tr.name.toUpperCase()} · ${res.score.toLocaleString()}\n💰 ${bar(f.mF)}\n⏱️ ${bar(f.tF)}\n🎟️ ${bar(f.dF)}\n${res.route.length} legs · ${modes}\ntraversledaily.com`;
+    const dc = res.cost - M.par.cost, dh = res.hours - M.par.hours, ps = res.score, pp = M.par.score;
+    const vs = parMatchOf(res) ? "🎯 Matched the planner's route" : ps > pp + 5 ? `🧠 Beat the planner${dc < -0.5 ? ' · ' + T.money(-dc) + ' cheaper' : ''}${dh < -0.05 ? ' · ' + T.dur(-dh) + ' faster' : ''}` : `🧭 Planner wins${dc > 0.5 ? ' · ' + T.money(dc) + ' behind' : dh > 0.05 ? ' · ' + T.dur(dh) + ' slower' : ''}`;
+    const S = mode === 'today' ? T.stats((st && st.results) || {}, today) : null, streak = S && S.streak > 1 ? `\n🔥 ${S.streak}-day streak` : '';
+    return `🌎 TRAVERSLE ${ch.n ? '#' + String(ch.n).padStart(3, '0') : 'EXPEDITION'}\n${ch.from.name} → ${ch.to.name}\n💰 ${T.money(res.cost)} · ⏱️ ${T.dur(res.hours)} · 🎟️ ${res.deals ? res.deals.found : 0}/${M.deals} deals\n${tr.icon} ${tr.name.toUpperCase()} · ${res.score.toLocaleString()}\n💰 ${bar(f.mF)}\n⏱️ ${bar(f.tF)}\n🎟️ ${bar(f.dF)}\n${vs}\n${res.route.length} legs · ${modes}${streak}\ntraversledaily.com`;
   }
   function share(res) {
     const txt = shareText(res);
-    const copy = () => (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copied. Paste it wherever you like.'), () => prompt('Copy your result:', txt));
+    const copy = () => (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copied. Paste it where your friends will see it.'), () => prompt('Copy your result:', txt));
     if (navigator.share) navigator.share({ text: txt }).catch(e => { if (!e || e.name !== 'AbortError') copy(); }); else copy();
   }
   function showModal(res, isPractice, xpGain, earned) {

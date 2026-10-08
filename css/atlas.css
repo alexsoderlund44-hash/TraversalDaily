@@ -915,3 +915,12 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 .tv-board .sub.tomorrow b{color:var(--ink)}
 @media(max-width:560px){.rs-vs .duel{gap:6px}.rs-vs .side{padding:10px 8px}.rs-vs .side b{font-size:1.4rem}.rs-vs .duel .vs{font-size:.9rem}}
 @media(prefers-reduced-motion:reduce){.tv-stage.landed .tv-gate-card > .btn.primary,.tv-stage.fresh .tv-city.reach,.tv-stage.coach-reach .tv-city.reach,.tv-link.undraw,.tv-stops li.gone,.tv-toast.no,.tv-opt.sel:after,.tv-deal.show .ticket>*,.tv-deal.show b s,.tv-deal.show b i,.tv-deal.show b .new,.tv-deal.show em,.tv-deal.show .ticket,.coach-cap,.coach-ring,.rs-vs .verdict{animation:none}.tv-city,.tv-opt,.tv-stoprow,.coach-cap,.coach-ring{transition:none}.tv-stage.intro:not(.landed) .tv-gate{opacity:1}.tv-link.undraw{opacity:0}}
+/* on a phone the sheet goes compact while you pick a leg: one-line gauges, the current stop only, so the options and Add this leg stay on screen */
+@media(max-width:900px){
+  .tv-plan.picking .tv-twist,.tv-plan.picking .tv-counts,.tv-plan.picking .tv-estimate,.tv-plan.picking .tv-gauge small,.tv-plan.picking .tv-gauge .bar{display:none}
+  .tv-plan.picking .tv-gauge{padding:6px 12px;display:flex;align-items:baseline;gap:6px}.tv-plan.picking .tv-gauge b{font-size:1rem;margin:0}
+  .tv-plan.picking .tv-stops li:not(:nth-last-child(-n+2)){display:none}.tv-plan.picking .tv-stops{padding-top:4px;padding-bottom:4px}
+  .tv-plan.picking .tv-plan-head{padding-top:8px;padding-bottom:6px}.tv-plan.picking .tv-plan-head h2{font-size:1.1rem}
+}
+/* on a phone the sheet owns the bottom of the screen, so toasts come in under the header instead */
+@media(max-width:900px){.tv-toast{bottom:auto;top:78px;max-width:calc(100vw - 24px);text-align:center}}

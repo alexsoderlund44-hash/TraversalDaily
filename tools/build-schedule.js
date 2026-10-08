@@ -20,7 +20,7 @@ const N = +process.argv[2] || 730, MAX_TRIES = 48;
 const PAIR_GAP = 120, CITY_GAP = 7;
 /* Countries whose cities make awkward subjects for a daily puzzle and its promotion while conflicts are active.
    They stay in data/cities.js and can still be stops on a route; they are just never the start or the destination. */
-const AVOID = new Set(['Ukraine', 'Russia', 'Iran', 'Israel', 'Lebanon']);
+const AVOID = new Set(['Ukraine', 'Russia', 'Iran', 'Israel', 'Lebanon', 'Myanmar']);
 /* Days already published: read from the committed schedule so a rebuild keeps every day up to and including today. */
 const FROZEN = (() => {
   try {

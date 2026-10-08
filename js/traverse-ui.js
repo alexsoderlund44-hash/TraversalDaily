@@ -512,7 +512,7 @@
     const dc = res.cost - M.par.cost, dh = res.hours - M.par.hours, ps = res.score, pp = M.par.score;
     const vs = parMatchOf(res) ? "🎯 Matched the planner's route" : ps > pp + 5 ? `🧠 Beat the planner${dc < -0.5 ? ' · ' + T.money(-dc) + ' cheaper' : ''}${dh < -0.05 ? ' · ' + T.dur(-dh) + ' faster' : ''}` : `🧭 Planner wins${dc > 0.5 ? ' · ' + T.money(dc) + ' behind' : dh > 0.05 ? ' · ' + T.dur(dh) + ' slower' : ''}`;
     const S = mode === 'today' ? T.stats((st && st.results) || {}, today) : null, streak = S && S.streak > 1 ? `\n🔥 ${S.streak}-day streak` : '';
-    return `🌎 TRAVERSLE ${ch.n ? '#' + String(ch.n).padStart(3, '0') : 'EXPEDITION'}\n${ch.from.name} → ${ch.to.name}\n💰 ${T.money(res.cost)} · ⏱️ ${T.dur(res.hours)} · 🎟️ ${res.deals ? res.deals.found : 0}/${M.deals} deals\n${tr.icon} ${tr.name.toUpperCase()} · ${res.score.toLocaleString()}\n💰 ${bar(f.mF)}\n⏱️ ${bar(f.tF)}\n🎟️ ${bar(f.dF)}\n${vs}\n${res.decisions || res.route.length}/${res.decisionsTotal || DEC} decisions · ${modes}${streak}\ntraversledaily.com`;
+    return `🌎 TRAVERSLE ${ch.n ? '#' + String(ch.n).padStart(3, '0') : 'EXPEDITION'} · ${M.difficulty}\n${ch.from.name} → ${ch.to.name}\n💰 ${T.money(res.cost)} · ⏱️ ${T.dur(res.hours)} · 🎟️ ${res.deals ? res.deals.found : 0}/${M.deals} deals\n${tr.icon} ${tr.name.toUpperCase()} · ${res.score.toLocaleString()}\n💰 ${bar(f.mF)}\n⏱️ ${bar(f.tF)}\n🎟️ ${bar(f.dF)}\n${vs}\n${res.decisions || res.route.length}/${res.decisionsTotal || DEC} decisions · ${modes}${streak}\ntraversledaily.com`;
   }
   function share(res) {
     const txt = shareText(res);

@@ -2,7 +2,7 @@
    (budget, deadline, twist, hidden deals), the planner's route and scoring. No backend. */
 (function () {
   'use strict';
-  const C = window.TRAVERSE_CITIES.map(a => ({ id: a[0], name: a[1], country: a[2], flag: a[3], lat: a[4], lon: a[5], hub: a[6], coastal: a[7], rail: a[8], iata: a[9] }));
+  const C = window.TRAVERSE_CITIES.map(a => ({ id: a[0], name: a[1], country: a[2], flag: a[3], lat: a[4], lon: a[5], hub: a[6], coastal: a[7], rail: a[8], land: a[10] || 'eu', iata: a[9] }));
   const byId = {}; C.forEach(c => (byId[c.id] = c));
   const STORE = 'traverse.v1';
   const DAY_MS = 86400000;
@@ -24,26 +24,19 @@
     const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(x));
   }
-  const sameLand = (a, b) => { // crude: can you drive/rail between them?
+  /* can you drive or rail between them? Cities carry a land code (data/cities.js): the same code means yes, within 2,600 km.
+     Europe and the Middle East join over Anatolia within 2,200 km; Singapore joins the Malay peninsula over the causeway. */
+  const sameLand = (a, b) => {
     const d = km(a, b);
     if (d > 2600) return false;
-    const water = [['rey'], ['dub'], ['hnl'], ['akl'], ['bal'], ['mnl'], ['cmb'], ['hav'], ['pal'], ['jkt'], ['tpe'], ['sin','kul','bkk','sgn','han'], ['tok','osa'], ['syd','mel','per'], ['cpt','jnb','dar','nbo','adb'], ['lag','acc','dak'], ['sao','rio','bue','scl','lim','bog','pty'], ['mex','can'], ['nyc','bos','wdc','chi','mia','lax','sfo','sea','den','dal','atl','tor','mtl','van','anc'], ['dxb','doh','ryh','mct','teh','amm','bei','tel','cai','alx','kar','del','bom','blr'], ['pek','sha','sel','hkg']];
-    const isle = ['rey','dub','hnl','akl','bal','mnl','cmb','hav','pal','jkt','tpe','tok','osa','sin'];
-    if (isle.includes(a.id) || isle.includes(b.id)) {
-      if ((a.id === 'tok' && b.id === 'osa') || (a.id === 'osa' && b.id === 'tok')) return true;
-      if ((a.id === 'sin' && b.id === 'kul') || (a.id === 'kul' && b.id === 'sin')) return true;
-      return false;
-    }
-    const grp = id => water.findIndex(g => g.includes(id));
-    const ga = grp(a.id), gb = grp(b.id);
-    if (ga === -1 && gb === -1) return true; // Europe/N. Africa/Middle east mainland
-    if (ga === gb) return true;
-    const eu = x => x === -1, me = x => x === 19;
-    if ((eu(ga) && me(gb)) || (eu(gb) && me(ga))) return d < 2200;
+    if (a.land === b.land) return true;
+    const pair = [a.land, b.land].sort().join('+');
+    if (pair === 'eu+me') return d < 2200;
+    if (pair === 'sea+sg') return true;
     return false;
   };
-  const MED_S = ['tun','alg','cas','mar','tan','cai','alx','tel','bei'];
-  const crossesMed = (a, b) => MED_S.includes(a.id) !== MED_S.includes(b.id);
+  const MED_SOUTH = new Set(['Tunisia', 'Algeria', 'Morocco', 'Egypt', 'Israel', 'Lebanon']);
+  const crossesMed = (a, b) => MED_SOUTH.has(a.country) !== MED_SOUTH.has(b.country);
 
   /* ---------- transport modes ---------- */
   const MODES = {
@@ -103,8 +96,14 @@
   const BLOCKED = {}; // seed -> 'x-y' pair with no direct link at all (every day needs at least one stop)
   const DEALS = {};   // seed -> { 'a-b|mode': pct }
   const TWIST = {};   // seed -> twist id (edge-level rules are applied inside legs())
+  const LEGC = {}; // seed -> 'a-b' -> legs, cleared when a day's deals are set
   function legs(a, b, seed) {
     if (a.id === b.id) return [];
+    const cache = LEGC[seed] || (LEGC[seed] = {}), ck = a.id + '-' + b.id;
+    if (cache[ck]) return cache[ck];
+    return (cache[ck] = legsOf(a, b, seed));
+  }
+  function legsOf(a, b, seed) {
     if (BLOCKED[seed] === [a.id, b.id].sort().join('-')) return []; // never a direct link between start and destination
     const d = km(a, b), r = rng(hash(seed + '|' + [a.id, b.id].sort().join('-')));
     const out = [];
@@ -143,7 +142,7 @@
    ['South America', 'Colombia Peru Chile Argentina Brazil'], ['Oceania', 'Australia New Zealand'],
    ['Asia', 'Georgia Azerbaijan Armenia Israel Jordan Lebanon UAE Qatar Iran Oman India Pakistan Thailand Vietnam Malaysia Singapore Indonesia Philippines China Japan Taiwan']
   ].forEach(([k, v]) => v.split(' ').forEach(c => (CONTINENT[c] = k)));
-  Object.assign(CONTINENT, { 'South Africa': 'Africa', 'Saudi Arabia': 'Asia', 'Sri Lanka': 'Asia', 'Hong Kong': 'Asia', 'South Korea': 'Asia' });
+  Object.assign(CONTINENT, { 'South Africa': 'Africa', 'Saudi Arabia': 'Asia', 'Sri Lanka': 'Asia', 'Hong Kong': 'Asia', 'South Korea': 'Asia', Laos: 'Asia', Myanmar: 'Asia', Bangladesh: 'Asia', Jamaica: 'North America', Bahamas: 'North America', 'Costa Rica': 'North America', Honduras: 'North America', Ecuador: 'South America', Bolivia: 'South America', Uruguay: 'South America' });
   const continentOf = c => CONTINENT[c.country] || 'Europe';
   const COUNTRIES = Array.from(new Set(C.map(c => c.country)));
   const CONTINENTS = ['Europe', 'Asia', 'Africa', 'North America', 'South America', 'Oceania'];
@@ -306,7 +305,7 @@
     decoys.sort((x, y) => (x.mode === 'plane') - (y.mode === 'plane'));
     if (!decoys.length) cities.forEach(a => { if (a.id === ch.from.id || a.id === ch.to.id) return; g[a.id].forEach(e => { if (!endLeg(e) && e.mode !== 'plane' && !seen.has(key(e))) { seen.add(key(e)); decoys.push(e); } }); });
     while (Object.keys(deals).length < 3 && decoys.length) { const e = decoys.splice(Math.floor(r() * Math.min(decoys.length, 8)), 1)[0]; deals[key(e)] = Math.round((0.3 + r() * 0.25) * 20) / 20; }
-    DEALS[ch.seed] = deals;
+    DEALS[ch.seed] = deals; delete LEGC[ch.seed];
     for (const k in deals) { const [pair, mode] = k.split('|'), [fa, tb] = pair.split('-'); g[fa].forEach(e => { if (e.to === tb && e.mode === mode) { e.cost = Math.max(1, Math.round(e.cost * (1 - deals[k]))); e.deal = deals[k]; } }); }
     routes = search();
     const short2 = routes.filter(x => x.legs <= 2), bestShort2 = short2.length ? Math.min(...short2.map(x => x.cost)) : Infinity;
@@ -334,9 +333,15 @@
        is the day's luck (about 3 in 10 days have one way, 3 in 10 two, 4 in 10 three), and that is its difficulty. */
     const luck = rng(hash('ways-' + ch.seed))(), want = luck < 0.3 ? 1 : luck < 0.6 ? 2 : 3;
     const inner = x => x.path.slice(0, -1).map(e => e.to);
-    const others = routes.filter(x => x !== pick.par).map(x => ({ x, s: sc0(x, pick.cheapest, pick.fastest) })).sort((a, b) => ((b.x.legs >= 3) - (a.x.legs >= 3)) || (b.s - a.s));
+    const good = routes.filter(x => x !== pick.par).map(x => ({ x, s: sc0(x, pick.cheapest, pick.fastest) })).filter(o => o.s >= 0.5 * pick.parScore);
     const ways = [{ x: pick.par, s: pick.parScore }], used = new Set(inner(pick.par));
-    for (const o of others) { if (ways.length >= want) break; if (o.s < 0.55 * pick.parScore) continue; const mids = inner(o.x); if (!mids.length || mids.some(c => used.has(c))) continue; ways.push(o); mids.forEach(c => used.add(c)); }
+    const distinct = o => { const mids = inner(o.x); return mids.length && !mids.some(c => used.has(c)); };
+    const add = o => { if (o) { ways.push(o); inner(o.x).forEach(c => used.add(c)); } };
+    // the second way is the fastest different route, the third the cheapest: money against time, not fewer legs
+    const by = f => good.filter(distinct).sort((p, q) => f(p.x) - f(q.x) || q.s - p.s)[0];
+    const quick = by(x => x.hours), cheap0 = by(x => x.cost);
+    if (want >= 2) add(quick && cheap0 && quick !== cheap0 && (pick.par.hours - quick.x.hours) / pick.par.hours < (pick.par.cost - cheap0.x.cost) / pick.par.cost ? cheap0 : quick);
+    if (want >= 3) add(by(x => x.cost) || by(x => x.hours));
     const way = o => ({ cost: o.x.cost, hours: o.x.hours, legs: o.x.legs, path: o.x.path, score: Math.round(10000 * Math.min(1, o.s)) });
     const M = { budget: pick.B, deadline: pick.D, cheapest: pick.cheapest, fastest: pick.fastest, twist: ch.twist, deals: Object.keys(deals).length, dealKeys: Object.keys(deals),
       par: way(ways[0]), ways: ways.map(way), routes: pick.feas.length };

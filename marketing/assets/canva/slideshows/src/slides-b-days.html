@@ -33,9 +33,9 @@ const D = [
   { d: 'Monday', s: 'M', th: 'Open Road', em: '🛣️', rule: 'No extra rule. Anywhere in the world.', n: 5, a: ['Cape Town', 18.42, -33.92], b: ['Dar es Salaam', 39.28, -6.79], dec: 4, c: 'var(--teal)' },
   { d: 'Tuesday', s: 'T', th: 'Southern Crossing', em: '🌎', rule: 'South America or Africa, and no flying into the destination.', n: 6, a: ['Rio de Janeiro', -43.17, -22.91], b: ['Buenos Aires', -58.38, -34.6], dec: 4, c: 'var(--red)' },
   { d: 'Wednesday', s: 'W', th: 'Island Hopper', em: '⛴️', rule: 'Coast to coast, with at least one ferry.', n: 7, a: ['Athens', 23.73, 37.98], b: ['Barcelona', 2.17, 41.39], dec: 4, c: '#2F5E86' },
-  { d: 'Thursday', s: 'T', th: 'Road Trip', em: '🚗', rule: 'The Americas with no flights at all.', n: 8, a: ['Cancún', -86.85, 21.16], b: ['San Francisco', -122.42, 37.77], dec: 7, c: 'var(--brass)' },
+  { d: 'Thursday', s: 'T', th: 'Road Trip', em: '🚗', rule: 'The Americas with no flights at all.', n: 8, a: ['Cancún', -86.85, 21.16], b: ['San Francisco', -122.42, 37.77], dec: 6, c: 'var(--brass)' },
   { d: 'Friday', s: 'F', th: 'Mix It Up', em: '🚆🚌', rule: 'Asia, with three kinds of transport.', n: 2, a: ['Tokyo', 139.69, 35.68], b: ['Seoul', 126.98, 37.57], dec: 4, c: '#6B3A6E' },
-  { d: 'Saturday', s: 'S', th: 'Eurorail', em: '🚆', rule: 'Europe by train, at least twice.', n: 3, a: ['Stockholm', 18.07, 59.33], b: ['Milan', 9.19, 45.46], dec: 4, c: 'var(--teal)' },
+  { d: 'Saturday', s: 'S', th: 'Eurorail', em: '🚆', rule: 'Europe by train, at least twice.', n: 3, a: ['Stockholm', 18.07, 59.33], b: ['Milan', 9.19, 45.46], dec: 5, c: 'var(--teal)' },
   { d: 'Sunday', s: 'S', th: 'Grand Tour', em: '🧭', rule: 'A long way to go and one flight at most.', n: 4, a: ['Cairo', 31.24, 30.04], b: ['Madrid', -3.7, 40.42], dec: 4, c: 'var(--ink)' },
 ];
 const T = window.WORLD_LITE, LAND = topojson.feature(T, T.objects.countries), BORD = topojson.mesh(T, T.objects.countries, (x, y) => x !== y);

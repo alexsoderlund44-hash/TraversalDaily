@@ -110,7 +110,7 @@ window.render = function (t) {
   $('#tNo').textContent = '#' + r.n; $('#tR').textContent = `${r.a} → ${r.b}`; $('#tT').textContent = r.tw;
   const flip = P(t, TOUR0 + i * STEP, .3), tin = E.spring(P(t, TOUR0 - .1, .5)), tout = E.in(P(t, TOUR_END - .1, .3));
   css($('#ticket'), { display: t > TOUR0 - .1 && t < TOUR_END + .25 ? 'flex' : 'none', opacity: 1 - tout, transform: `translateY(${(1 - tin) * -140 - tout * 140}px) rotateX(${i > 0 && flip < 1 ? (1 - E.out(flip)) * 80 : 0}deg)` });
-  $('#count').textContent = `${r.n === 8 ? 7 : 4} decisions · route ${i + 1} of 8`; // decisionsFor(): planner legs + 1, at least 4
+  $('#count').textContent = `${r.n === 8 ? 6 : r.n === 3 ? 5 : 4} decisions · route ${i + 1} of 8`; // decisionsFor(): planner legs + 1, at least 4
   css($('#count'), { opacity: P(t, TOUR0 + .2, .3) * (1 - P(t, TOUR_END, .3)) });
   revealWords(caps.sum, t, TOUR_END + .2, .12);
   css($('#sum'), { opacity: 1 - P(t, END0 - .2, .2) });

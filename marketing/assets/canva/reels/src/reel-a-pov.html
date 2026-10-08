@@ -2,15 +2,22 @@
 <link rel="stylesheet" href="base.css">
 <style>
 .veh{z-index:3;position:absolute;width:118px;height:118px;margin:-59px 0 0 -59px;border-radius:50%;background:var(--card);border:6px solid var(--ink);box-shadow:6px 6px 0 var(--ink);display:grid;place-items:center;font-size:62px}
-.chip{z-index:4;position:absolute;white-space:nowrap;background:var(--card);border:5px solid var(--ink);box-shadow:7px 7px 0 var(--ink);border-radius:16px;padding:8px 20px;font-weight:900;font-size:58px;transform-origin:0 50%}
-.chip b{color:var(--red)}
-.chip .deal{display:inline-block;margin-left:12px;background:var(--brass);color:var(--card);padding:0 12px;border-radius:8px;font-size:38px}
-.lbl{position:absolute;white-space:nowrap;font-family:'Alegreya';font-weight:700;font-size:44px;color:var(--ink);text-shadow:0 0 8px #F7EEDB,0 0 8px #F7EEDB,0 0 14px #F7EEDB;transform:translate(-50%,-130%)}
+.lbl{position:absolute;white-space:nowrap;font-family:'Alegreya';font-weight:700;font-size:42px;color:var(--ink);text-shadow:0 0 8px #F7EEDB,0 0 8px #F7EEDB,0 0 14px #F7EEDB}
 .dot{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:var(--ink);border:6px solid var(--card)}
 .dot.start{background:var(--teal)} .dot.end{background:var(--red)}
-#stamp{position:absolute;left:90px;right:90px;top:760px;text-align:center;border:12px solid var(--red);color:var(--red);border-radius:26px;padding:26px 10px 30px;background:rgba(247,238,219,.92);font-family:'Alfa Slab One';font-size:118px;line-height:1;letter-spacing:2px}
-#stamp small{display:block;font-family:'Alegreya Sans';font-weight:900;font-size:56px;letter-spacing:6px;margin-top:14px}
-#end{position:absolute;left:0;right:0;top:0;bottom:0}
+/* the current leg, as a ticket under the HUD */
+#ticket{position:absolute;left:70px;right:150px;top:410px;z-index:4;display:flex;align-items:center;gap:22px;background:var(--card);border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink);border-radius:18px;padding:14px 22px;transform-origin:50% 0}
+#ticket .em{font-size:64px;line-height:1}
+#ticket .mid{flex:1;min-width:0}
+#ticket .k{font-size:26px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:var(--brass);white-space:nowrap}
+#ticket .route{font-family:'Alegreya';font-weight:700;font-size:44px;white-space:nowrap;line-height:1.1}
+#ticket .cost{font-family:'Alfa Slab One';font-size:58px;color:var(--red);white-space:nowrap}
+#ticket .deal{font-size:24px;font-weight:900;background:var(--brass);color:var(--card);border-radius:8px;padding:2px 10px;margin-left:10px;letter-spacing:2px;vertical-align:4px}
+#stamp{position:absolute;left:150px;width:700px;top:1170px;text-align:center;border:12px solid var(--red);color:var(--red);border-radius:26px;padding:22px 10px 26px;background:rgba(247,238,219,.94);font-family:'Alfa Slab One';font-size:104px;line-height:1;letter-spacing:2px}
+#stamp small{display:block;font-family:'Alegreya Sans';font-weight:900;font-size:48px;letter-spacing:5px;margin-top:12px}
+#end{position:absolute;inset:0}
+.follow{position:absolute;left:70px;top:1180px}
+.url{position:absolute;left:74px;top:1320px;font-family:'Alegreya';font-style:italic;font-weight:700;font-size:50px;color:var(--ink)}
 </style></head><body>
 <div class="stage">
   <svg class="chart" id="chart" viewBox="0 0 1080 1920"></svg>
@@ -19,14 +26,16 @@
   <div class="hud" id="hud">
     <div class="box"><div class="k">Budget</div><div class="v" id="budget">$440</div></div>
     <div class="box"><div class="k">Time left</div><div class="v" id="clock">4d 10h</div></div>
-    <div class="box" style="flex:.8"><div class="k">Twist</div><div class="v" style="font-size:54px;padding-top:8px">🚫✈️</div></div>
+    <div class="box" style="flex:.7"><div class="k">Twist</div><div class="v" style="font-size:46px">🚫✈️</div></div>
   </div>
-  <div class="cap" id="hook" style="top:420px;font-size:92px" data-words="POV: you have *$440 and *no *flights"></div>
-  <div id="hook2" style="position:absolute;left:70px;top:900px"><span class="pill" style="font-size:52px">Cancún → San Francisco</span></div>
+  <div id="ticket"><div class="em" id="tEm"></div><div class="mid"><div class="k" id="tK"></div><div class="route" id="tR"></div></div><div class="cost" id="tC"></div></div>
+  <div class="cap" id="hook" style="top:330px;font-size:92px" data-words="POV: you have *$440 and *no *flights"></div>
+  <div id="hook2" style="position:absolute;left:70px;top:820px"><span class="pill" style="font-size:50px">Cancún → San Francisco</span></div>
   <div id="stamp">MADE IT<small>WITH $94 TO SPARE</small></div>
   <div id="end">
-    <div class="cap" id="endcap" style="top:420px;font-size:96px" data-words="Could you do it *cheaper?"></div>
-    <div id="endpill" style="position:absolute;left:70px;top:1330px"><span class="pill">New route daily · traversledaily.com</span></div>
+    <div class="cap" id="endcap" style="top:250px;font-size:92px" data-words="Could you do it *cheaper?"></div>
+    <div class="follow" id="endpill"><span class="pill" style="font-size:44px">Follow for tomorrow's route</span></div>
+    <div class="url" id="endurl">traversledaily.com</div>
   </div>
 </div>
 <script src="d3.min.js"></script><script src="topojson-client.min.js"></script><script src="world-lite.js"></script><script src="lib.js"></script>
@@ -35,39 +44,45 @@ window.DUR = 16.5;
 const chart = makeChart($('#chart'), [[-125, 14], [-74, 50]]);
 const hookW = buildCaption($('#hook')), endW = buildCaption($('#endcap'));
 const fx = $('#fx');
-const LEG0 = 3.5, LEGD = 1.45, TRAVEL = 1.15;
+const LEG0 = 3.5, LEGD = 1.45, TRAVEL = 1.15, LEGS_END = LEG0 + 6 * LEGD;
 const legs = PERFECT.map((L, i) => {
   const p = legPath(chart, CITY[L.a].ll, CITY[L.b].ll, i % 2 ? .12 : -.12, { stroke: '#8E2A1E', 'stroke-width': 5, 'stroke-linecap': 'round' });
   const veh = document.createElement('div'); veh.className = 'veh'; veh.textContent = L.mode; fx.appendChild(veh);
-  const chip = document.createElement('div'); chip.className = 'chip';
-  chip.innerHTML = `${L.name} <b>−$${L.cost}</b>${L.deal ? `<span class="deal">DEAL ${L.deal}</span>` : ''}`; fx.appendChild(chip);
-  return Object.assign({ p, veh, chip, s: LEG0 + i * LEGD }, L);
+  return Object.assign({ p, veh, s: LEG0 + i * LEGD }, L);
 });
+// label side per city so close pairs (LA/SF, Atlanta/Dallas) never collide
+const SIDE = { can: 'below', mia: 'below', atl: 'above', dal: 'below', den: 'above', lax: 'below', sfo: 'above' };
 const stops = ['can', 'mia', 'atl', 'dal', 'den', 'lax', 'sfo'].map((id, i) => {
   const d = document.createElement('div'); d.className = 'dot' + (i === 0 ? ' start' : i === 6 ? ' end' : ''); fx.appendChild(d);
   const l = document.createElement('div'); l.className = 'lbl'; l.textContent = CITY[id].n; fx.appendChild(l);
-  return { d, l, xy: chart.proj(CITY[id].ll), at: i === 0 ? 2.9 : LEG0 + (i - 1) * LEGD + TRAVEL };
+  return { d, l, side: SIDE[id], xy: chart.proj(CITY[id].ll), at: i === 0 ? 2.9 : LEG0 + (i - 1) * LEGD + TRAVEL };
 });
 const xyOf = id => chart.proj(CITY[id].ll);
 const allXY = Object.keys(CITY).map(xyOf);
-const mid = [(Math.min(...allXY.map(p => p[0])) + Math.max(...allXY.map(p => p[0]))) / 2, (Math.min(...allXY.map(p => p[1])) + Math.max(...allXY.map(p => p[1]))) / 2];
+const minX = Math.min(...allXY.map(p => p[0])), maxX = Math.max(...allXY.map(p => p[0]));
+const minY = Math.min(...allXY.map(p => p[1])), maxY = Math.max(...allXY.map(p => p[1]));
+const mid = [(minX + maxX) / 2, (minY + maxY) / 2];
+const KEND = 560 / (maxX - minX);         // whole route fits between x 220 and 780
 const HRS = [23.58, 15, 17.5, 16.17, 10.92, 8.25];
-const KLEG = 2.0, CY = 1080;
-const cumul = PERFECT.reduce((a, L) => (a.push((a[a.length - 1] || 0) + L.cost), a), []);
+const KLEG = 2.0, CY = 1000;
 
 window.render = function (t) {
   // ---- camera
-  let cx, cy, k;
+  let cx, cy, k, sy = CY, sx = W / 2;
   const c0 = xyOf('can');
   if (t < 2.9) { const f = E.inOut(P(t, 0, 2.9)); [cx, cy] = [lerp(mid[0], mid[0] + 60, f), lerp(mid[1] - 40, mid[1], f)]; k = lerp(1.05, 1.25, f); }
   else if (t < LEG0) { const f = E.inOut(P(t, 2.9, LEG0 - 2.9)); [cx, cy] = [lerp(mid[0] + 60, c0[0], f), lerp(mid[1], c0[1], f)]; k = lerp(1.25, KLEG, f); }
-  else if (t < LEG0 + 6 * LEGD) {
+  else if (t < LEGS_END) {
     const i = Math.min(5, Math.floor((t - LEG0) / LEGD)), L = legs[i];
     [cx, cy] = pointOn(L.p, E.inOut(P(t, L.s, TRAVEL))); k = KLEG;
-  } else { const f = E.inOut(P(t, LEG0 + 6 * LEGD, .9)), e = xyOf('sfo'); [cx, cy] = [lerp(e[0], mid[0] - 45, f), lerp(e[1], mid[1] - 40, f)]; k = lerp(KLEG, .93, f); }
-  camXY(chart, cx, cy, k, W / 2, CY);
+  } else {
+    const f = E.inOut(P(t, LEGS_END, .9)), e = xyOf('sfo');
+    [cx, cy] = [lerp(e[0], mid[0], f), lerp(e[1], mid[1], f)]; k = lerp(KLEG, KEND, f);
+    sx = lerp(W / 2, 500, f); sy = lerp(CY, 840, f);
+  }
+  camXY(chart, cx, cy, k, sx, sy);
 
-  // ---- hook (fully readable on frame 0, words land fast)
+  // ---- hook (readable on frame 0, words land fast)
   revealWords(hookW, t + .3, 0, .075);
   const hookOut = E.in(P(t, 2.55, .4));
   css($('#hook'), { opacity: 1 - hookOut, transform: `translateX(${-hookOut * 300}px)` });
@@ -76,39 +91,48 @@ window.render = function (t) {
 
   // ---- HUD
   const hud = E.spring(P(t, 2.75, .6)), hudOut = E.in(P(t, 13.6, .35));
-  css($('#hud'), { opacity: P(t, 2.75, .1) * (1 - hudOut), transform: `translateY(${(1 - hud) * -260 - hudOut * 200}px)` });
+  css($('#hud'), { opacity: P(t, 2.75, .1) * (1 - hudOut), transform: `translateY(${(1 - hud) * -300 - hudOut * 300}px)` });
   let spent = 0;
-  legs.forEach((L, i) => { const f = E.out(P(t, L.s + .15, .7)); spent += L.cost * f; });
+  legs.forEach(L => { spent += L.cost * E.out(P(t, L.s + .15, .7)); });
   $('#budget').textContent = money(440 - spent);
-  $('#budget').style.color = spent > 0 && t < LEG0 + 6 * LEGD ? 'var(--red)' : 'var(--ink)';
-  let hrs = 106; legs.forEach((L, i) => { hrs -= HRS[i] * E.inOut(P(t, L.s, TRAVEL)); }); // 4d10h deadline, 3d19h25m used
+  $('#budget').style.color = spent > 0 && t < LEGS_END ? 'var(--red)' : 'var(--ink)';
+  let hrs = 106; legs.forEach((L, i) => { hrs -= HRS[i] * E.inOut(P(t, L.s, TRAVEL)); }); // 4d 10h deadline, 3d 19h 25m used
   $('#clock').textContent = `${Math.floor(hrs / 24)}d ${Math.floor(hrs % 24)}h`;
 
+  // ---- ticket: flips to each leg
+  const li = Math.max(0, Math.min(5, Math.floor((t - LEG0) / LEGD))), L = legs[li];
+  $('#tEm').textContent = L.mode;
+  $('#tK').textContent = `Leg ${li + 1} of 6 · ${L.name}`;
+  $('#tR').innerHTML = `${CITY[L.a].n.replace('San Francisco', 'SF')} → ${CITY[L.b].n.replace('San Francisco', 'SF')}`;
+  $('#tC').innerHTML = `−$${L.cost}${L.deal ? '<span class="deal">DEAL</span>' : ''}`;
+  const flip = P(t, L.s - .08, .3), tin = E.spring(P(t, LEG0 - .1, .5)), tout = E.in(P(t, LEGS_END - .1, .3));
+  css($('#ticket'), { display: t > LEG0 - .1 && t < LEGS_END + .2 ? 'flex' : 'none', opacity: 1 - tout, transform: `translateY(${(1 - tin) * -120 - tout * 120}px) rotateX(${li > 0 && flip < 1 ? (1 - E.out(flip)) * 80 : 0}deg)` });
+
   // ---- legs
-  legs.forEach((L, i) => {
+  legs.forEach(L => {
     const f = E.inOut(P(t, L.s, TRAVEL));
     drawPath(L.p, f);
     const on = t >= L.s - .05 && t < L.s + TRAVEL + .22;
     const [x, y] = scr(chart, pointOn(L.p, f));
     const pop = E.spring(P(t, L.s - .05, .35)), gone = E.in(P(t, L.s + TRAVEL, .22));
     css(L.veh, { display: on ? 'grid' : 'none', left: x + 'px', top: y + 'px', transform: `scale(${pop * (1 - gone)})` });
-    const cp = E.spring(P(t, L.s + .12, .4)), cg = E.in(P(t, L.s + TRAVEL + .05, .2));
-    css(L.chip, { display: t > L.s + .1 && t < L.s + TRAVEL + .3 ? 'block' : 'none', left: x > 520 ? 'auto' : (x + 80) + 'px', right: x > 520 ? (W - x + 80) + 'px' : 'auto', transformOrigin: x > 520 ? '100% 50%' : '0 50%', top: (y - 150) + 'px', transform: `scale(${cp * (1 - cg)}) rotate(-2deg)` });
   });
+  const far = E.inOut(P(t, LEGS_END, .9)); // labels sit clear of the vehicle while it moves
   stops.forEach(s => {
     const [x, y] = scr(chart, s.xy), a = E.spring(P(t, s.at, .4));
     css(s.d, { left: x + 'px', top: y + 'px', transform: `scale(${a})` });
-    css(s.l, { left: x + 'px', top: y + 'px', opacity: P(t, s.at, .2), transform: `translate(-50%,-130%) scale(${lerp(.7, 1, a)})` });
+    css(s.l, { left: x + 'px', top: y + 'px', opacity: P(t, s.at, .2), transform: `translate(-50%,${s.side === 'above' ? lerp(-225, -135, far) : lerp(115, 30, far)}%) scale(${lerp(.7, 1, a)})` });
   });
 
-  // ---- stamp + end card
+  // ---- stamp under the finished route, then the end card
   const st = P(t, 13.15, .45), sOut = E.in(P(t, 14.35, .3));
   const shake = st > 0 && st < 1 ? Math.sin(t * 90) * 10 * (1 - st) : 0;
-  css($('#stamp'), { opacity: st > 0 ? 1 - sOut : 0, transform: `translate(${shake}px,${-sOut * 120}px) rotate(-6deg) scale(${lerp(2.4, 1, E.out5(st))})` });
+  css($('#stamp'), { opacity: st > 0 ? 1 - sOut : 0, transform: `translate(${shake}px,${sOut * 160}px) rotate(-4deg) scale(${lerp(2.0, 1, E.out5(st))})` });
   css($('#end'), { opacity: t > 14.4 ? 1 : 0 });
   revealWords(endW, t, 14.45, .12);
   const ep = E.spring(P(t, 15.0, .5));
   css($('#endpill'), { opacity: P(t, 15.0, .05), transform: `scale(${lerp(.6, 1, ep)}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  css($('#endurl'), { opacity: P(t, 15.4, .3) });
 };
 window.render(0);
 </script></body></html>

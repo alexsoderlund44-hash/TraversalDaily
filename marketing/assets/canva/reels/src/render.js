@@ -13,7 +13,18 @@ const path = require('path');
   await p.waitForTimeout(400);
   const dur = await p.evaluate(() => window.DUR);
   const shot = async t => { await p.evaluate(t => window.render(t), t); return p.screenshot({ type: 'jpeg', quality: 94 }); };
-  if (stills) {
+  if (out === 'qa') {
+    const seen = {};
+    for (let t = 0; t <= dur; t += .1) {
+      await p.evaluate(t => window.render(t), t);
+      const issues = await p.evaluate(t => window.qaScan(t), t);
+      issues.forEach(m => { (seen[m] = seen[m] || []).push(t.toFixed(1)); });
+    }
+    // an issue that lasts under 0.4 s is an element flying in or out; report only what stays on screen
+    const keys = Object.keys(seen).filter(k => seen[k].length >= 4);
+    keys.forEach(k => console.log(k, ' @', seen[k][0] + '–' + seen[k][seen[k].length - 1], '(' + seen[k].length + ' frames)'));
+    console.log(keys.length ? keys.length + ' issues' : 'QA clean', '(' + (Object.keys(seen).length - keys.length) + ' transient)');
+  } else if (stills) {
     for (const s of stills.split(',')) { const buf = await shot(+s); require('fs').writeFileSync(out.replace('.png', `-${s}.jpg`), buf); }
   } else {
     const fps = 30, n = Math.round(dur * fps);

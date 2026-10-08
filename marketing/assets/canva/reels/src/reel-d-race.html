@@ -1,0 +1,103 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css">
+<style>
+body{background:var(--page)}
+#title{position:absolute;left:70px;right:150px;top:215px;font-family:'Alfa Slab One';font-size:78px;line-height:1;white-space:nowrap}
+#clock{position:absolute;left:70px;top:345px;font-family:'Alfa Slab One';font-size:64px;color:var(--brass);white-space:nowrap}
+.lane{position:absolute;left:70px;width:850px;height:270px;background:var(--card);border:6px solid var(--ink);box-shadow:12px 12px 0 var(--ink);border-radius:24px}
+.lane .nm{position:absolute;left:30px;top:22px;font-weight:900;font-size:52px;white-space:nowrap}
+.lane .res{position:absolute;right:30px;top:20px;font-family:'Alfa Slab One';font-size:52px;white-space:nowrap}
+.lane .track{position:absolute;left:60px;right:150px;top:150px;height:0;border-top:6px dashed rgba(43,31,20,.45)}
+.lane .a,.lane .b{position:absolute;top:128px;font-weight:900;font-size:30px;letter-spacing:3px;color:var(--brass)}
+.lane .a{left:30px;top:170px} .lane .b{right:30px;top:170px}
+.lane .veh{position:absolute;top:150px;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;background:#fff;border:5px solid var(--ink);display:grid;place-items:center;font-size:54px}
+.lane .bar{position:absolute;left:30px;right:230px;top:214px;height:30px;border:4px solid var(--ink);border-radius:10px;background:#EADBB8;overflow:hidden}
+.lane .bar i{display:block;height:100%}
+.lane .cost{position:absolute;right:30px;top:198px;font-family:'Alfa Slab One';font-size:46px;white-space:nowrap}
+.lane.win{border-color:var(--teal);box-shadow:12px 12px 0 var(--teal)}
+#end{position:absolute;inset:0;background:var(--red)}
+#end .big{position:absolute;left:70px;right:150px;top:300px;font-family:'Alfa Slab One';font-size:112px;line-height:1;color:var(--card)}
+#end .sub2{position:absolute;left:74px;right:150px;top:700px;font-family:'Alegreya';font-style:italic;font-weight:700;font-size:58px;color:var(--card);line-height:1.2}
+</style></head><body>
+<div class="stage">
+  <div class="grain"></div>
+  <div id="title" data-qa>Atlanta → Dallas</div>
+  <div class="cap" id="hook" style="top:335px;font-size:74px" data-words="Bus, train or *car? 🤔"></div>
+  <div id="clock" data-qa>⏱ 0h 00m</div>
+  <div class="cap" id="c2" style="top:335px;font-size:68px" data-words="Now add the *price 👀"></div>
+  <div class="cap" id="c3" style="top:335px;font-size:66px" data-words="Today's planner took the *bus 🚌"></div>
+  <div id="lanes"></div>
+  <div id="end">
+    <div class="big" id="e1">A daily travel puzzle.</div>
+    <div class="sub2" id="e2">One route. One budget.<br>One twist. Every day.</div>
+    <div class="cap" id="e3" style="top:930px;font-size:66px" data-words="Bus, train or car? *Comment 👇"></div>
+    <div id="e4" style="position:absolute;left:70px;top:1180px"><span class="pill" style="font-size:44px;background:var(--card);color:var(--ink)">traversledaily.com</span></div>
+  </div>
+</div>
+<script src="lib.js"></script>
+<script>
+window.DUR = 15.5;
+// real options for Atlanta → Dallas on puzzle #8 (from the game engine)
+const OPT = [
+  { em: '🚌', nm: 'Bus', h: 17.5, cost: 48, col: 'var(--teal)' },
+  { em: '🚆', nm: 'Train', h: 9.75, cost: 142, col: '#B8862B' },
+  { em: '🚗', nm: 'Rental car', h: 14.58, cost: 227, col: 'var(--red)' },
+];
+const order = OPT.map((o, i) => i).sort((a, b) => OPT[a].h - OPT[b].h);
+const MEDAL = ['🥇', '🥈', '🥉'];
+const fmtH = h => `${Math.floor(h)}h ${String(Math.round((h % 1) * 60)).padStart(2, '0')}m`;
+const lanes = OPT.map((o, i) => {
+  const d = document.createElement('div'); d.className = 'lane'; d.style.top = (575 + i * 305) + 'px'; d.dataset.qa = '';
+  d.innerHTML = `<div class="nm">${o.em} ${o.nm}</div><div class="res"></div><div class="track"></div><div class="a">ATL</div><div class="b">DAL</div>
+    <div class="veh">${o.em}</div><div class="bar"><i style="background:${o.col}"></i></div><div class="cost"></div>`;
+  $('#lanes').appendChild(d); return d;
+});
+const caps = {}; $$('.cap').forEach(c => caps[c.id] = buildCaption(c));
+const RACE0 = 2.5, RACE = 4.6, PRICE0 = 7.7, WIN0 = 10.6, END0 = 12.9;
+
+window.render = function (t) {
+  // hook: title + question readable on frame 0
+  revealWords(caps.hook, t + .4, 0, .08);
+  css($('#title'), { transform: `scale(${lerp(.94, 1, E.spring(P(t, 0, .4)))})`, transformOrigin: '0 50%' });
+  css($('#hook'), { opacity: 1 - P(t, RACE0 - .3, .25) });
+
+  // race clock: 17.5 sim-hours over RACE seconds
+  const simH = 17.5 * E.inOut(P(t, RACE0, RACE));
+  $('#clock').textContent = `⏱ ${fmtH(simH)}`;
+  css($('#clock'), { opacity: P(t, RACE0 - .1, .2) * (1 - P(t, PRICE0 - .3, .2)) });
+
+  lanes.forEach((d, i) => {
+    const o = OPT[i], f = clamp(simH / o.h), w = 690 - 60;
+    const intro = E.spring(P(t + .5, i * .08, .5)); // already on screen at frame 0
+    d.style.transform = `translateX(${(1 - intro) * 1100}px)`;
+    const v = d.querySelector('.veh');
+    v.style.left = (60 + f * w) + 'px';
+    v.style.transform = `translateY(${f > 0 && f < 1 ? Math.sin(t * 30 + i) * 4 : 0}px)`;
+    const done = simH >= o.h, rank = order.indexOf(i);
+    d.querySelector('.res').textContent = done ? `${MEDAL[rank]} ${fmtH(o.h)}` : '';
+    // price phase: what that leg costs out of the whole $440
+    const pp = E.out(P(t, PRICE0 + i * .35, .7));
+    d.querySelector('.bar').style.opacity = P(t, PRICE0 + i * .35, .1);
+    d.querySelector('.bar i').style.width = (pp * o.cost / 440 * 100) + '%';
+    d.querySelector('.cost').textContent = t > PRICE0 + i * .35 ? `$${Math.round(o.cost * pp)}` : '';
+    // verdict: bus highlighted, the others fade back
+    const wv = P(t, WIN0, .4);
+    d.classList.toggle('win', i === 0 && wv > 0);
+    d.style.opacity = i === 0 ? 1 : lerp(1, .4, wv);
+  });
+  revealWords(caps.c2, t, PRICE0 - .2, .12);
+  css($('#c2'), { opacity: 1 - P(t, WIN0 - .25, .2) });
+  revealWords(caps.c3, t, WIN0, .1);
+  css($('#title'), { opacity: 1 });
+
+  // end card wipes up
+  const e = E.inOut(P(t, END0, .5));
+  css($('#end'), { display: t > END0 ? 'block' : 'none', clipPath: `inset(${(1 - e) * 100}% 0 0 0)` });
+  css($('#e1'), { transform: `scale(${lerp(.85, 1, E.spring(P(t, END0 + .2, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  css($('#e2'), { opacity: P(t, END0 + .6, .3) });
+  $('#lanes').style.display = e >= 1 ? 'none' : 'block'; // fully covered by the end card
+  revealWords(caps.e3, t, END0 + 1.0, .1);
+  css($('#e4'), { opacity: P(t, END0 + 1.6, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, END0 + 1.6, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+};
+window.render(0);
+</script></body></html>

@@ -104,3 +104,46 @@ const PERFECT = [
   { a: 'den', b: 'lax', mode: '🚆', name: 'Train', cost: 78, deal: '-35%' },
   { a: 'lax', b: 'sfo', mode: '🚗', name: 'Rideshare', cost: 36 },
 ];
+
+/* ---------- QA: TikTok safe zones + overlapping text ----------
+   Text-bearing blocks are found by selector (or [data-qa]); [data-qa-skip] opts out.
+   Unsafe zones for 1080x1920 (TikTok/Reels overlays): top tabs y<200, caption/buttons y>1480,
+   right action rail x>930 for 860<y<1560. */
+const QA_SEL = '.veh,#ticket,.url,.cap .w,.pill,.hud .box,.huge,.hook,.sub,.rule-k,.rule-v,.chip,.lbl,.stampx,#stamp,.share,.meter,.receipt,.phone,.card,[data-qa]';
+function qaVisible(el) {
+  let o = 1;
+  for (let e = el; e && e !== document.body; e = e.parentElement) {
+    const cs = getComputedStyle(e);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return 0;
+    o *= +cs.opacity;
+  }
+  return o;
+}
+window.qaScan = function (t) {
+  const els = $$(QA_SEL).filter(e => !e.closest('[data-qa-skip]') && qaVisible(e) > .35);
+  const R = els.map(e => ({ e, r: e.getBoundingClientRect(), name: (e.id ? '#' + e.id : '.' + e.className.split(' ')[0]) + ' "' + (e.dataset.qaName || (e.textContent || '').trim().replace(/[\d$,]+/g, '#').slice(0, 22)) + '"' }))
+    .filter(o => o.r.width > 2 && o.r.height > 2 && o.r.right > 0 && o.r.left < W && o.r.bottom > 0 && o.r.top < H);
+  const out = [];
+  R.forEach(o => {
+    const r = o.r, z = [];
+    if (r.top < 200) z.push('top ' + Math.round(r.top));
+    if (r.bottom > 1480) z.push('bottom ' + Math.round(r.bottom));
+    if (r.left < 40) z.push('left ' + Math.round(r.left));
+    if (r.right > 1040) z.push('right ' + Math.round(r.right));
+    else if (r.right > 930 && r.bottom > 860 && r.top < 1560) z.push('rail ' + Math.round(r.right));
+    if (z.length && !o.e.closest('[data-qa-edge]') && !o.e.classList.contains('lbl')) out.push(`zone ${o.name}: ${z.join(', ')}`);
+  });
+  for (let i = 0; i < R.length; i++) for (let j = i + 1; j < R.length; j++) {
+    const a = R[i], b = R[j];
+    if (a.e.contains(b.e) || b.e.contains(a.e)) continue;
+    const sa = a.e.closest('.scene'), sb = b.e.closest('.scene');
+    if (sa && sb && sa !== sb) continue; // a wipe covers the old scene
+    if (a.e.dataset.qaGroup && a.e.dataset.qaGroup === b.e.dataset.qaGroup) continue;
+    const ix = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left), iy = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+    if (ix > 6 && iy > 6) {
+      const small = Math.min(a.r.width * a.r.height, b.r.width * b.r.height);
+      if (ix * iy > small * .02) out.push(`overlap ${a.name} x ${b.name}`);
+    }
+  }
+  return out;
+};

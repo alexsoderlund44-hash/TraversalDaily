@@ -24,8 +24,8 @@ svg.chart{position:absolute;inset:0;width:1080px;height:1920px;background:var(--
 .cap .w.hot{background:var(--red);color:var(--card)}
 .pill{display:inline-block;background:var(--red);color:var(--card);font-weight:900;letter-spacing:4px;text-transform:uppercase;padding:14px 26px;font-size:40px;border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .card{background:var(--card);border:6px solid var(--ink);box-shadow:14px 14px 0 var(--ink);border-radius:26px}
-.hud{position:absolute;top:150px;left:60px;right:60px;display:flex;gap:22px}
+.hud{position:absolute;top:215px;left:70px;right:150px;display:flex;gap:22px}
 .hud .box{flex:1;background:var(--card);border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink);border-radius:18px;padding:14px 22px}
-.hud .k{font-size:28px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:var(--brass)}
-.hud .v{font-family:'Alfa Slab One';font-size:68px;line-height:1.05}
+.hud .k{white-space:nowrap;font-size:26px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:var(--brass)}
+.hud .v{font-family:'Alfa Slab One';font-size:56px;line-height:1.1;white-space:nowrap}
 .city{font-family:'Alegreya';font-weight:700;font-size:44px;paint-order:stroke;stroke:#F7EEDB;stroke-width:10px;fill:var(--ink)}

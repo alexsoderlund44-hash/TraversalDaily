@@ -72,7 +72,7 @@ HOME = '''
   </section>
   @HOW@
 </main>'''
-HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/data/tutorial-map.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script><script src="@/js/chart-bg.js" defer></script>'
+HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/account-config.js"></script><script src="@/js/account.js"></script><script src="@/data/tutorial-map.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script><script src="@/js/chart-bg.js" defer></script>'
 
 PLAY = '''
 <main class="tv">
@@ -113,7 +113,7 @@ PLAY = '''
   <p class="tv-source" id="tv-source"></p>
   @HOW@
 </main>'''
-PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/world-lite.js"></script><script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/data/tutorial-map.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/traverse-ui.js"></script><script src="@/js/coach.js"></script>'
+PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/world-lite.js"></script><script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/account-config.js"></script><script src="@/js/account.js"></script><script src="@/data/tutorial-map.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/traverse-ui.js"></script><script src="@/js/coach.js"></script>'
 
 ACH = '''
 <main class="td-page">
@@ -190,7 +190,7 @@ PLUS = '''
     <details><summary>Where is my membership stored?</summary><p>In this browser for now. When accounts arrive, your membership comes with you.</p></details>
   </section>
 </main>'''
-PAGES_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script>'
+PAGES_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/account-config.js"></script><script src="@/js/account.js"></script><script src="@/js/pages.js"></script>'
 PAGES = (('index',HOME,HOME_JS),('play',PLAY,PLAY_JS),('archive',ARCHIVE,PAGES_JS),('achievements',ACH,PAGES_JS),('stats',STATS,PAGES_JS),('profile',PROFILE,PAGES_JS),('plus',PLUS,PAGES_JS))
 
 for page, body, js in PAGES:

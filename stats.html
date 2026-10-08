@@ -26,18 +26,18 @@
     <div class="tile"><span>Best score</span><b id="st-best">—</b></div>
     <div class="tile"><span>Planner's routes found</span><b id="st-par">0</b></div>
     <div class="tile"><span>Deals found</span><b id="st-deals">0</b></div>
-    <div class="tile"><span>Legs travelled</span><b id="st-legs">0</b></div>
+    <div class="tile"><span>Legs traveled</span><b id="st-legs">0</b></div>
     <div class="tile"><span>Distance</span><b id="st-km">0 km</b></div>
     <div class="tile"><span>Countries</span><b id="st-countries">0</b></div>
     <div class="tile"><span>Average score</span><b id="st-avg">—</b></div>
-    <div class="tile"><span>Favourite transport</span><b id="st-mode">—</b></div>
+    <div class="tile"><span>Favorite transport</span><b id="st-mode">—</b></div>
   </section>
   <section class="two">
     <div class="card"><h2>How you travel</h2><div id="st-modes"></div><p class="muted"><span id="st-spent">$0</span> spent and <span id="st-hours">0h</span> on the move in total.</p></div>
     <div class="card"><h2>Journey log</h2><div class="tbl"><table><thead><tr><th>Day</th><th>Route</th><th>Legs</th><th class="r">Spent</th><th class="r">Time</th><th class="r">Decided</th><th class="r">Score</th></tr></thead><tbody id="st-history"></tbody></table></div></div>
   </section>
 </main>
-<footer class="td-foot"><div class="td-wrap"><span>TraversleDaily · a new travel puzzle every day</span><span>Map data: Natural Earth. Your runs stay in this browser.</span></div></footer>
+<footer class="td-foot"><div class="td-wrap"><span>© 2026 TraversleDaily. A new travel puzzle every day.</span><span>Map data from Natural Earth. Your progress is saved in this browser.</span></div></footer>
 <script src="data/cities.js"></script><script src="data/live/latest.js"></script><script src="data/schedule.js"></script><script src="js/traverse.js"></script><script src="js/pages.js"></script>
 <script>(function(){var b=document.getElementById('td-burger'),m=document.getElementById('td-menu');function set(o){m.hidden=!o;b.setAttribute('aria-expanded',o);b.classList.toggle('open',o);document.body.classList.toggle('td-menu-open',o);}b.onclick=function(e){e.stopPropagation();set(m.hidden);};m.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});document.addEventListener('click',function(e){if(!m.hidden&&!m.contains(e.target))set(false);});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!m.hidden)set(false);});
 var how=document.getElementById('hm-howmodal');if(how){window.tdHow=function(o){if(window.tdTutorial)return window.tdTutorial(o);how.hidden=!o;};['hm-how','td-help'].forEach(function(id){var el=document.getElementById(id);if(el)el.onclick=function(){tdHow(true);};});window.addEventListener('hashchange',function(){if(location.hash==='#how')tdHow(true);});if(location.hash==='#how')tdHow(true);}})();</script>

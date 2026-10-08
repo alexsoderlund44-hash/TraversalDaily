@@ -92,7 +92,7 @@
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     const uLon = gl.getUniformLocation(prog, 'lon'), uTilt = gl.getUniformLocation(prog, 'tilt'), uRing = gl.getUniformLocation(prog, 'ring');
     gl.uniform1f(uTilt, tilt); gl.uniform1f(uRing, (R + 7) / R); gl.clearColor(0, 0, 0, 0);
-    const SPEED = (2 * Math.PI) / 240; // one full turn every four minutes, like a desk globe given a push
+    const SPEED = (2 * Math.PI) / 150; // one full turn every two and a half minutes, like a desk globe given a push
     let lon = mid[0] * Math.PI / 180, last = performance.now(), raf = 0;
     const draw = () => { gl.clear(gl.COLOR_BUFFER_BIT); gl.uniform1f(uLon, lon); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); };
     const frame = now => { const dt = Math.min(0.1, (now - last) / 1000); last = now; lon += SPEED * dt; draw(); raf = requestAnimationFrame(frame); };

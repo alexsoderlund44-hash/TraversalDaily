@@ -6,7 +6,7 @@
   const today = T.dayNumber();
   const prof = (() => { try { return JSON.parse(localStorage.getItem('traverse.profile')) || {}; } catch (e) { return {}; } })();
   const saveProf = p => { try { localStorage.setItem('traverse.profile', JSON.stringify(p)); } catch (e) {} };
-  const nameOf = () => prof.name || 'Traveller';
+  const nameOf = () => prof.name || 'Traveler';
   const dayOf = k => Math.round((Date.parse(k) - T.EPOCH) / 86400000) + 1;
   const fmtDay = k => new Date(k).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
@@ -48,7 +48,7 @@
       const hide = a.secret && !a.level, pct = a.done ? 100 : Math.min(100, 100 * a.value / a.target);
       const pips = a.max > 1 ? `<span class="pips">${['bronze', 'silver', 'gold'].map((t, i) => `<i class="${t}${i < a.level ? ' on' : ''}" title="${t}"></i>`).join('')}</span>` : '';
       return `<div class="ach${a.level ? ' on' : ''}${a.tier ? ' t-' + a.tier.toLowerCase() : ''}${hide ? ' secret' : ''}"><span class="ic">${hide ? '❔' : a.ic}</span><b>${hide ? 'Secret badge' : T.esc(a.name)}</b>${pips}
-        <p>${hide ? 'Keep travelling to discover it.' : a.done ? T.esc(a.goal) + '.' : 'Next: ' + T.esc(a.goal) + (a.note ? ' (' + a.note + ')' : '') + '.'}</p>
+        <p>${hide ? 'Keep traveling to discover it.' : a.done ? T.esc(a.goal) + '.' : 'Next: ' + T.esc(a.goal) + (a.note ? ' (' + a.note + ')' : '') + '.'}</p>
         ${hide ? '' : `<div class="prog"><i style="width:${pct}%"></i></div><small>${a.done ? (a.tier ? a.tier + ' · complete' : 'Unlocked') : Math.min(a.value, a.target).toLocaleString() + ' / ' + a.target.toLocaleString()}${!a.done && a.tier ? ' · ' + a.tier + ' earned' : ''}</small>`}</div>`;
     };
     $('#ach-grid').innerHTML = ACH.filter(a => !a.secret).map(card).join('');
@@ -135,9 +135,9 @@
   }
   if (page === 'plus') {
     const stat = $('#pl-status');
-    stat.innerHTML = plus.active ? `<div class="plus-active"><span class="ic">✦</span><b>You're a Traversle + member${plus.plan === 'life' ? ' for life' : ''}.</b><p>Every puzzle since day one is open in the <a href="archive.html">archive</a>. Thank you for backing the game.</p></div>` : '';
+    stat.innerHTML = plus.active ? `<div class="plus-active"><span class="ic">✦</span><b>You're a Traversle + member for life.</b><p>Every puzzle since day one is open in the <a href="archive.html">archive</a>. Thank you for backing the game.</p></div>` : '';
     document.querySelectorAll('[data-checkout]').forEach(b => {
-      if (plus.active) { b.textContent = plus.plan === b.dataset.checkout || plus.plan === 'life' ? 'Active' : b.textContent; if (plus.plan === 'life' || plus.plan === b.dataset.checkout) b.classList.add('disabled'); return; }
+      if (plus.active) { b.textContent = 'Active'; b.classList.add('disabled'); return; }
       if (!b.getAttribute('href') || b.getAttribute('href') === '#') b.addEventListener('click', e => { e.preventDefault(); const n = $('#pl-soon'); n.hidden = false; n.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
     });
   }

@@ -442,10 +442,10 @@
 
   /* ---------- TraversleDaily Plus: the paid archive ----------
      The last FREE_DAYS puzzles are free to replay; older ones need Plus. Membership is stored in this browser.
-     Plans: $2.99 a month or $20 once for lifetime. Checkout is wired in plus.html once a payment provider is connected. */
+     Plan: $20 once, no subscription. Checkout is wired in plus.html once a payment provider is connected. */
   const FREE_DAYS = 7;
   const PLUS_STORE = 'traverse.plus';
-  const PLANS = { month: { name: 'Monthly', price: '$2.99', per: 'per month' }, life: { name: 'Lifetime', price: '$20', per: 'once, forever' } };
+  const PLANS = { life: { name: 'Traversle +', price: '$20', per: 'one-time' } };
   const plus = () => { try { const p = JSON.parse(localStorage.getItem(PLUS_STORE)); return p && p.active ? p : { active: false }; } catch (e) { return { active: false }; } };
   const setPlus = p => { try { localStorage.setItem(PLUS_STORE, JSON.stringify(p)); } catch (e) {} };
   const dayLocked = n => n < dayNumber() - FREE_DAYS && !plus().active;

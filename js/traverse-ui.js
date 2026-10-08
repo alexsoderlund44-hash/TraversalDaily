@@ -37,6 +37,7 @@
     return null;
   }
   const usable = (a, b) => T.legs(a, b, ch.seed).filter(l => !blocked(l, b));
+  const why = b => b === 'over budget' ? 'is over budget' : b === 'misses deadline' ? 'misses the deadline' : 'breaks the ' + b;
   function noteDeals(a, b, ls) {
     ls.forEach(l => { if (l.deal) { const k = dealKey(a, b, l); if (!found.has(k)) { found.add(k); if (playing) { dealReveal(a, b, l); renderBrief(); renderCounts(); } } } });
   }
@@ -173,7 +174,9 @@
     const w = Math.max(60, (x1 - x0) * (pad || 1.6)), h = Math.max(40, (y1 - y0) * (pad || 1.6));
     const kk = Math.min(12, Math.max(1, Math.min(vw / w, vh / h) * 0.9));
     const cx = (x0 + x1) / 2 + (window.innerWidth > 900 ? (offset == null ? 120 : offset) / kk : 0);
-    return svg.transition().delay(delay || 0).duration(dur == null ? 750 : dur).ease(ease || d3.easeCubicOut).call(zoom.transform, d3.zoomIdentity.translate(480 - kk * cx, 250 - kk * (y0 + y1) / 2).scale(kk));
+    // on a phone the planning sheet covers the lower part of the chart, so the route lands in the strip above it
+    const plan = $('#tv-plan'), sheet = window.innerWidth <= 900 && plan && !plan.hidden, cy = sheet ? (plan.classList.contains('collapsed') ? 200 : 110) : 250;
+    return svg.transition().delay(delay || 0).duration(dur == null ? 750 : dur).ease(ease || d3.easeCubicOut).call(zoom.transform, d3.zoomIdentity.translate(480 - kk * cx, cy - kk * (y0 + y1) / 2).scale(kk));
   }
   function fitRoute() { fitTo([ch.from, ch.to, ...route.map(r => T.byId[r.to]), ...(showPar ? M.par.path.map(e => T.byId[e.to]) : [])], 1.8); }
   const arc = (a, b) => path({ type: 'LineString', coordinates: [[a.lon, a.lat], [b.lon, b.lat]] });
@@ -239,13 +242,13 @@
     if (onRouteIds().has(c.id)) return toast(c.name + ' is already on your route');
     const all = T.legs(cur, c, ch.seed); noteDeals(cur, c, all);
     if (!all.length) { markCity(c.id, 'no', 700); return toast('Nothing runs from ' + cur.name + ' to ' + c.name + ' today'); }
-    if (!all.some(l => !blocked(l, c))) { markCity(c.id, 'no', 700); return toast('Nothing from ' + cur.name + ' to ' + c.name + ' fits: ' + blocked(all.slice().sort((x, y) => x.cost - y.cost)[0], c)); }
+    if (!all.some(l => !blocked(l, c))) { markCity(c.id, 'no', 700); return toast('Nothing from ' + cur.name + ' to ' + c.name + ' fits: the cheapest ' + why(blocked(all.slice().sort((x, y) => x.cost - y.cost)[0], c))); }
     pendingTo = c; selOpt = null; refresh(); fitTo([cur, c], 2.2);
     $('#tv-plan').classList.remove('collapsed');
-    const el = $('#tv-picker'); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const el = $('#tv-picker'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function commit(c, leg) {
-    if (blocked(leg, c)) return toast('That option is ' + blocked(leg, c));
+    if (blocked(leg, c)) return toast('That option ' + why(blocked(leg, c)));
     route.push({ from: at().id, to: c.id, leg }); pendingTo = null; selOpt = null; refresh();
     drawNewLeg(c.id);
     if (!atDest()) fitTo([c, ch.to], 1.8); else { fitRoute(); stage.classList.add('arrived'); }
@@ -259,7 +262,7 @@
     setTimeout(() => markCity(toId, 'born', 700), 380);
   }
   function refresh() { renderPlan(); drawMap(); }
-  let toastT; function toast(m) { let t = $('.tv-toast'); if (!t) { t = document.createElement('div'); t.className = 'tv-toast'; document.body.appendChild(t); } t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+  let toastT; function toast(m) { let t = $('.tv-toast'); if (!t) { t = document.createElement('div'); t.className = 'tv-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
 
   /* ---------- planning dashboard ---------- */
   function pace() {
@@ -275,15 +278,16 @@
     const tt = totals(), cur = at();
     const gauge = (id, v, cap, fmt) => { const left = cap - v, el = $(id); el.querySelector('b').textContent = fmt(v); el.querySelector('small').textContent = left >= 0 ? fmt(left) + ' left of ' + fmt(cap) : fmt(-left) + ' over'; el.querySelector('.bar i').style.width = Math.min(100, 100 * v / cap) + '%'; el.classList.toggle('warn', v / cap > 0.8); el.classList.toggle('over', v > cap); };
     gauge('#tv-g-cost', tt.cost, M.budget, T.money); gauge('#tv-g-time', tt.hours, M.deadline, T.dur);
-    const [pt, pc] = pace(); const pe = $('#tv-pace'); pe.textContent = pt; pe.className = pc;
+    const [pt, pc] = pace(); $('#tv-pace').textContent = speedNote();
     const ts = twState(), done = tw.done(ts);
     $('#tv-twist').innerHTML = tw.id === 'open' ? `<span>${tw.icon} ${T.esc(tw.name)}</span><small>${T.esc(tw.desc)}</small>` : `<span>${tw.icon} ${T.esc(tw.name)}</span><small class="${done ? 'good' : ''}">${T.esc(tw.status(ts))}</small>`;
     renderCounts();
     $('#tv-hint').disabled = !hints || found.size >= M.deals || atDest();
     const est = atDest() ? T.score(tt.cost, tt.hours, elapsed(), M) : null;
     $('#tv-est').hidden = est === null; $('#tv-est b').textContent = est === null ? '—' : est.toLocaleString(); $('#tv-est .bar i').style.width = (est === null ? 0 : est / 100) + '%';
-    $('#tv-plan-sub').textContent = atDest() ? (done ? 'You made it. Submit, or undo a leg and try another idea.' : 'You made it, but the twist isn\'t met: ' + tw.status(ts) + '.') : `You're in ${cur.name}.`;
+    $('#tv-plan-sub').innerHTML = atDest() ? (done ? (undos ? 'You made it. Submit, or undo a leg and try another idea.' : 'You made it. Submit when you are ready.') : 'You made it, but the twist isn\'t met: ' + T.esc(tw.status(ts)) + '.') : `You're in ${T.esc(cur.name)}.${pt ? ` <span class="pace ${pc}">${pt}</span>` : ''}`;
     $('#tv-submit').disabled = !(atDest() && done); $('#tv-submit').classList.toggle('ready', atDest() && done); $('#tv-undo').disabled = !route.length || !undos;
+    $('#tv-undo').textContent = undos ? `Undo · ${undos} left` : 'No undos left';
 
     let h = `<li class="start"><span class="dot"></span><div class="stop">${T.place(ch.from)}<small>start</small></div>`;
     route.forEach((r, i) => {
@@ -298,6 +302,8 @@
     renderPicker();
   }
 
+  /* deciding fast earns a bonus; it never costs anything, and the clock says so */
+  const speedNote = () => 'bonus +' + Math.round(20 * Math.exp(-Math.max(0, elapsed() - 30) / 240)) + '%';
   function renderCounts() { $('#tv-counts').innerHTML = `<span><b>${route.length}</b> leg${route.length === 1 ? '' : 's'}</span><span><b>${undos}</b> undo${undos === 1 ? '' : 's'}</span><span><b>${hints}</b> hint${hints === 1 ? '' : 's'}</span><span class="deals" title="Secret fares found">🎟️ ${dealDots()} <b>${found.size}</b>/${M.deals}</span>`; }
   /* what a leg means for the twist */
   function twNote(o) {
@@ -327,7 +333,7 @@
           <span class="ic">${o.icon}</span><span class="nm">${o.name}${o.deal ? ` <em class="deal">🎟️ −${Math.round(o.deal * 100)}%</em>` : ''}<small class="${b ? 'off' : o.live ? 'live' : ''}">${b ? b : o.live ? 'avg of ' + T.esc(String(o.note).replace('avg of ', '')) + (o.nonstop ? ' · nonstop from ' + T.money(o.nonstop.cost) : '') : (o.note || 'modelled')}</small></span>
           <span class="nums"><b>${T.money(o.cost)}${o.deal ? ` <s>${T.money(o.full)}</s>` : ''}</b><span>${T.dur(o.hours)}</span></span></button>`; }).join('')}</div>
         ${card}${selOpt === null ? '<p class="tv-pick-hint">Tap an option to see the details, tap again to take it.</p>' : ''}`;
-      box.querySelectorAll('.tv-opt:not(.off)').forEach(b => (b.onclick = () => { const i = +b.dataset.i; if (selOpt === i) commit(pendingTo, opts[i]); else { selOpt = i; renderPicker(); const c = $('.tv-legcard'); if (c) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }));
+      box.querySelectorAll('.tv-opt:not(.off)').forEach(b => (b.onclick = () => { const i = +b.dataset.i; if (selOpt === i) commit(pendingTo, opts[i]); else { selOpt = i; renderPicker(); const c = $('.tv-legcard'); if (c) box.scrollTo({ top: Math.max(0, c.offsetTop - box.offsetTop - 8), behavior: 'smooth' }); } }));
       const add = $('#tv-addleg'); if (add) add.onclick = () => commit(pendingTo, opts[selOpt]);
       $('#tv-unpick').onclick = () => { pendingTo = null; selOpt = null; refresh(); };
       return;
@@ -338,7 +344,7 @@
     const destLegs = T.legs(cur, ch.to, ch.seed);
     box.innerHTML = `<div class="tv-pick-head"><b>Add a stop</b><small>${reach.length} places fit from ${T.esc(cur.name)}</small></div>
       <div class="tv-search"><input type="search" id="tv-q" placeholder="Search any city…" autocomplete="off"><ul class="tv-results" id="tv-res" hidden></ul></div>
-      <div class="tv-stoplist">${finish ? row(finish) : destLegs.length ? `<div class="tv-stoprow finish off"><span class="nm">${T.place(ch.to)}<small>reachable, but nothing fits: ${T.esc(blocked(destLegs.slice().sort((x, y) => x.cost - y.cost)[0], ch.to) || '')}</small></span></div>` : ''}${suggested.map(row).join('')}</div>
+      <div class="tv-stoplist">${finish ? row(finish) : destLegs.length ? `<div class="tv-stoprow finish off"><span class="nm">${T.place(ch.to)}<small>reachable, but the cheapest option ${T.esc(why(blocked(destLegs.slice().sort((x, y) => x.cost - y.cost)[0], ch.to) || ''))}</small></span></div>` : ''}${suggested.map(row).join('')}</div>
       <p class="tv-pick-hint">Lit cities on the map are reachable. Secret fares only show when you look.</p>`;
     box.querySelectorAll('.tv-stoprow[data-id]').forEach(b => (b.onclick = () => pick(T.byId[b.dataset.id])));
     const q = $('#tv-q'), res = $('#tv-res');
@@ -361,12 +367,12 @@
     // the chart swoops in on today's region, then the clock starts
     const gate = $('#tv-gate'), plan = $('#tv-plan'); gate.classList.add('off'); stage.classList.add('zooming'); stage.classList.remove('arrived'); stage.classList.remove('intro');
     gCourse.selectAll('path').remove();
-    const dur = reducedMotion ? 0 : 2600;
-    fitTo([ch.from, ch.to], 1.8, dur, d3.easeCubicInOut).on('end interrupt', () => {
+    const dur = reducedMotion ? 0 : 1200;
+    fitTo([ch.from, ch.to], 1.8, dur, d3.easeCubicOut).on('end interrupt', () => {
       gate.hidden = true; gate.classList.remove('off'); stage.classList.remove('zooming'); relayout();
       plan.hidden = false; plan.classList.remove('leave'); plan.classList.toggle('collapsed', window.innerWidth <= 900); plan.classList.add('arrive');
       playing = true; t0 = performance.now();
-      clearInterval(timer); timer = setInterval(() => { $('#tv-timer').textContent = T.secsF(elapsed()); if (atDest()) { const tt = totals(); const est = T.score(tt.cost, tt.hours, elapsed(), M); $('#tv-est b').textContent = est.toLocaleString(); $('#tv-est .bar i').style.width = est / 100 + '%'; } }, 250);
+      clearInterval(timer); timer = setInterval(() => { $('#tv-timer').textContent = T.secsF(elapsed()); $('#tv-pace').textContent = speedNote(); if (atDest()) { const tt = totals(); const est = T.score(tt.cost, tt.hours, elapsed(), M); $('#tv-est b').textContent = est.toLocaleString(); $('#tv-est .bar i').style.width = est / 100 + '%'; } }, 250);
       refresh();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
@@ -420,7 +426,7 @@
     return { cls: 'lose', h: '🧭 The planner wins this one', t: dc > 0.5 ? `You were ${T.money(dc)} more expensive${dh > 0.05 ? ' and ' + T.dur(dh) + ' slower' : ''}.` : dh > 0.05 ? `You were ${T.dur(dh)} slower.` : 'A whisker behind on the balance of money and time.' };
   }
   const routeCol = (title, rt, cost, hours, cls) => `<div class="col ${cls}"><h5>${title}</h5><ol>${[ch.from, ...rt.map(r => T.byId[r.to])].map((c, i) => (i ? `<li class="lg"><span class="ar">↓</span><span>${T.MODES[rt[i - 1].mode].icon} ${T.MODES[rt[i - 1].mode].name}${rt[i - 1].deal ? ' 🎟️' : ''}</span><small>${T.money(rt[i - 1].cost)} · ${T.dur(rt[i - 1].hours)}</small></li>` : '') + `<li class="st${i === 0 ? ' s' : i === rt.length ? ' d' : ''}">${T.esc(c.name)}</li>`).join('')}</ol><div class="tot"><b>${T.money(cost)}</b><span>${T.dur(hours)}</span><span>${rt.length} legs</span></div></div>`;
-  function buildSummary(res, isPractice, xpGain, earned) {
+  function buildSummary(res, isPractice, xpGain, earned, full) {
     const tr = T.tier(res.score, M), ofPar = Math.round(100 * res.score / Math.max(1, M.par.score)), f = factors(res), v = verdict(res);
     const prog = T.progression(T.load().results || {}), lvlPct = prog.next ? Math.round(100 * prog.into / prog.span) : 100;
     const parRoute = M.par.path.map(e => ({ to: e.to, mode: e.mode, cost: e.cost, hours: e.hours, deal: e.deal }));
@@ -433,13 +439,17 @@
     const bar = (lab, val, cls) => `<div class="brow ${cls || ''}"><span>${lab}</span><div class="bar"><i style="width:${val}%" data-w="${val}"></i></div><b><span data-count="${val}">${val}</span> <small>/ 100</small></b></div>`;
     const tags = [res.cost < M.par.cost - 0.5 ? ['you', 'Cheaper'] : res.cost > M.par.cost + 0.5 ? ['par', 'Planner cheaper'] : ['tie', 'Same cost'], res.hours < M.par.hours - 0.05 ? ['you', 'Faster'] : res.hours > M.par.hours + 0.05 ? ['par', 'Planner faster'] : ['tie', 'Same time'], res.route.length < M.par.legs ? ['you', 'Fewer legs'] : res.route.length > M.par.legs ? ['par', 'Planner fewer legs'] : ['tie', 'Same legs'], [found >= parDeals ? 'you' : 'par', `Deals ${res.deals ? res.deals.used : 0} vs ${parDeals} used`]];
     return `
-      <p class="kicker">${isPractice ? (mode === 'today' ? 'Practice run · not scored' : mode === 'archive' ? 'Archive practice · not scored' : 'Random expedition · not scored') : 'Official result · ' + ch.key}</p>
+      <p class="kicker">${isPractice ? (mode === 'today' ? 'Practice run · not scored' : mode === 'archive' ? 'Archive practice · not scored' : 'Random expedition · not scored') : 'Official result · ' + dayLabel}</p>
+      <section class="rs-top">
+        <div class="rs-rating ${tr.name.toLowerCase()}"><span class="ic">${tr.icon}</span><div><b>${tr.name}</b><small>${ofPar}% of the planner's score (${M.par.score.toLocaleString()})${isPractice ? ' · practice' : ''}</small></div></div>
+        <div class="rs-big"><b data-count="${res.score}">${res.score.toLocaleString()}</b><small>score</small>${!isPractice && mode === 'today' ? `<span>Next puzzle in <b>${resetIn()}</b></span>` : ''}</div>
+        <p class="rs-verdict ${v.cls}"><b>${v.h}</b> ${v.t}</p>
+      </section>
       <section class="rs-journey">
         <p class="lab">Your journey</p>
         <div class="chain">${chain}</div>
         <p class="rs-dist"><b data-count="${km}" data-fmt="km">${km.toLocaleString()} km</b> across <b>${nations} ${nations === 1 ? 'country' : 'countries'}</b></p>
-        <div class="rs-stats"><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.route.length}</b><span>legs</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>deals</span></div><div class="sc"><b data-count="${res.score}">${res.score.toLocaleString()}</b><span>score</span></div></div>
-        <div class="rs-rating ${tr.name.toLowerCase()}"><span class="ic">${tr.icon}</span><div><b>${tr.name}</b><small>${ofPar}% of the planner's score (${M.par.score.toLocaleString()})${isPractice ? ' · practice' : ''}</small></div></div>
+        <div class="rs-stats"><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.route.length}</b><span>legs</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>deals</span></div></div>
       </section>
       ${earned && earned.length ? `<section class="rs-badges"><p class="lab">New badge${earned.length === 1 ? '' : 's'}</p><div>${earned.map(a => `<a href="achievements.html" class="nb${a.tier ? ' t-' + a.tier.toLowerCase() : ''}"><span>${a.ic}</span><b>${T.esc(a.name)}</b><small>${a.tier || (a.secret ? 'Secret badge' : 'Unlocked')}</small></a>`).join('')}</div></section>` : ''}
       <section class="rs-perf"><p class="lab">Your performance</p>
@@ -449,7 +459,6 @@
       </section>
       <section class="rs-vs"><p class="lab">Your route vs the planner</p>
         <div class="cols">${routeCol('Your route', res.route, res.cost, res.hours, 'you')}<span class="vs">vs</span>${routeCol("Planner's route", parRoute, M.par.cost, M.par.hours, 'par')}</div>
-        <div class="verdict ${v.cls}"><b>${v.h}</b><small>${v.t}</small></div>
         <div class="tags">${tags.map(t => `<span class="${t[0]}">${t[1]}</span>`).join('')}</div>
       </section>
       <section class="rs-score"><p class="lab">Score breakdown</p>
@@ -459,7 +468,7 @@
         <p class="note">Cost and time are measured against the best routes that fit today's mission. Efficiency rewards doing well at both. Deciding quickly adds a bonus, up to 20%, and never takes anything away.</p>
       </section>
       ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+${xpGain} XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%" data-w="${lvlPct}"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
-      <div class="actions"><button class="btn primary big tv-share">Share result</button><button class="btn ghost tv-map">See the map</button><button class="btn ghost tv-stats">Stats</button><button class="btn ghost tv-again">Practice again</button>${mode !== 'today' ? '<a class="btn ghost" href="play.html">Today\'s puzzle</a>' : `<a class="btn ghost" href="play.html?seed=${Math.random().toString(36).slice(2, 8)}">Random expedition</a>`}</div>`;
+      <div class="actions"><button class="btn primary big tv-share">Share result</button><button class="btn ghost tv-map">See the map</button><button class="btn ghost tv-stats">Stats</button>${full ? `<button class="btn ghost tv-again">Practice again</button>${mode !== 'today' ? '<a class="btn ghost" href="play.html">Today\'s puzzle</a>' : `<a class="btn ghost" href="play.html?seed=${Math.random().toString(36).slice(2, 8)}">Random expedition</a>`}` : ''}</div>`;
   }
   function wireSummary(root, res) {
     root.querySelectorAll('.tv-share').forEach(b => (b.onclick = () => share(res)));
@@ -486,6 +495,7 @@
     $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
     wireSummary($('#tv-modal'), res);
     animateReport($('#tv-modal .rs'));
+    $('#tv-modal-close').focus({ preventScroll: true });
   }
   /* the report reveals itself: sections in turn, numbers counting up, bars filling, badges springing in */
   function animateReport(root) {
@@ -548,7 +558,7 @@
     showPar = !!quiet; parPending = !quiet; // on a fresh submit the planner's route waits until the report closes
     route = res.route.map((r, i) => ({ from: i ? res.route[i - 1].to : ch.from.id, to: r.to, leg: { mode: r.mode, cost: r.cost, hours: r.hours, icon: T.MODES[r.mode].icon, deal: r.deal } }));
     drawMap();
-    $('#tv-result').innerHTML = `<div class="rs">${buildSummary(res, isPractice, xpGain, earned)}<p class="rs-maptoggle"><button class="lnk" id="tv-par-toggle">${showPar ? 'Hide' : 'Show'} the planner's route on the map</button></p></div>`;
+    $('#tv-result').innerHTML = `<div class="rs">${buildSummary(res, isPractice, xpGain, earned, true)}<p class="rs-maptoggle"><button class="lnk" id="tv-par-toggle">${showPar ? 'Hide' : 'Show'} the planner's route on the map</button></p></div>`;
     $('#tv-result').hidden = false;
     wireSummary($('#tv-result'), res);
     $('#tv-par-toggle').onclick = () => { showPar = !showPar; parPending = false; $('#tv-par-toggle').textContent = (showPar ? 'Hide' : 'Show') + " the planner's route on the map"; drawMap(); fitRoute(); };
@@ -576,7 +586,13 @@
     // the chart opens on the whole world, then carries you to today's region; the course line draws once it lands
     gCourse.append('path').attr('class', 'tv-course').attr('d', arc(ch.from, ch.to)).attr('pathLength', 1);
     stage.classList.add('zooming'); stage.classList.add('intro');
-    setTimeout(() => fitTo([ch.from, ch.to], 3.2, reducedMotion ? 0 : 2300, d3.easeCubicInOut, reducedMotion ? 0 : 450, window.innerWidth >= 1100 ? 250 : 120).on('end interrupt', () => { stage.classList.remove('zooming'); relayout(); stage.classList.add('landed'); }), 50);
-    try { if (!localStorage.getItem('traverse.seen')) { if (window.tdTutorial) window.tdTutorial(true); localStorage.setItem('traverse.seen', '1'); } } catch (e) {}
+    let introRan = false;
+    const intro = () => { if (introRan) return; introRan = true; setTimeout(() => fitTo([ch.from, ch.to], 3.2, reducedMotion ? 0 : 2300, d3.easeCubicInOut, reducedMotion ? 0 : 450, window.innerWidth >= 1100 ? 250 : 120).on('end interrupt', () => { stage.classList.remove('zooming'); relayout(); stage.classList.add('landed'); }), 50); };
+    let firstTime = false; try { firstTime = !localStorage.getItem('traverse.seen'); } catch (e) {}
+    if (firstTime && window.tdTutorial) {
+      // the first visit gets the tutorial first; the chart's arrival waits until it closes
+      const tut = window.tdTutorial; window.tdTutorial = o => { tut(o); if (!o) intro(); }; tut(true);
+      try { localStorage.setItem('traverse.seen', '1'); } catch (e) {}
+    } else intro();
   }
 })();

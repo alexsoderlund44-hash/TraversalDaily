@@ -22,7 +22,7 @@
     <div class="tv-brief" id="tv-brief"></div>
     <div class="tv-maptools"><button id="tv-zin" aria-label="Zoom in">+</button><button id="tv-zout" aria-label="Zoom out">−</button><button id="tv-zfit" aria-label="Fit route" title="Fit the route">⤢</button></div>
     <div class="tv-tip" id="tv-tip" hidden></div>
-    <div class="tv-deal" id="tv-deal" hidden></div>
+    <div class="tv-deal" id="tv-deal" hidden aria-live="polite"></div>
     <div class="tv-gate" id="tv-gate"><div class="tv-gate-card">
       <p class="tv-gate-kicker" id="tv-gate-day"></p>
       <h1 id="tv-gate-title"></h1>
@@ -38,14 +38,14 @@
     <div class="tv-gauges">
       <div class="tv-gauge" id="tv-g-cost"><span class="lab">Budget</span><b>$0</b><small></small><div class="bar"><i></i></div></div>
       <div class="tv-gauge" id="tv-g-time"><span class="lab">Deadline</span><b>0h</b><small></small><div class="bar"><i></i></div></div>
-      <div class="tv-gauge clock"><span class="lab">Deciding</span><b id="tv-timer">0s</b><small id="tv-pace"></small></div>
+      <div class="tv-gauge clock"><span class="lab">Deciding</span><b id="tv-timer">0s</b><small id="tv-pace">bonus +20%</small></div>
     </div>
     <div class="tv-twist" id="tv-twist"></div>
     <div class="tv-counts" id="tv-counts"></div>
     <div class="tv-estimate" id="tv-est" hidden><span>Score estimate</span><b>—</b><div class="bar"><i style="width:0"></i></div></div>
     <ol class="tv-stops" id="tv-stops"></ol>
     <div class="tv-picker" id="tv-picker"></div>
-    <footer class="tv-plan-foot"><button class="btn ghost" id="tv-undo" title="Remove the last leg">Undo</button><button class="btn ghost" id="tv-hint" title="Reveal a hidden deal. Adds 45 seconds to your clock.">Hint</button><button class="btn primary" id="tv-submit" disabled>Submit journey</button></footer>
+    <footer class="tv-plan-foot"><button class="btn ghost" id="tv-undo" title="Remove the last leg">Undo</button><button class="btn ghost" id="tv-hint" title="Reveal a hidden deal. Adds 45 seconds to your clock.">Hint · +45 s</button><button class="btn primary" id="tv-submit" disabled>Submit journey</button></footer>
   </aside>
   <div class="tv-modal" id="tv-modal" hidden></div>
   <section id="tv-result" class="tv-result" hidden></section>

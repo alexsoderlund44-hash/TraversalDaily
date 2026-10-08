@@ -330,14 +330,22 @@
     if (!pick) for (const c of cands) { const m = evalC(c.mb, c.md); if (ok(m, 3)) { pick = m; break; } }
     if (!pick) for (const c of cands) { const m = evalC(c.mb, c.md); if (m && m.feas.length >= 2) { pick = m; break; } }
     if (!pick) { const m = evalC(1.9, 2.6); pick = m || { B: Math.ceil(icost * 2), D: Math.ceil(ihours * 3), feas: routes, par: routes[0] || intended, cheapest: cheap, fastest: fast, parScore: 1 }; }
+    /* the ways to win: the planner's route and up to two routes that share none of its stops. How many a day gets
+       is the day's luck (about 3 in 10 days have one way, 3 in 10 two, 4 in 10 three), and that is its difficulty. */
+    const luck = rng(hash('ways-' + ch.seed))(), want = luck < 0.3 ? 1 : luck < 0.6 ? 2 : 3;
+    const inner = x => x.path.slice(0, -1).map(e => e.to);
+    const others = routes.filter(x => x !== pick.par).map(x => ({ x, s: sc0(x, pick.cheapest, pick.fastest) })).sort((a, b) => ((b.x.legs >= 3) - (a.x.legs >= 3)) || (b.s - a.s));
+    const ways = [{ x: pick.par, s: pick.parScore }], used = new Set(inner(pick.par));
+    for (const o of others) { if (ways.length >= want) break; if (o.s < 0.55 * pick.parScore) continue; const mids = inner(o.x); if (!mids.length || mids.some(c => used.has(c))) continue; ways.push(o); mids.forEach(c => used.add(c)); }
+    const way = o => ({ cost: o.x.cost, hours: o.x.hours, legs: o.x.legs, path: o.x.path, score: Math.round(10000 * Math.min(1, o.s)) });
     const M = { budget: pick.B, deadline: pick.D, cheapest: pick.cheapest, fastest: pick.fastest, twist: ch.twist, deals: Object.keys(deals).length, dealKeys: Object.keys(deals),
-      par: { cost: pick.par.cost, hours: pick.par.hours, legs: pick.par.legs, path: pick.par.path, score: Math.round(10000 * Math.min(1, pick.parScore)) },
-      routes: pick.feas.length };
+      par: way(ways[0]), ways: ways.map(way), routes: pick.feas.length };
+    M.difficulty = M.ways.length === 1 ? 'Hard' : M.ways.length === 2 ? 'Medium' : 'Easy';
     return (MIS[ch.seed] = M);
   }
 
-  /* the decisions a mission allows: one more than the planner needed, never fewer than four */
-  const decisionsFor = M => Math.max(4, M.par.legs + 1);
+  /* the decisions a mission allows: one more than the longest way to win needs, never fewer than four */
+  const decisionsFor = M => Math.max(4, Math.max(...M.ways.map(w => w.legs)) + 1);
 
   /* ---------- scoring ---------- */
   function score(cost, hours, secs, M) {

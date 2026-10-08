@@ -33,12 +33,12 @@
   </div>
   <!-- 3 rules -->
   <div class="scene bg-teal" id="r1"><div class="rule-k" style="top:420px;color:#F7EEDB">Rule 1</div><div class="rule-v" style="top:500px;color:#F7EEDB">One route.<br>Same for everyone.</div><div class="big-emoji" id="r1e" style="top:1050px">🌍</div></div>
-  <div class="scene bg-page" id="r2"><div class="grain"></div><div class="rule-k" style="top:420px;color:var(--brass)">Rule 2 · The budget</div><div class="rule-v" id="r2n" style="top:490px;font-size:300px;color:var(--red)">$440</div><div class="sub" style="top:830px;text-align:left">to get from Cancún to San Francisco</div></div>
+  <div class="scene bg-page" id="r2"><div class="grain"></div><div class="rule-k" style="top:420px;color:var(--brass)">Rule 2 · Limited decisions</div><div class="rule-v" id="r2n" style="top:490px;font-size:300px;color:var(--red)">7</div><div class="sub" style="top:830px;text-align:left">decisions to get from Cancún to San Francisco</div></div>
   <div class="scene bg-red" id="r3"><div class="rule-k" style="top:420px;color:#F7EEDB">Today's twist</div><div class="rule-v" style="top:500px;color:#F7EEDB">No flights.</div><div class="big-emoji" id="r3e" style="top:900px">🚫✈️</div></div>
   <!-- 4 gameplay -->
   <div class="scene bg-page" id="s4"><div class="grain"></div>
-    <div class="cap" id="s4cap" style="top:225px;font-size:68px" data-words="Chain *buses, *trains and *ferries"></div>
-    <div class="phone" id="phone"><video id="vid" src="clip-route-scroll.webm" muted preload="auto"></video></div>
+    <div class="cap" id="s4cap" style="top:225px;font-size:68px" data-words="Pick a place. *Travel. *Repeat."></div>
+    <div class="phone" id="phone"><video id="vid" src="clip-decisions.webm" muted preload="auto"></video></div>
   </div>
   <!-- 5 share text -->
   <div class="scene bg-ink" id="s5">
@@ -57,13 +57,13 @@
 </div>
 <script src="lib.js"></script>
 <script>
-window.DUR = 16;
-const S = [['s1', 0], ['s2', 2.7], ['r1', 5.3], ['r2', 6.6], ['r3', 7.9], ['s4', 9.2], ['s5', 11.9], ['s6', 14.2]];
+window.DUR = 17.4;
+const S = [['s1', 0], ['s2', 2.7], ['r1', 5.3], ['r2', 6.6], ['r3', 7.9], ['s4', 9.2], ['s5', 13.3], ['s6', 15.6]];
 const caps = {}; $$('.cap').forEach(c => caps[c.id] = buildCaption(c));
 const word = 'TRAVERSLE', cls = ['c1', 'c2', 'c1', 'c3', 'c1', 'c1', 'c2', 'c1', 'c1'];
 const tiles = word.split('').map((ch, i) => { const d = document.createElement('div'); d.className = 'tile'; d.innerHTML = `<span>${ch}</span>`; $('#tiles').appendChild(d); return d; });
 // the game's real share text for this run (shareText() in js/traverse-ui.js)
-const SHARE = '🌎 TRAVERSLE #008\nCancún → San Francisco\n💰 $346 · ⏱️ 3d 19h 25m · 🎟️ 2/3 deals\n🏆 PERFECT · 9,545\n💰 ██████████\n⏱️ █████████░\n🎟️ ███████░░░\n6 legs · 🚆 🚌 🚢 🚗\ntraversledaily.com';
+const SHARE = '🌎 TRAVERSLE #008\nCancún → San Francisco\n💰 $346 · ⏱️ 3d 19h 25m · 🎟️ 2/3 deals\n🏆 PERFECT · 9,545\n💰 ██████████\n⏱️ █████████░\n🎟️ ███████░░░\n🎯 Matched the planner\'s route\n6/7 decisions · 🚆 🚌 🚢 🚘\ntraversledaily.com';
 const vid = $('#vid');
 const seek = s => new Promise(r => { setTimeout(r, 3000); if (Math.abs(vid.currentTime - s) < 1e-3) return r(); vid.addEventListener('seeked', () => r(), { once: true }); vid.currentTime = s; });
 
@@ -96,7 +96,7 @@ window.render = async function (t) {
 
   // 3 rules
   css($('#r1e'), { transform: `rotate(${t * 40}deg) scale(${E.spring(P(t, 5.4, .5))})` });
-  $('#r2n').textContent = money(lerp(0, 440, E.out(P(t, 6.7, .7))));
+  $('#r2n').textContent = Math.round(lerp(0, 7, E.out(P(t, 6.7, .7))));
   const st = P(t, 8.05, .35);
   css($('#r3e'), { transform: `rotate(-8deg) scale(${lerp(2.2, 1, E.out5(st))}) translateX(${st < 1 && st > 0 ? Math.sin(t * 90) * 12 : 0}px)`, opacity: st > 0 ? 1 : 0 });
 
@@ -104,22 +104,22 @@ window.render = async function (t) {
   revealWords(caps.s4cap, t, 9.4, .12);
   const ph = E.spring(P(t, 9.25, .7));
   css($('#phone'), { transform: `translateY(${(1 - ph) * 900}px) rotate(${lerp(8, -3, ph)}deg)` });
-  if (t >= 9.1 && t < 12.3) await seek(clamp(t - 9.1 + .6, 0, 4.95));
+  if (t >= 9.1 && t < 13.7) await seek(clamp(t - 9.25, 0, 5.05));
 
   // 5 typed share result
-  revealWords(caps.s5cap, t, 12.0, .12);
-  const sh = E.spring(P(t, 12.15, .5));
-  css($('#share'), { transform: `scale(${lerp(.7, 1, sh)}) rotate(${lerp(-5, -1.5, sh)}deg)`, opacity: P(t, 12.15, .1) });
-  const chars = Array.from(SHARE), n = Math.floor(chars.length * P(t, 12.3, 1.0));
+  revealWords(caps.s5cap, t, 13.4, .12);
+  const sh = E.spring(P(t, 13.55, .5));
+  css($('#share'), { transform: `scale(${lerp(.7, 1, sh)}) rotate(${lerp(-5, -1.5, sh)}deg)`, opacity: P(t, 13.55, .1) });
+  const chars = Array.from(SHARE), n = Math.floor(chars.length * P(t, 13.7, 1.0));
   $('#share').innerHTML = chars.slice(0, n).join('').replace(/\n/g, '<br>') + (Math.floor(t * 4) % 2 || n < chars.length ? '<span class="caret"></span>' : '');
-  revealWords(caps.s5cap2, t, 13.45, .12);
+  revealWords(caps.s5cap2, t, 14.85, .12);
 
   // 6 end
-  const e = E.spring(P(t, 14.3, .5));
+  const e = E.spring(P(t, 15.7, .5));
   css($('#s6a'), { transform: `scale(${lerp(.85, 1, e)}) rotate(-2deg)`, transformOrigin: '0 50%' });
-  css($('#s6p'), { opacity: P(t, 14.7, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, 14.7, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
-  css($('#s6s'), { opacity: P(t, 14.9, .3) });
-  css($('#s6f'), { opacity: P(t, 15.2, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, 15.2, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  css($('#s6p'), { opacity: P(t, 16.1, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, 16.1, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
+  css($('#s6s'), { opacity: P(t, 16.3, .3) });
+  css($('#s6f'), { opacity: P(t, 16.6, .05), transform: `scale(${lerp(.6, 1, E.spring(P(t, 16.6, .5)))}) rotate(-2deg)`, transformOrigin: '0 50%' });
 };
 window.render(0);
 </script></body></html>

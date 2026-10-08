@@ -95,6 +95,8 @@ const CITY = {
   can: { n: 'Cancún', ll: [-86.85, 21.16] }, mia: { n: 'Miami', ll: [-80.19, 25.76] }, atl: { n: 'Atlanta', ll: [-84.39, 33.75] },
   dal: { n: 'Dallas', ll: [-96.80, 32.78] }, den: { n: 'Denver', ll: [-104.99, 39.74] }, lax: { n: 'Los Angeles', ll: [-118.24, 34.05] },
   sfo: { n: 'San Francisco', ll: [-122.42, 37.77] },
+  // the other places the game offers along the way (choices at each decision)
+  hav: { n: 'Havana', ll: [-82.37, 23.11] }, chi: { n: 'Chicago', ll: [-87.63, 41.88] }, tor: { n: 'Toronto', ll: [-79.38, 43.65] },
 };
 const PERFECT = [
   { a: 'can', b: 'mia', mode: '🚢', name: 'Ferry', cost: 93 },
@@ -102,7 +104,7 @@ const PERFECT = [
   { a: 'atl', b: 'dal', mode: '🚌', name: 'Bus', cost: 48 },
   { a: 'dal', b: 'den', mode: '🚌', name: 'Bus', cost: 54 },
   { a: 'den', b: 'lax', mode: '🚆', name: 'Train', cost: 78, deal: '-35%' },
-  { a: 'lax', b: 'sfo', mode: '🚗', name: 'Rideshare', cost: 36 },
+  { a: 'lax', b: 'sfo', mode: '🚘', name: 'Rideshare', cost: 36 },
 ];
 
 /* ---------- QA: TikTok safe zones + overlapping text ----------

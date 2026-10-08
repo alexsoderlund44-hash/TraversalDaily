@@ -35,4 +35,4 @@ Testing: Profile → "Reset today's puzzle" (or `play.html?reset=1`) erases toda
 
 ## Design
 
-The site uses the **Night Atlas** theme (`css/atlas.css`): ink navy, brass hairlines, Cormorant Garamond + Nunito Sans. The alternative **Field Journal** direction lives in `designs/journal/`. Pages are generated from shared bodies by `tools/build-designs.py`.
+The site uses the **Expedition Chart** theme (`css/atlas.css`): parchment paper, sepia ink, ox-blood route marks, Alfa Slab One + Alegreya + Alegreya Sans. The home page draws an old chart of today's region onto a canvas (`js/chart-bg.js`, loads d3 and the world topology lazily) and drifts it slowly; pressing start on the play page swoops the chart in on the day's region before the clock runs. The earlier **Field Journal** direction lives in `designs/journal/` (its home page markup is now out of date). Pages are generated from shared bodies by `tools/build-designs.py`; the link preview image comes from `tools/og.html` via `node tools/build-og.js`.

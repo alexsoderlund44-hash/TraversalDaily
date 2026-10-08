@@ -5,7 +5,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTS = {
  'journal': 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Caveat:wght@500;700&display=swap',
- 'atlas':   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap',
+ 'atlas':   'https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Alegreya:ital,wght@0,400..900;1,400..900&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&display=swap',
 }
 TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – every puzzle, forever'}
 DESC = "The daily travel puzzle. One start city, one destination, one budget. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world."
@@ -24,7 +24,7 @@ def shell(design, page, body, scripts, prefix, css):
 <title>{TITLE[page]}</title>
 <meta name="description" content="{DESC}">
 <meta property="og:title" content="{TITLE[page]}"><meta property="og:type" content="website"><meta property="og:site_name" content="TraversleDaily"><meta property="og:description" content="{DESC}"><meta property="og:image" content="https://traversledaily.com/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="TraversleDaily: a route drawn across a map of Europe"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://traversledaily.com/og.png">
-<meta name="theme-color" content="#0A1220">{canon}{LD if page=='index' else ''}
+<meta name="theme-color" content="{'#E8D9B5' if design=='atlas' else '#0A1220'}">{canon}{LD if page=='index' else ''}
 <link rel="icon" href="{prefix}favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="{FONTS[design]}" rel="stylesheet">
@@ -46,22 +46,33 @@ HOW_MODAL = '''<div class="td-modal" id="hm-howmodal" hidden></div>'''
 
 # ----- shared page bodies (design-neutral markup; themes do the rest) -----
 HOME = '''
-<main class="td-home-min">
-  <header class="hm-head"><h1 class="hm-h1" id="hm-h1">The daily travel puzzle. Plan the smartest route across the world.</h1><p class="hm-pitch">Chain trains, buses, ferries and flights. Beat the budget, beat the clock, and beat the planner.</p></header>
-  <section class="hm-card">
-    <p class="eyebrow" id="hm-day"></p>
+<canvas class="hm-bg" id="hm-bg" aria-hidden="true"></canvas>
+<main class="td-home-min hm">
+  <header class="hm-hero">
+    <h1 class="hm-brand" aria-label="Traversle Daily"><span class="hm-word">Traversle</span><span class="hm-stamp">Daily</span>
+      <svg class="hm-trail" viewBox="0 0 420 44" aria-hidden="true"><path class="rt" d="M10 32 C 80 -6, 150 54, 230 16 S 350 30, 396 10"/><circle class="s" cx="10" cy="32" r="4.5"/><path class="d" d="M396 10 m-6 0 a6 6 0 1 1 12 0 c0 5 -6 12 -6 12 s-6 -7 -6 -12z"/></svg></h1>
+    <p class="hm-tag" id="hm-h1">One start. One destination. One budget. Out-plan the planner.</p>
+  </header>
+  <section class="hm-card" aria-label="Today's expedition">
+    <p class="hm-kicker" id="hm-day"></p>
     <div class="route" id="hm-route"></div>
+    <p class="hm-theme" id="hm-theme" hidden></p>
     <div class="mission" id="hm-mission"></div>
-    <a class="btn primary big wide" href="play.html" id="hm-play">Play today's puzzle</a>
+    <a class="btn primary big wide" href="play.html" id="hm-play">Begin the journey</a>
     <p class="sub" id="hm-sub">You get one attempt. Make it count.</p>
     <div id="hm-level" class="hm-level" hidden></div>
     <p class="meta" id="hm-meta"></p>
   </section>
-  <div class="hm-links"><button class="lnk" id="hm-how">How to play</button><a class="lnk" href="archive.html">Past puzzles</a><a class="lnk plus" href="plus.html">✦ Traversle +</a></div>
-  <section class="hm-week" aria-label="The week"><h2>Every day of the week has its own rule</h2><ol id="hm-week"></ol></section>
+  <section class="hm-panels">
+    <article class="hm-panel" id="how"><h2>How to play</h2>
+      <ol class="hm-how"><li><b>Tap a city</b> on the chart to add a stop, then choose train, bus, ferry, car or plane.</li><li><b>Reach the destination</b> under budget and before the deadline. Hidden deals cut the cost.</li><li><b>Beat the planner.</b> Money, time and how fast you decide all count towards your score.</li></ol>
+      <button class="lnk" id="hm-how">Walk me through it</button></article>
+    <article class="hm-panel hm-week" aria-label="The week"><h2>Every day has its own rule</h2><ol id="hm-week"></ol></article>
+    <article class="hm-panel hm-plus"><h2>Traversle +</h2><p>Today's puzzle is free, always. Traversle + opens every past puzzle since day one, with the planner's route revealed, plus archive stats on your profile.</p><a class="btn" href="plus.html">See Traversle +</a><a class="lnk" href="archive.html">Browse past puzzles</a></article>
+  </section>
   @HOW@
 </main>'''
-HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script>'
+HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/tutorial.js"></script><script src="@/js/pages.js"></script><script src="@/js/chart-bg.js" defer></script>'
 
 PLAY = '''
 <main class="tv">

@@ -89,6 +89,10 @@
   const feats = topojson.feature(WORLD_TOPO, WORLD_TOPO.objects.countries).features;
   const g = svg.append('g');
   g.append('path').attr('class', 'tv-sphere').attr('d', path({ type: 'Sphere' }));
+  // an old chart: graticule, water lines along the coast, then the land
+  g.append('path').attr('class', 'tv-grat').attr('d', path(d3.geoGraticule().step([10, 10])()));
+  const landAll = topojson.merge(WORLD_TOPO, WORLD_TOPO.objects.countries.geometries);
+  ['tv-coast c3', 'tv-coast c2', 'tv-coast'].forEach(c => g.append('path').attr('class', c).attr('d', path(landAll)));
   g.append('g').selectAll('path').data(feats).join('path').attr('class', 'tv-land').attr('d', path);
   const gCountry = g.append('g');
   gCountry.selectAll('text').data(feats.filter(f => path.area(f) > 60)).join('text').attr('class', 'tv-cname')
@@ -114,8 +118,9 @@
   // dash patterns in screen pixels, whatever the zoom
   const DASH = { spoke: [2, 3], ghost: [3, 4], par: [6, 4], train: [7, 4], bus: [3, 3], ferry: [1, 4], car: [10, 3, 2, 3], ride: [10, 3, 2, 3] };
   const dashFor = cls => { const d = DASH[cls]; return d ? d.map(x => x / k).join(' ') : null; };
-  const zoom = d3.zoom().scaleExtent([1, 14]).translateExtent([[-80, -40], [1040, 540]]).on('zoom', e => {
-    g.attr('transform', e.transform); k = e.transform.k; const s = k;
+  // while the chart swoops in on start, only the transform moves; labels and routes are relaid at the end
+  const relayout = () => {
+    const s = k;
     drawMap();
     gLabels.selectAll('text').style('font-size', (9.5 / s) + 'px').attr('x', c => pos(c)[0] + 5 / s).attr('y', c => pos(c)[1] + 3.2 / s);
     gHits.selectAll('circle').attr('r', 9 / s);
@@ -123,6 +128,10 @@
     gBadges.selectAll('g').attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / s})`);
     g.select('.tv-pulse-g').attr('transform', `translate(${pos(ch.to)[0]},${pos(ch.to)[1]}) scale(${1 / s})`); g.select('.tv-pulse').style('stroke-width', 1);
     layoutLabels();
+  };
+  const zoom = d3.zoom().scaleExtent([1, 14]).translateExtent([[-80, -40], [1040, 540]]).on('zoom', e => {
+    g.attr('transform', e.transform); k = e.transform.k;
+    if (!stage.classList.contains('zooming')) relayout();
   }).on('start', () => { svg.classed('dragging', true); hideTip(); }).on('end', () => svg.classed('dragging', false));
   svg.call(zoom);
 
@@ -142,7 +151,7 @@
   $('#tv-zout').onclick = () => svg.transition().call(zoom.scaleBy, 1 / 1.6);
   $('#tv-zfit').onclick = () => fitRoute();
   document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === '+' || e.key === '=') $('#tv-zin').click(); else if (e.key === '-') $('#tv-zout').click(); else if (e.key === 'Escape') { if (!$('#tv-modal').hidden) closeModal(); else if (pendingTo) { pendingTo = null; refresh(); } } });
-  function fitTo(points, pad) {
+  function fitTo(points, pad, dur, ease) {
     const xs = points.map(p => pos(p)[0]), ys = points.map(p => pos(p)[1]);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
     const r = stage.getBoundingClientRect(); const aspect = r.width / r.height;
@@ -150,7 +159,7 @@
     const w = Math.max(60, (x1 - x0) * (pad || 1.6)), h = Math.max(40, (y1 - y0) * (pad || 1.6));
     const kk = Math.min(12, Math.max(1, Math.min(vw / w, vh / h) * 0.9));
     const cx = (x0 + x1) / 2 + (window.innerWidth > 900 ? 120 / kk : 0);
-    svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity.translate(480 - kk * cx, 250 - kk * (y0 + y1) / 2).scale(kk));
+    return svg.transition().duration(dur == null ? 750 : dur).ease(ease || d3.easeCubicOut).call(zoom.transform, d3.zoomIdentity.translate(480 - kk * cx, 250 - kk * (y0 + y1) / 2).scale(kk));
   }
   function fitRoute() { fitTo([ch.from, ch.to, ...route.map(r => T.byId[r.to]), ...(showPar ? M.par.path.map(e => T.byId[e.to]) : [])], 1.8); }
   const arc = (a, b) => path({ type: 'LineString', coordinates: [[a.lon, a.lat], [b.lon, b.lat]] });
@@ -322,14 +331,20 @@
 
   /* ---------- flow ---------- */
   function start() {
-    route = []; pendingTo = null; selOpt = null; playing = true; found = new Set(); showPar = false; drawn = false; undos = UNDOS; hints = HINTS;
-    renderBrief();
-    $('#tv-gate').hidden = true; $('#tv-result').hidden = true; $('#tv-board').hidden = true; $('#tv-plan').hidden = false;
-    $('#tv-plan').classList.toggle('collapsed', window.innerWidth <= 900);
-    t0 = performance.now();
-    clearInterval(timer); timer = setInterval(() => { $('#tv-timer').textContent = T.secsF(elapsed()); if (atDest()) { const tt = totals(); const est = T.score(tt.cost, tt.hours, elapsed(), M); $('#tv-est b').textContent = est.toLocaleString(); $('#tv-est .bar i').style.width = est / 100 + '%'; } }, 250);
-    refresh(); fitRoute();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    route = []; pendingTo = null; selOpt = null; playing = false; found = new Set(); showPar = false; drawn = false; undos = UNDOS; hints = HINTS;
+    renderBrief(); hideTip();
+    $('#tv-result').hidden = true; $('#tv-board').hidden = true; $('#tv-plan').hidden = true;
+    // the chart swoops in on today's region, then the clock starts
+    const gate = $('#tv-gate'), plan = $('#tv-plan'); gate.classList.add('off'); stage.classList.add('zooming');
+    const dur = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 2600;
+    fitTo([ch.from, ch.to], 1.8, dur, d3.easeCubicInOut).on('end interrupt', () => {
+      gate.hidden = true; gate.classList.remove('off'); stage.classList.remove('zooming'); relayout();
+      plan.hidden = false; plan.classList.toggle('collapsed', window.innerWidth <= 900); plan.classList.add('arrive');
+      playing = true; t0 = performance.now();
+      clearInterval(timer); timer = setInterval(() => { $('#tv-timer').textContent = T.secsF(elapsed()); if (atDest()) { const tt = totals(); const est = T.score(tt.cost, tt.hours, elapsed(), M); $('#tv-est b').textContent = est.toLocaleString(); $('#tv-est .bar i').style.width = est / 100 + '%'; } }, 250);
+      refresh();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
   $('#tv-start').onclick = start;
   function undo() {
@@ -501,7 +516,7 @@
   drawMap();
   if (official) { $('#tv-gate').hidden = true; showResult(official, false, 0, true); }
   else {
-    setTimeout(() => fitTo([ch.from, ch.to], 1.6), 50);
+    setTimeout(() => fitTo([ch.from, ch.to], 7, 0), 50);
     try { if (!localStorage.getItem('traverse.seen')) { if (window.tdTutorial) window.tdTutorial(true); localStorage.setItem('traverse.seen', '1'); } } catch (e) {}
   }
 })();

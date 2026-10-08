@@ -13,9 +13,9 @@ Live at the repo root: `index.html` (home), `play.html`, `achievements.html`, `s
 
 ## The daily schedule
 
-Each weekday has its own twist: Sunday Overland arrival, Monday Open road, Tuesday Rail pass, Wednesday One ticket, Thursday Mix it up, Friday Sea legs, Saturday Grounded. `data/schedule.js` holds the start, destination and twist for each day, written by `node tools/build-schedule.js [days]` (default 730). It keeps a city pair only if the planner's route has three or more legs, the weekday's twist survives the mission search and at least three routes fit; otherwise it tries the next pair for that day. Re-run it after changing `EPOCH`, the cities or the twists. Days past the end of the file fall back to the same generator, unchecked.
+Each weekday has its own twist: Sunday Overland arrival, Monday Open road, Tuesday Rail pass, Wednesday One ticket, Thursday Mix it up, Friday Sea legs, Saturday Grounded. `data/schedule.js` holds the start, destination, twist and, for hand-made days, a title and blurb for each day (the first week is hand-made in `HANDMADE` inside the tool), written by `node tools/build-schedule.js [days]` (default 730). It keeps a city pair only if the planner's route has three or more legs, the weekday's twist survives the mission search and at least three routes fit; otherwise it tries the next pair for that day. Re-run it after changing `EPOCH`, the cities or the twists. Days past the end of the file fall back to the same generator, unchecked.
 
-To launch with a ready archive, set `EPOCH` in `js/traverse.js` one or two weeks before launch day and rebuild the schedule.
+Day #1 is 1 Oct 2026 and launch day (7 Oct) is puzzle #7, so the archive opens with a week of puzzles.
 
 ## Player profile and stats
 

@@ -6,7 +6,7 @@
   const byId = {}; C.forEach(c => (byId[c.id] = c));
   const STORE = 'traverse.v1';
   const DAY_MS = 86400000;
-  const EPOCH = Date.UTC(2026, 9, 7); // day #1 = 7 Oct 2026 UTC (launch day)
+  const EPOCH = Date.UTC(2026, 9, 1); // day #1 = 1 Oct 2026 UTC; launch day (7 Oct) is puzzle #7 so the archive opens with a week
 
   // a new puzzle at midnight on the player's own clock (like Wordle), numbered by calendar date
   const dayNumber = (t = Date.now()) => { const d = new Date(t); return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - EPOCH) / DAY_MS) + 1; };
@@ -152,7 +152,7 @@
   const scheduled = n => { const S = window.TRAVERSE_SCHEDULE; return S && S.epoch === dayKey(1) && S.days[n] ? S.days[n] : null; };
   function challenge(n, salt) {
     const s = salt === undefined ? scheduled(n) : null;
-    if (s) return build('d' + n, '', n, null, { from: byId[s[0]], to: byId[s[1]], twist: twistById[s[2]] });
+    if (s) return build('d' + n, '', n, null, { from: byId[s[0]], to: byId[s[1]], twist: twistById[s[2]], title: s[3] || '', blurb: s[4] || '' });
     return build('d' + n, 'traverse-day-' + n + (salt ? '-' + salt : ''), n, null, { twist: rhythmOf(n).twist });
   }
   // random expeditions: try a few city pairs (deterministic from the tag) until one has a real multi-leg puzzle
@@ -178,7 +178,7 @@
     BLOCKED[seed] = [a.id, b.id].sort().join('-');
     const twist = fixed.twist || TWISTS[Math.floor(r() * TWISTS.length)];
     TWIST[seed] = twist.id;
-    const ch = { n, key: n ? dayKey(n) : 'random-' + tag, seed, from: a, to: b, twistId: twist.id, twist, random: !n };
+    const ch = { n, key: n ? dayKey(n) : 'random-' + tag, seed, from: a, to: b, twistId: twist.id, twist, random: !n, title: fixed.title || '', blurb: fixed.blurb || '' };
     return (CH[seed] = ch);
   }
 

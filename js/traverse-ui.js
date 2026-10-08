@@ -60,9 +60,9 @@
   }
   renderBrief();
   const rhythm = ch.n ? T.rhythmOf(ch.n) : null;
-  $('#tv-gate-day').textContent = title + ' · ' + dayLabel + (rhythm && rhythm.twist.id === tw.id ? ' · ' + tw.name + ' ' + rhythm.day : '');
+  $('#tv-gate-day').textContent = title + ' · ' + dayLabel + (ch.title ? ' · ' + ch.title : rhythm && rhythm.twist.id === tw.id ? ' · ' + tw.name + ' ' + rhythm.day : '');
   $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} <span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></span><span class="arr">→</span><span class="city">${T.flagImg(ch.to, 40)} <span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></span>`;
-  $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km. No direct route. Get there under budget and before the deadline.`;
+  $('#tv-gate-sub').textContent = ch.blurb || `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km. No direct route. Get there under budget and before the deadline.`;
   $('#tv-gate-mission').innerHTML = `
     <div class="mi"><span class="ic">💰</span><b>${T.money(M.budget)}</b><span>budget</span></div>
     <div class="mi"><span class="ic">⏱️</span><b>${T.dur(M.deadline)}</b><span>deadline</span></div>

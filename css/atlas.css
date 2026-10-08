@@ -540,26 +540,30 @@ body.td-modal-open{overflow:hidden}
 .tut-plan .tv-pick-hint{font-size:.74rem}
 .tut-plan .tv-plan-foot{padding:10px 14px;gap:6px;margin-top:auto}.tut-plan .tv-plan-foot .btn{padding:9px 10px;font-size:.84rem;min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}.tut-plan .tv-plan-foot .primary{flex:1 1 auto;text-align:center}
 .tut-plan .tv-estimate{padding:8px 14px 4px}
-.tut-gate{position:absolute;inset:0;z-index:4;display:grid;place-items:center;background:rgba(227,204,150,.55);backdrop-filter:blur(2px);transition:opacity 2.5s,visibility 2.5s}
+.tut-gate{position:absolute;inset:0;z-index:4;display:grid;place-items:center;background:rgba(227,204,150,.55);backdrop-filter:blur(2px);transition:opacity .7s,visibility .7s}
+.tut-gate-card{max-height:none;overflow:visible}.tut-screen.col .tut-gate-card{animation:none;zoom:.5;width:min(380px,calc(100% - 24px))}.tut-screen.col .tut-gate-card .tv-gate-note{display:none}
 .tut-gate.go{opacity:0;visibility:hidden}
-.tut-gate-card{width:min(420px,calc(100% - 40px));padding:22px 24px 20px;transform:none}
+.tut-gate-card{width:min(400px,calc(100% - 24px));padding:22px 24px 20px;transform:none}
 .tut-gate-card .tv-gate-title{font-size:1.6rem;margin:4px 0 8px;display:grid;gap:6px}.tut-gate-card .tv-gate-title .arr{display:none}.tut-gate-card .tv-gate-sub{font-size:.86rem;margin-bottom:12px}
 .tut-gate-card .tv-mission{grid-template-columns:repeat(3,1fr);margin-bottom:14px}.tut-gate-card .tv-mission .mi{padding:8px 10px}.tut-gate-card .tv-mission b{font-size:1rem}
 .tut-gate-card .btn.big{padding:12px 22px;font-size:1rem}.tut-gate-card .tv-gate-note{font-size:.76rem;margin-top:8px}
-.tut-screen.swoop .tut-svg{animation:tutswoop 5.5s cubic-bezier(.2,.8,.2,1) both}
+.tut-screen.swoop .tut-svg{animation:tutswoop 2.5s cubic-bezier(.2,.8,.2,1) both}
 @keyframes tutswoop{from{transform:scale(1.18)}to{transform:none}}
 /* the pointer that taps what you would tap */
-.tut-cursor{position:absolute;left:0;top:0;z-index:9;pointer-events:none;transform:translate(-60px,-60px);transition:transform 3.75s cubic-bezier(.2,.8,.2,1),opacity 1.5s;opacity:0;filter:drop-shadow(1px 2px 1px rgba(43,29,18,.35))}
+.tut-cursor{position:absolute;left:0;top:0;z-index:9;pointer-events:none;transform:translate(-60px,-60px);transition:transform 2.2s cubic-bezier(.2,.8,.2,1),opacity 1s;opacity:0;filter:drop-shadow(1px 2px 1px rgba(43,29,18,.35))}
 .tut-cursor.on{opacity:1}
 .tut-cursor svg{display:block;margin:-4px 0 0 -4px}
 .tut-cursor .ring{position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;border:2px solid var(--red);opacity:0;transform:scale(.3)}
 .tut-cursor.click svg{animation:tutpress 1.6s ease}.tut-cursor.click .ring{animation:tutring 2.75s ease-out}
 @keyframes tutpress{40%{transform:scale(.82)}}
 @keyframes tutring{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(1.5)}}
-/* hand-drawn callouts: a label and an arrow to the thing the step is about */
-.tut-arrows{position:absolute;inset:0;width:100%;height:100%;z-index:8;pointer-events:none;overflow:visible}
-.tut-arrows path{fill:none;stroke:var(--red);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;animation:tdfadein 1.75s .5s both}
-.tut-note{position:absolute;z-index:8;max-width:190px;background:var(--red);color:#FFF4DC;font:700 .78rem/1.3 var(--ui);padding:6px 10px;border-radius:4px;box-shadow:2px 2px 0 var(--ink);transform:rotate(-1.5deg);animation:tvmodal 1.5s both;pointer-events:none}
+/* callouts: one caption at a time in the chart's empty corner, and a ring around the thing it talks about */
+.tut-hl{position:absolute;z-index:8;pointer-events:none;border:2.5px solid var(--red);border-radius:6px;box-shadow:0 0 0 3px rgba(255,244,220,.7);animation:tuthl 1.2s cubic-bezier(.2,.8,.2,1) both}
+@keyframes tuthl{from{opacity:0;transform:scale(1.12)}to{opacity:1;transform:none}}
+.tut-cap{position:absolute;z-index:8;left:12px;bottom:12px;max-width:300px;background:var(--red);color:#FFF4DC;font:700 .8rem/1.35 var(--ui);padding:7px 12px;border-radius:4px;box-shadow:2px 2px 0 var(--ink);animation:tvmodal 1.2s both;pointer-events:none}
+.tut-screen.col .tut-cap{left:8px;top:8px;bottom:auto;max-width:260px;font-size:.74rem}
+.tut-screen.col .tv-deal{display:none} /* the strip is too short for the ticket; the caption and the row's badge carry it */
+.tut-foot .replay{margin-left:10px;border:0;background:none;color:var(--brass);font:700 .74rem var(--ui);letter-spacing:.04em;text-transform:uppercase;cursor:pointer;padding:4px 2px}.tut-foot .replay:hover{color:var(--ink)}
 /* the report that ends the last step */
 .tut-report{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:20px;background:rgba(43,29,18,.45);backdrop-filter:blur(4px);animation:tdfadein 1.5s both}
 .tut-report .rs{width:min(440px,100%);background:var(--panel-2);border:2px solid var(--ink);border-radius:4px;padding:18px 20px 16px;box-shadow:6px 6px 0 var(--ink);animation:tvmodal 2s cubic-bezier(.2,.8,.2,1) both}
@@ -568,8 +572,8 @@ body.td-modal-open{overflow:hidden}
 .tut-report .rs-top .rs-big > b{font-size:2.3rem}.tut-report .rs-verdict{padding:8px 12px;font-size:.84rem}.tut-report .rs-verdict b{font-size:1.1rem}
 .tut-report .chain{font-size:1.1rem}.tut-report .rs-dist{font-size:.84rem;margin-top:4px}
 .td-modal-card.tut [data-k],.td-modal-card.tut [data-t]{opacity:0}.td-modal-card.tut .in{animation:tdrise .4s cubic-bezier(.2,.8,.2,1) both}
-@media(max-width:560px){.td-modal-card.tut{width:min(560px,100%)}.tut-gate-card{padding:16px 16px 14px}.tut-gate-card .tv-mission{grid-template-columns:repeat(3,1fr)}.tut-note{max-width:150px;font-size:.72rem}}
-@media(prefers-reduced-motion:reduce){.tut-cursor{transition:none}.tut-screen.swoop .tut-svg,.tut-note,.tut-arrows path,.tut-cursor.click svg,.tut-cursor.click .ring,.tut-svg .tv-link.draw{animation:none}.tut-svg .tv-link.draw{stroke-dashoffset:0}}
+@media(max-width:560px){.td-modal-card.tut{width:min(560px,100%)}.tut-gate-card{padding:16px 16px 14px}.tut-gate-card .tv-mission{grid-template-columns:repeat(3,1fr)}}
+@media(prefers-reduced-motion:reduce){.tut-cursor{transition:none}.tut-screen.swoop .tut-svg,.tut-cap,.tut-hl,.tut-cursor.click svg,.tut-cursor.click .ring,.tut-svg .tv-link.draw{animation:none}.tut-svg .tv-link.draw{stroke-dashoffset:0}}
 .td-modal-card.tut h2{font-size:1.7rem;margin:0 0 6px;padding-right:0}
 .tut-t{margin:0 0 16px;color:var(--ink-2);font-size:.95rem;line-height:1.55}.tut-t b{color:var(--ink)}
 .tut-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}

@@ -67,10 +67,9 @@
     </div></div>`;
   }
   const screenHtml = () => `<div class="tut-wrap"><div class="tut-screen">
-      <div class="tut-chart">${chartSvg()}<div class="tv-tip" data-tip hidden></div><div class="tv-deal" data-deal><div class="ticket"><p class="k">🎟️ Secret fare found</p><b><s>$48</s> → $21</b><small>Train to Barcelona · 56% off</small></div></div></div>
+      <div class="tut-chart">${chartSvg()}${gateHtml()}<div class="tv-tip" data-tip hidden></div><div class="tv-deal" data-deal><div class="ticket"><p class="k">🎟️ Secret fare found</p><b><s>$48</s> → $21</b><small>Train to Barcelona · 56% off</small></div></div></div>
       ${planHtml()}
       <div class="tut-report" data-report hidden></div>
-      <svg class="tut-arrows" data-arrows aria-hidden="true"></svg>
       <div class="tut-cursor" data-cursor><svg viewBox="0 0 24 24" width="26" height="26"><path d="M5 3 L19 12 L12 13.5 L15.5 20.5 L13 21.5 L9.5 14.5 L5 18 Z" fill="#2B1D12" stroke="#FFF4DC" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="ring"></span></div>
     </div></div>`;
 
@@ -121,70 +120,53 @@
   function cursorTo(el, dx, dy) { const c = q('[data-cursor]'); if (!c || !el) return; reveal(el); const [x, y] = centre(el); c.style.transform = `translate(${x + (dx || 0)}px,${y + (dy || 0)}px)`; c.classList.add('on'); }
   function cursorOff() { const c = q('[data-cursor]'); if (c) { c.classList.remove('on'); c.style.transform = 'translate(-60px,-60px)'; } }
   function click() { const c = q('[data-cursor]'); if (!c) return; c.classList.remove('click'); void c.offsetWidth; c.classList.add('click'); }
-  function callout(text, el, at, side) { // a label with a hand-drawn arrow to the element
-    if (!el) return; reveal(el);
+  function callout(text, el) { // one caption at a time, and a ring around the thing it talks about; nothing is drawn over words
+    if (!el) return; clearCallouts(); reveal(el);
     const scr = q('.tut-screen'), s = scr.getBoundingClientRect(), r = el.getBoundingClientRect();
-    // on phones the chart is a short strip, so notes show one at a time in its top-left corner and never cover the panel
-    if (scr.classList.contains('col')) { clearCallouts(); at = [8, 8]; side = 'bottom'; }
-    const tx = (r.left - s.left) / scale, ty = (r.top - s.top) / scale, tw = r.width / scale, th = r.height / scale;
-    const n = document.createElement('div'); n.className = 'tut-note'; n.textContent = text; n.style.left = at[0] + 'px'; n.style.top = at[1] + 'px'; scr.appendChild(n);
-    const nr = n.getBoundingClientRect(), nx = (nr.left - s.left) / scale, ny = (nr.top - s.top) / scale, nw = nr.width / scale, nh = nr.height / scale;
-    let from = side === 'left' ? [nx, ny + nh / 2] : side === 'right' ? [nx + nw, ny + nh / 2] : side === 'top' ? [nx + nw / 2, ny] : [nx + nw / 2, ny + nh];
-    const cx = tx + tw / 2, cy = ty + th / 2, plan = el.closest('.tut-plan'), col = scr.classList.contains('col');
-    let to, c1;
-    if (plan && !col) { // a panel target: the arrow stops at the panel's edge, level with the row, instead of crossing the panel's words
-      const pr = plan.getBoundingClientRect(), pl = (pr.left - s.left) / scale; to = [pl - 5, cy - 10 + 20 * ((tx - pl) / (pr.width / scale))]; from = [nx + nw, ny + nh / 2];
-      c1 = [(from[0] + to[0]) / 2 + 20, from[1] + (to[1] - from[1]) * .15];
-    } else if (plan) { // on phones the panel is below the note: the arrow runs down the panel's left margin to the row
-      from = [nx + 2, ny + nh]; to = [tx - 5, cy]; c1 = [from[0] - 8, (from[1] + to[1]) / 2];
-    } else {
-      to = Math.abs(cx - from[0]) > Math.abs(cy - from[1]) ? [cx < from[0] ? tx + tw + 6 : tx - 6, cy] : [cx, cy < from[1] ? ty + th + 6 : ty - 6];
-      const mx = (from[0] + to[0]) / 2, my = (from[1] + to[1]) / 2, dx = to[0] - from[0], dy = to[1] - from[1];
-      c1 = [mx - dy * .25, my + dx * .25];
-    }
-    const ang = Math.atan2(to[1] - c1[1], to[0] - c1[0]) * 180 / Math.PI;
-    const NS = 'http://www.w3.org/2000/svg', p = document.createElementNS(NS, 'path'); p.setAttribute('d', `M${from[0]},${from[1]} Q${c1[0]},${c1[1]} ${to[0]},${to[1]}`); q('[data-arrows]').appendChild(p);
-    const h = document.createElementNS(NS, 'path'); h.setAttribute('class', 'ah'); h.setAttribute('d', 'M-9,-5.5 L0,0 L-9,5.5'); h.setAttribute('transform', `translate(${to[0]},${to[1]}) rotate(${ang})`); q('[data-arrows]').appendChild(h);
+    const hl = document.createElement('div'); hl.className = 'tut-hl';
+    hl.style.left = (r.left - s.left) / scale - 4 + 'px'; hl.style.top = (r.top - s.top) / scale - 4 + 'px'; hl.style.width = r.width / scale + 8 + 'px'; hl.style.height = r.height / scale + 8 + 'px';
+    const cap = document.createElement('div'); cap.className = 'tut-cap'; cap.textContent = text;
+    scr.append(hl, cap);
   }
   // the picker clips like the real one, so whatever a step points at or taps is scrolled into view first
   function reveal(el) { const bx = el && el.closest('.tv-picker'); if (!bx) return; const top = el.getBoundingClientRect().top - bx.getBoundingClientRect().top; const y = top / scale + bx.scrollTop - 10; if (top / scale < 0 || (top + el.getBoundingClientRect().height) / scale > bx.clientHeight) bx.scrollTop = Math.max(0, y); }
-  function clearCallouts() { qa('.tut-note').forEach(n => n.remove()); const a = q('[data-arrows]'); if (a) a.querySelectorAll('path').forEach(p => p.remove()); }
+  function clearCallouts() { qa('.tut-hl, .tut-cap').forEach(n => n.remove()); }
 
   /* ---------- the scenes: each one is a looping timeline ---------- */
   // Alex (2026-10-08): the walkthrough should move about five times slower than the game and hold each state ten times longer
-  const SLOW = 5, HOLD = 10;
+  const SLOW = 5;
   const at = (ms, fn) => { ms *= SLOW; timers.push(setTimeout(fn, reduced ? Math.min(ms, 2000 + ms * .25) : ms)); };
   function clearScene() { timers.forEach(clearTimeout); timers = []; clearTimeout(loopT); cancelAnimationFrame(raf); clearCallouts(); }
-  function loop(len, fn) { fn(); loopT = setTimeout(() => { clearScene(); loop(len, fn); }, reduced ? Math.max(12000, len * 2.5) : len * HOLD); }
+  function loop(len, fn) { fn(); } // a scene plays once and holds on its last state; Replay runs it again
   const baseLeg1 = () => { cityState({ cur: 'mad', on: ['lis'], reach: ['bcn', 'sev', 'por'], far: ['mrs', 'alg', 'tan'] }); spokes('mad', ['bcn', 'sev', 'por']); links([{ from: 'lis', to: 'mad', leg: LEG1 }]); stops([{ to: 'mad', leg: LEG1 }]); gauges(48, 3.17); sub("You're in Madrid. <span class=\"pace good\">Ahead of pace</span>"); q('.tut-plan').classList.remove('arrived'); q('[data-submit]').disabled = true; q('[data-submit]').classList.remove('ready'); q('[data-est]').hidden = true; };
   const clockFrom = sec => { const el = q('[data-clock]'); if (!el) return; started = performance.now() - sec * 1000; const tick = () => { if (!el.isConnected) return; el.textContent = T.secsF((performance.now() - started) / 1000); timers.push(setTimeout(tick, 250)); }; tick(); };
   const SCENES = [
     // 0: the mission card, then Begin
     () => loop(4600, () => { const g = q('.tut-gate'); g.classList.remove('go'); q('.tut-screen').classList.remove('swoop'); cursorOff(); cityState({ cur: 'lis', far: ['mrs', 'alg', 'tan'] }); spokes('lis', []); links([]); stops([]); gauges(0, 0); pickerList('lis', [['mad', ['train', 'bus', 'ride'], 19], ['por', ['train', 'bus'], 12], ['sev', ['train', 'bus'], 22]]); sub("You're in Lisbon.");
-      at(500, () => cursorTo(q('[data-begin]'), 30, 8)); at(1500, click); at(1700, () => { g.classList.add('go'); q('.tut-screen').classList.add('swoop'); clockFrom(0); }); at(2000, cursorOff); }),
+      at(500, () => cursorTo(q('[data-begin]'), 30, 8)); at(1500, click); at(1700, () => { g.classList.add('go'); q('.tut-screen').classList.add('swoop'); clockFrom(0); }); at(2000, cursorOff); at(2600, () => callout('The clock is running. Decide fast for a bonus.', q('[data-g="clock"]'))); }),
     // 1: tap a city
     () => loop(5200, () => { q('.tut-gate').classList.add('go'); cursorOff(); cityState({ cur: 'lis', reach: ['mad', 'por', 'sev'], far: ['mrs', 'alg', 'tan', 'bcn'] }); spokes('lis', ['mad', 'por', 'sev']); links([]); stops([]); gauges(0, 0); tip(null); sub("You're in Lisbon."); pickerList('lis', [['mad', ['train', 'bus', 'ride'], 19], ['por', ['train', 'bus'], 12], ['sev', ['train', 'bus'], 22]]); clockFrom(4);
-      at(300, () => callout('Lit cities are within reach', q('[data-c="por"]'), [14, 14], 'bottom'));
+      at(300, () => callout('Lit cities are within reach', q('[data-c="por"]')));
       at(900, () => cursorTo(q('[data-c="mad"]'), 0, 0)); at(1700, () => tip('mad', `<b>${place(C.mad)}</b><small>Spain</small><div class="modes"><span>🚆 <em>$48</em></span><span>🚌 <em>$19</em></span><span>🚘 <em>$31</em></span></div><small class="hint">tap to add as a stop</small>`));
       at(2600, () => { click(); tip(null); cityState({ cur: 'lis', pend: 'mad', reach: ['por', 'sev'], far: ['mrs', 'alg', 'tan', 'bcn'] }); spokes('lis', ['por', 'sev'], true); links([], ['lis', 'mad']); pickerOpts('lis', 'mad', OPTS1, null, { cost: 0, hours: 0 }); });
-      at(3000, () => callout('Your options appear here', q('[data-opt="0"]'), [250, 300], 'right')); }),
+      at(3000, () => callout('Your options appear here', q('[data-opt="0"]'))); }),
     // 2: pick a ride, add the leg
     () => loop(6400, () => { q('.tut-gate').classList.add('go'); cursorOff(); cityState({ cur: 'lis', pend: 'mad', reach: ['por', 'sev'], far: ['mrs', 'alg', 'tan', 'bcn'] }); spokes('lis', ['por', 'sev'], true); links([], ['lis', 'mad']); stops([]); gauges(0, 0); tip(null); sub("You're in Lisbon."); pickerOpts('lis', 'mad', OPTS1, null, { cost: 0, hours: 0 }); clockFrom(9);
       at(700, () => cursorTo(q('[data-opt="2"]'), 40, 0)); at(1500, () => { click(); pickerOpts('lis', 'mad', OPTS1, 2, { cost: 0, hours: 0 }); });
-      at(1900, () => callout('What the leg does to your budget and deadline', q('.tv-legcard dl'), [120, 30], 'right'));
+      at(1900, () => callout('What the leg does to your budget and deadline', q('.tv-legcard dl')));
       at(2900, () => cursorTo(q('[data-addleg]'), 20, 4)); at(3700, () => { click(); clearCallouts(); cityState({ cur: 'mad', on: ['lis'], reach: ['bcn', 'sev', 'por'], far: ['mrs', 'alg', 'tan'] }); spokes('mad', []); links([{ from: 'lis', to: 'mad', leg: LEG1, draw: true }]); stops([{ to: 'mad', leg: LEG1 }]); gauges(48, 3.17); sub("You're in Madrid. <span class=\"pace good\">Ahead of pace</span>"); pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 21, false], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); });
       at(4300, () => { spokes('mad', ['bcn', 'sev', 'por']); cursorOff(); }); }),
     // 3: the gauges
     () => loop(6000, () => { q('.tut-gate').classList.add('go'); cursorOff(); baseLeg1(); tip(null); pickerOpts('mad', 'bcn', OPTS2, null, { cost: 48, hours: 3.17 }); clockFrom(14);
-      at(400, () => callout('$32 left to spend', q('[data-g="cost"]'), [250, 60], 'right'));
-      at(1300, () => callout('8h 50m before the deadline', q('[data-g="time"]'), [40, 120], 'top'));
-      at(2200, () => callout('Decide fast for a bonus', q('[data-g="clock"]'), [240, 262], 'top'));
-      at(3300, () => callout('Grayed out: it would break the budget', q('[data-opt="2"]'), [232, 302], 'right')); }),
+      at(400, () => callout('$32 left to spend', q('[data-g="cost"]')));
+      at(1300, () => callout('8h 50m before the deadline', q('[data-g="time"]')));
+      at(2200, () => callout('Decide fast for a bonus', q('[data-g="clock"]')));
+      at(3300, () => callout('Grayed out: it would break the budget', q('[data-opt="2"]'))); }),
     // 4: secret fares
     () => loop(5600, () => { q('.tut-gate').classList.add('go'); cursorOff(); baseLeg1(); tip(null); q('[data-deal]').classList.remove('show'); pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 26, false], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); clockFrom(21);
       at(700, () => cursorTo(q('[data-c="bcn"]'), 0, 0)); at(1500, () => tip('bcn', `<b>${place(C.bcn)}</b><small>Spain · destination</small><div class="modes"><span class="deal">🚆 <em>$21</em> 🏷️</span><span>🚌 <em>$26</em></span><span class="off">✈️ <em>$95</em></span></div><small class="hint">tap to add as a stop</small>`));
       at(2100, () => { q('[data-deal]').classList.add('show'); pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 21, true], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); });
-      at(2700, () => { tip(null); callout('Found one: it stays cheap for you', q('[data-row="bcn"] .dl'), [232, 296], 'right'); }); }),
+      at(2700, () => { tip(null); callout('Found one: it stays cheap for you', q('[data-row="bcn"] .dl')); }); }),
     // 5: finish and submit
     () => loop(9000, () => { q('.tut-gate').classList.add('go'); cursorOff(); baseLeg1(); tip(null); q('[data-deal]').classList.remove('show'); q('[data-report]').hidden = true; pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 21, true], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); clockFrom(24);
       at(600, () => cursorTo(q('[data-c="bcn"]'), 0, 0)); at(1300, () => { click(); cityState({ cur: 'mad', on: ['lis'], pend: 'bcn', reach: ['sev', 'por'], far: ['mrs', 'alg', 'tan'] }); spokes('mad', ['sev', 'por'], true); links([{ from: 'lis', to: 'mad', leg: LEG1 }], ['mad', 'bcn']); pickerOpts('mad', 'bcn', OPTS2, null, { cost: 48, hours: 3.17 }); });
@@ -209,13 +191,14 @@
     if (!had) box.innerHTML = `<div class="td-modal-card tut" role="dialog" aria-modal="true" aria-label="How to play" data-step="${i}">
       <button class="td-modal-x" id="tut-x" aria-label="Close">✕</button>
       <p class="kicker" data-kick></p>
-      ${screenHtml()}${gateHtml()}
+      ${screenHtml()}
       <h2 data-k></h2><p class="tut-t" data-t></p>
       <div class="tut-foot"><div class="dots" data-dots></div><div class="btns" data-btns></div></div></div>`;
     const card = q('.tut'); card.dataset.step = i;
     q('[data-kick]').textContent = `How to play · ${i + 1} of ${STEPS.length}`;
     q('[data-k]').innerHTML = s.k; q('[data-t]').innerHTML = s.t;
-    q('[data-dots]').innerHTML = STEPS.map((_, j) => `<i class="${j === i ? 'on' : j < i ? 'done' : ''}"></i>`).join('');
+    q('[data-dots]').innerHTML = STEPS.map((_, j) => `<i class="${j === i ? 'on' : j < i ? 'done' : ''}"></i>`).join('') + '<button class="replay" id="tut-replay" type="button" aria-label="Replay this step">↻ Replay</button>';
+    q('#tut-replay').onclick = () => { clearScene(); raf = requestAnimationFrame(() => { if (!q('.tut-screen')) return; SCENES[i](); }); };
     q('[data-btns]').innerHTML = `${i > 0 ? '<button class="btn ghost" id="tut-back">Back</button>' : '<button class="btn ghost" id="tut-skip">Skip</button>'}<button class="btn primary" id="tut-next">${i < STEPS.length - 1 ? 'Next' : (onPlay ? 'Start today\'s puzzle' : 'Play today\'s puzzle')}</button>`;
     q('#tut-x').onclick = () => open(false);
     const sk = q('#tut-skip'); if (sk) sk.onclick = () => open(false);

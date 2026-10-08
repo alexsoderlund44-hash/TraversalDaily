@@ -67,17 +67,17 @@
   const rhythm = ch.n ? T.rhythmOf(ch.n) : null;
   $('#tv-gate-day').textContent = title + ' · ' + dayLabel + (rhythm && rhythm.twist.id === tw.id ? ' · ' + rhythm.label : '');
   $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} <span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></span><span class="arr">→</span><span class="city">${T.flagImg(ch.to, 40)} <span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></span>`;
-  $('#tv-gate-sub').textContent = ch.blurb ? (ch.title ? ch.title + '. ' : '') + ch.blurb : `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km. No direct route. Get there under budget and before the deadline.`;
+  $('#tv-gate-sub').textContent = ch.blurb ? (ch.title ? ch.title + '. ' : '') + ch.blurb : `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km with no direct route. Get there under budget and before the deadline.`;
   $('#tv-gate-mission').innerHTML = `
     <div class="mi"><span class="ic">💰</span><b>${T.money(M.budget)}</b><span>budget</span></div>
     <div class="mi"><span class="ic">⏱️</span><b>${T.dur(M.deadline)}</b><span>deadline</span></div>
     <div class="mi"><span class="ic">${tw.icon}</span><b>${T.esc(tw.name)}</b><span>${T.esc(tw.desc)}</span></div>
     <div class="mi"><span class="ic">🏷️</span><b>${M.deals} deal${M.deals === 1 ? '' : 's'}</b><span>hidden on the map</span></div>`;
   const parDeals = M.par.path.filter(e => e.deal).length, word = n => ['no', 'one', 'two', 'three', 'four', 'five'][n] || String(n);
-  $('#tv-gate-rules').innerHTML = `<li>Tap a city to add a stop, then pick how to get there. Anything over budget or past the deadline is grayed out.</li>
+  $('#tv-gate-rules').innerHTML = `<li>Tap a city to add a stop, then pick how to get there. Anything you can't afford, or that would miss the deadline, is grayed out.</li>
     <li>Fares show when you look at a city, and so do hidden deals. ${!parDeals ? '' : parDeals === M.deals ? (M.deals === 1 ? 'The deal is' : M.deals === 2 ? 'Both deals are' : 'All ' + word(M.deals) + ' deals are') + " on the planner's route." : word(parDeals).replace(/^./, c => c.toUpperCase()) + ' of the ' + word(M.deals) + ' deals ' + (parDeals === 1 ? 'is' : 'are') + " on the planner's route."}</li>
-    <li>Money, time and how fast you decide all count. ${mode === 'today' ? 'One attempt.' : 'This one is practice.'}</li>`;
-  $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'The clock starts the moment you begin.';
+    <li>You're scored on money, time and how quickly you decide. ${mode === 'today' ? 'Everyone playing today has this same puzzle, and you get one scored attempt.' : 'This one is just practice.'}</li>`;
+  $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'The timer starts when you press Begin.';
   const locked = mode === 'archive' && T.dayLocked(ch.n);
   if (locked) {
     $('#tv-gate-mission').innerHTML = `<div class="tv-lock"><span class="ic">🔒</span><b>This puzzle is in the Traversle + archive</b><p>The last ${T.FREE_DAYS} days are free to replay. Traversle + opens every puzzle since day one.</p><a class="btn primary" href="plus.html">See Traversle +</a> <a class="btn ghost" href="archive.html">Back to the archive</a></div>`;
@@ -389,7 +389,7 @@
   $('#tv-start').onclick = start;
   function undo() {
     if (!route.length) return;
-    if (!undos) return toast('No undos left. Commit to the route.');
+    if (!undos) return toast('No undos left, so this route is final.');
     undos--; route.pop(); pendingTo = null; refresh();
     if (!undos) toast('That was your last undo.');
   }
@@ -430,9 +430,9 @@
   function verdict(res) {
     const ps = T.score(res.cost, res.hours, 0, M), pp = M.par.score;
     const dc = res.cost - M.par.cost, dh = res.hours - M.par.hours;
-    if (parMatchOf(res)) return { cls: 'tie', h: "🎯 You found the planner's route", t: 'The best balance of money and time on the board today.' };
+    if (parMatchOf(res)) return { cls: 'tie', h: "🎯 You found the planner's route", t: "That's the best balance of money and time anyone could find today." };
     if (ps > pp + 5) return { cls: 'win', h: '🧠 You outsmarted the planner', t: dc < -0.5 ? `You saved ${T.money(-dc)}${dh < -0.05 ? ' and ' + T.dur(-dh) : ''}.` : `You got there ${T.dur(-dh)} faster.` };
-    return { cls: 'lose', h: '🧭 The planner wins this one', t: dc > 0.5 ? `You were ${T.money(dc)} more expensive${dh > 0.05 ? ' and ' + T.dur(dh) + ' slower' : ''}.` : dh > 0.05 ? `You were ${T.dur(dh)} slower.` : 'A whisker behind on the balance of money and time.' };
+    return { cls: 'lose', h: '🧭 The planner wins this one', t: dc > 0.5 ? `You were ${T.money(dc)} more expensive${dh > 0.05 ? ' and ' + T.dur(dh) + ' slower' : ''}.` : dh > 0.05 ? `You were ${T.dur(dh)} slower.` : 'Just behind on the balance of money and time.' };
   }
   const routeCol = (title, rt, cost, hours, cls) => `<div class="col ${cls}"><h5>${title}</h5><ol>${[ch.from, ...rt.map(r => T.byId[r.to])].map((c, i) => (i ? `<li class="lg"><span class="ar">↓</span><span>${T.MODES[rt[i - 1].mode].icon} ${T.MODES[rt[i - 1].mode].name}${rt[i - 1].deal ? ' 🎟️' : ''}</span><small>${T.money(rt[i - 1].cost)} · ${T.dur(rt[i - 1].hours)}</small></li>` : '') + `<li class="st${i === 0 ? ' s' : i === rt.length ? ' d' : ''}">${T.esc(c.name)}</li>`).join('')}</ol><div class="tot"><b>${T.money(cost)}</b><span>${T.dur(hours)}</span><span>${rt.length} legs</span></div></div>`;
   function buildSummary(res, isPractice, xpGain, earned, full) {
@@ -494,7 +494,7 @@
   }
   function share(res) {
     const txt = shareText(res);
-    const copy = () => (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Result copied. Paste it anywhere.'), () => prompt('Copy your result:', txt));
+    const copy = () => (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copied. Paste it wherever you like.'), () => prompt('Copy your result:', txt));
     if (navigator.share) navigator.share({ text: txt }).catch(e => { if (!e || e.name !== 'AbortError') copy(); }); else copy();
   }
   function showModal(res, isPractice, xpGain, earned) {

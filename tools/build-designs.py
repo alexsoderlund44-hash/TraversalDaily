@@ -8,7 +8,7 @@ FONTS = {
  'atlas':   'https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Alegreya:ital,wght@0,400..900;1,400..900&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&display=swap',
 }
 TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – Every puzzle, forever'}
-DESC = "The daily travel puzzle. One start city, one destination, one budget. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world."
+DESC = "A daily travel puzzle. Everyone gets the same start, destination and budget. Chain trains, buses, ferries and flights, beat the deadline, and see if you can out-plan the planner."
 LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"The daily travel puzzle. One start city, one destination, one budget. Plan the smartest route across trains, buses, ferries and flights, then compare it with the planner.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
 NAV = [('index','Home'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
 MARK = '<svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg>'
@@ -51,7 +51,7 @@ HOME = '''
   <header class="hm-hero">
     <h1 class="hm-brand" aria-label="Traversle Daily"><span class="hm-word">Traversle</span><span class="hm-stamp">Daily</span>
       <svg class="hm-trail" viewBox="0 0 420 36" aria-hidden="true"><path class="rt" d="M12 22 C 90 -2, 160 42, 240 14 S 340 30, 400 8"/><circle class="s" cx="12" cy="22" r="4.5"/><path class="d" d="M400 8 m-6 0 a6 6 0 1 1 12 0 c0 5 -6 12 -6 12 s-6 -7 -6 -12z"/></svg></h1>
-    <p class="hm-tag" id="hm-h1">One start. One destination. One budget. Out-plan the planner.</p>
+    <p class="hm-tag" id="hm-h1">Same start, same destination, same budget for everyone today. Can you beat the planner?</p>
   </header>
   <section class="hm-card" aria-label="Today's expedition">
     <p class="hm-kicker" id="hm-day"></p>
@@ -59,16 +59,16 @@ HOME = '''
     <p class="hm-theme" id="hm-theme" hidden></p>
     <div class="mission" id="hm-mission"></div>
     <a class="btn primary big wide" href="play.html" id="hm-play">Play today's puzzle</a>
-    <p class="sub" id="hm-sub">You get one attempt. Make it count.</p>
+    <p class="sub" id="hm-sub">One scored attempt a day, and everyone plays the same puzzle.</p>
     <div id="hm-level" class="hm-level" hidden></div>
     <p class="meta" id="hm-meta"></p>
   </section>
   <section class="hm-panels">
     <article class="hm-panel" id="how"><h2>How to play</h2>
-      <ol class="hm-how"><li><b>Tap a city</b> on the chart to add a stop, then choose train, bus, ferry, car or plane.</li><li><b>Reach the destination</b> under budget and before the deadline. Hidden deals cut the cost.</li><li><b>Beat the planner.</b> Money, time and how fast you decide all count towards your score.</li></ol>
+      <ol class="hm-how"><li><b>Tap a city</b> on the chart to add a stop, then choose train, bus, ferry, car or plane.</li><li><b>Reach the destination</b> under budget and before the deadline. There are hidden deals along the way if you look for them.</li><li><b>Beat the planner.</b> You're scored on money, time and how quickly you decide, and everyone playing today is up against the same planner.</li></ol>
       <button class="btn" id="hm-how">Walk me through it</button></article>
     <article class="hm-panel hm-week" aria-label="The week"><h2>Every day has its own rule</h2><ol id="hm-week"></ol></article>
-    <article class="hm-panel hm-plus"><h2>Traversle +</h2><p>Today's puzzle is free, always. Traversle + opens every past puzzle since day one, with the planner's route revealed, plus archive stats on your profile.</p><a class="btn" href="plus.html">See Traversle +</a><a class="lnk" href="archive.html">Browse past puzzles</a></article>
+    <article class="hm-panel hm-plus"><h2>Traversle +</h2><p>Today's puzzle is always free. Traversle + lets you play every puzzle since day one, shows you the planner's route for each one, and keeps your archive stats on your profile.</p><a class="btn" href="plus.html">See Traversle +</a><a class="lnk" href="archive.html">Browse past puzzles</a></article>
   </section>
   @HOW@
 </main>'''
@@ -125,7 +125,7 @@ ACH = '''
 </main>'''
 STATS = '''
 <main class="td-page">
-  <header class="page-head"><h1>Your stats</h1><p>Every journey you've logged, saved in this browser.</p></header>
+  <header class="page-head"><h1>Your stats</h1><p>Every journey you've played so far. It's saved in this browser.</p></header>
   <div class="lvl-wrap" id="st-level"></div>
   <section class="stat-tiles">
     <div class="tile"><span>Days played</span><b id="st-played">0</b></div>
@@ -147,7 +147,7 @@ STATS = '''
 </main>'''
 PROFILE = '''
 <main class="td-page narrow">
-  <header class="page-head"><h1>Profile</h1><p>Saved in this browser. Accounts that sync across devices are coming.</p></header>
+  <header class="page-head"><h1>Profile</h1><p>Your profile lives in this browser for now. Accounts that sync across devices are coming.</p></header>
   <section class="card profile">
     <div class="avatar" id="pf-initials">T</div>
     <div class="who"><b id="pf-display">Traveler</b><span>Traveling since <em id="pf-since">today</em></span><span class="pf-plus" id="pf-plus"></span></div>
@@ -173,21 +173,21 @@ ARCHIVE = '''
   <header class="page-head"><h1>Past puzzles</h1><p id="ar-summary"></p></header>
   <div class="ar-tools"><input type="search" id="ar-q" placeholder="Search a city, country or twist…" autocomplete="off"><a class="btn ghost" href="play.html">Today's puzzle</a></div>
   <div id="ar-list"></div>
-  <section class="plus-strip"><div><h2>Missed a day?</h2><p>Replay the last seven free. Traversle + opens every puzzle since day one.</p></div><a class="btn primary" href="plus.html">See Traversle +</a></section>
+  <section class="plus-strip"><div><h2>Missed a day?</h2><p>You can replay the last seven days for free. Traversle + unlocks every puzzle since day one.</p></div><a class="btn primary" href="plus.html">See Traversle +</a></section>
 </main>'''
 PLUS = '''
 <main class="td-page narrow plus-page">
-  <header class="page-head"><p class="eyebrow">✦ Traversle +</p><h1>Every puzzle, <em>forever.</em></h1><p>Today's puzzle is free, always. Traversle + opens the whole archive for a single one-time payment. No subscription.</p></header>
+  <header class="page-head"><p class="eyebrow">✦ Traversle +</p><h1>Every puzzle, <em>forever.</em></h1><p>Today's puzzle is always free. Traversle + unlocks the whole archive for one payment of $2.99. No subscription and nothing to cancel.</p></header>
   <div id="pl-status"></div>
   <section class="prices one">
-    <div class="price best"><p class="k">Lifetime access</p><b>$2.99</b><span>Pay once. Yours forever, with nothing to renew.</span><ul><li>Every puzzle since day one, with the planner's route revealed</li><li>Archive stats and ratings on your profile</li><li>Founder badge on your profile</li><li>Early access to new twists and modes</li></ul><a class="btn primary" data-checkout="life" href="#">Get Traversle +</a></div>
+    <div class="price best"><p class="k">Lifetime access</p><b>$2.99</b><span>Pay once and it's yours for good.</span><ul><li>Every puzzle since day one, with the planner's route revealed</li><li>Archive stats and ratings on your profile</li><li>Founder badge on your profile</li><li>Early access to new twists and modes</li></ul><a class="btn primary" data-checkout="life" href="#">Get Traversle +</a></div>
   </section>
   <p class="pl-note" id="pl-soon" hidden>Payments open soon. Until then, today's puzzle and the last seven days are free.</p>
   <section class="faq" aria-label="Questions">
-    <details><summary>What stays free?</summary><p>Today's puzzle, your score, streaks, stats and achievements. The last seven days of past puzzles too. Always.</p></details>
-    <details><summary>What does Traversle + unlock?</summary><p>Every past puzzle, with the planner's route revealed. Archive stats on your profile. A founder badge, too.</p></details>
-    <details><summary>Is it a subscription?</summary><p>No. Traversle + is a single payment of $2.99 for lifetime access. There is nothing to cancel and nothing renews.</p></details>
-    <details><summary>Where is my membership stored?</summary><p>In this browser for now. Accounts that sync across devices are coming, and your membership carries over.</p></details>
+    <details><summary>What stays free?</summary><p>Today's puzzle, your scores, streaks, stats and achievements, plus the last seven days of past puzzles. That never changes.</p></details>
+    <details><summary>What does Traversle + unlock?</summary><p>Every past puzzle with the planner's route shown, archive stats on your profile, and a founder badge.</p></details>
+    <details><summary>Is it a subscription?</summary><p>No. You pay $2.99 once and keep it for life. There's nothing to cancel and nothing renews.</p></details>
+    <details><summary>Where is my membership stored?</summary><p>In this browser for now. When accounts arrive, your membership comes with you.</p></details>
   </section>
 </main>'''
 PAGES_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script>'

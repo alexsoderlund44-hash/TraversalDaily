@@ -19,12 +19,12 @@
   const BUDGET = 80, DEADLINE = 12;
 
   const STEPS = [
-    { k: 'A start. A destination. A budget.', t: 'Every day the whole world gets the same puzzle. Here you begin in <b>Lisbon</b> and must reach <b>Barcelona</b> with <b>$80</b> and <b>12 hours</b>. The clock starts the moment you press Begin.' },
-    { k: 'Tap a city to add a stop.', t: 'Lit cities are the ones you can reach from where you stand; faded ones are out of range. Hover or tap one to see its fares, then tap it to make it your next stop.' },
-    { k: 'Pick how you get there.', t: 'Every ride trades money for time: the train is quick, the bus is cheap. Tap an option to see what it does to your budget and deadline, then add the leg.' },
-    { k: 'Mind the budget, the clock, and your pace.', t: 'The panel tracks what you have left. Anything that would break the budget or the deadline is grayed out. Deciding fast earns a bonus of up to 20%.' },
-    { k: 'Secret fares hide on the chart.', t: 'Three fares a day are quietly cheap. They only show when you look at a city, and two of them sit on the route the planner had in mind.' },
-    { k: 'Reach the end and submit.', t: 'Arrive, submit, and the expedition report scores your money, time and speed, then shows the planner\'s route beside yours. One official run a day. Make it count.' },
+    { k: 'Everyone gets the same puzzle.', t: 'Everyone who plays today gets this exact route, so your score goes up against theirs. In this example you start in <b>Lisbon</b> and need to reach <b>Barcelona</b> with <b>$80</b> and <b>12 hours</b>. The timer starts when you press Begin.' },
+    { k: 'Tap a city to add a stop.', t: 'The bright cities are the ones you can reach from where you are. Faded ones are too far for now. Tap a city to see what it costs to get there, then tap it again to make it your next stop.' },
+    { k: 'Choose how to get there.', t: 'Trains are fast but pricey, buses are slow but cheap. Tap an option to see what it does to your budget and your deadline, then add it to your route.' },
+    { k: 'Watch your money, your time and your pace.', t: "The panel shows what you have left. Anything you can't afford, or that would make you miss the deadline, is grayed out. The faster you decide, the bigger your bonus, up to 20%." },
+    { k: 'Some fares are secretly cheap.', t: 'Every day, three fares are much cheaper than they look. You only spot them by checking a city, and two of them are on the route the planner took.' },
+    { k: 'Get there and submit.', t: "Once you reach the destination, submit your route. Your report scores you on money, time and speed, and shows the planner's route next to yours. You get one scored attempt a day." },
   ];
   let i = 0, timers = [], loopT = null, started = 0, raf = 0;
 
@@ -134,7 +134,7 @@
 
   /* ---------- the scenes: each one is a looping timeline ---------- */
   // Alex (2026-10-08): the walkthrough should move about five times slower than the game and hold each state ten times longer
-  const SLOW = 5;
+  const SLOW = 2.5;
   const at = (ms, fn) => { ms *= SLOW; timers.push(setTimeout(fn, reduced ? Math.min(ms, 2000 + ms * .25) : ms)); };
   function clearScene() { timers.forEach(clearTimeout); timers = []; clearTimeout(loopT); cancelAnimationFrame(raf); clearCallouts(); }
   function loop(len, fn) { fn(); } // a scene plays once and holds on its last state; Replay runs it again
@@ -143,36 +143,36 @@
   const SCENES = [
     // 0: the mission card, then Begin
     () => loop(4600, () => { const g = q('.tut-gate'); g.classList.remove('go'); q('.tut-screen').classList.remove('swoop'); cursorOff(); cityState({ cur: 'lis', far: ['mrs', 'alg', 'tan'] }); spokes('lis', []); links([]); stops([]); gauges(0, 0); pickerList('lis', [['mad', ['train', 'bus', 'ride'], 19], ['por', ['train', 'bus'], 12], ['sev', ['train', 'bus'], 22]]); sub("You're in Lisbon.");
-      at(500, () => cursorTo(q('[data-begin]'), 30, 8)); at(1500, click); at(1700, () => { g.classList.add('go'); q('.tut-screen').classList.add('swoop'); clockFrom(0); }); at(2000, cursorOff); at(2600, () => callout('The clock is running. Decide fast for a bonus.', q('[data-g="clock"]'))); }),
+      at(500, () => cursorTo(q('[data-begin]'), 30, 8)); at(1500, click); at(1700, () => { g.classList.add('go'); q('.tut-screen').classList.add('swoop'); clockFrom(0); }); at(2000, cursorOff); at(2600, () => callout('Your timer is running', q('[data-g="clock"]'))); }),
     // 1: tap a city
     () => loop(5200, () => { q('.tut-gate').classList.add('go'); cursorOff(); cityState({ cur: 'lis', reach: ['mad', 'por', 'sev'], far: ['mrs', 'alg', 'tan', 'bcn'] }); spokes('lis', ['mad', 'por', 'sev']); links([]); stops([]); gauges(0, 0); tip(null); sub("You're in Lisbon."); pickerList('lis', [['mad', ['train', 'bus', 'ride'], 19], ['por', ['train', 'bus'], 12], ['sev', ['train', 'bus'], 22]]); clockFrom(4);
-      at(300, () => callout('Lit cities are within reach', q('[data-c="por"]')));
+      at(300, () => callout('You can reach the bright cities', q('[data-c="por"]')));
       at(900, () => cursorTo(q('[data-c="mad"]'), 0, 0)); at(1700, () => tip('mad', `<b>${place(C.mad)}</b><small>Spain</small><div class="modes"><span>🚆 <em>$48</em></span><span>🚌 <em>$19</em></span><span>🚘 <em>$31</em></span></div><small class="hint">tap to add as a stop</small>`));
       at(2600, () => { click(); tip(null); cityState({ cur: 'lis', pend: 'mad', reach: ['por', 'sev'], far: ['mrs', 'alg', 'tan', 'bcn'] }); spokes('lis', ['por', 'sev'], true); links([], ['lis', 'mad']); pickerOpts('lis', 'mad', OPTS1, null, { cost: 0, hours: 0 }); });
-      at(3000, () => callout('Your options appear here', q('[data-opt="0"]'))); }),
+      at(3000, () => callout('Ways to get there show up here', q('[data-opt="0"]'))); }),
     // 2: pick a ride, add the leg
     () => loop(6400, () => { q('.tut-gate').classList.add('go'); cursorOff(); cityState({ cur: 'lis', pend: 'mad', reach: ['por', 'sev'], far: ['mrs', 'alg', 'tan', 'bcn'] }); spokes('lis', ['por', 'sev'], true); links([], ['lis', 'mad']); stops([]); gauges(0, 0); tip(null); sub("You're in Lisbon."); pickerOpts('lis', 'mad', OPTS1, null, { cost: 0, hours: 0 }); clockFrom(9);
       at(700, () => cursorTo(q('[data-opt="2"]'), 40, 0)); at(1500, () => { click(); pickerOpts('lis', 'mad', OPTS1, 2, { cost: 0, hours: 0 }); });
-      at(1900, () => callout('What the leg does to your budget and deadline', q('.tv-legcard dl')));
+      at(1900, () => callout('How this leg affects your budget and deadline', q('.tv-legcard dl')));
       at(2900, () => cursorTo(q('[data-addleg]'), 20, 4)); at(3700, () => { click(); clearCallouts(); cityState({ cur: 'mad', on: ['lis'], reach: ['bcn', 'sev', 'por'], far: ['mrs', 'alg', 'tan'] }); spokes('mad', []); links([{ from: 'lis', to: 'mad', leg: LEG1, draw: true }]); stops([{ to: 'mad', leg: LEG1 }]); gauges(48, 3.17); sub("You're in Madrid. <span class=\"pace good\">Ahead of pace</span>"); pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 21, false], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); });
       at(4300, () => { spokes('mad', ['bcn', 'sev', 'por']); cursorOff(); }); }),
     // 3: the gauges
     () => loop(6000, () => { q('.tut-gate').classList.add('go'); cursorOff(); baseLeg1(); tip(null); pickerOpts('mad', 'bcn', OPTS2, null, { cost: 48, hours: 3.17 }); clockFrom(14);
       at(400, () => callout('$32 left to spend', q('[data-g="cost"]')));
-      at(1300, () => callout('8h 50m before the deadline', q('[data-g="time"]')));
+      at(1300, () => callout('8h 50m until the deadline', q('[data-g="time"]')));
       at(2200, () => callout('Decide fast for a bonus', q('[data-g="clock"]')));
-      at(3300, () => callout('Grayed out: it would break the budget', q('[data-opt="2"]'))); }),
+      at(3300, () => callout("Grayed out because you can't afford it", q('[data-opt="2"]'))); }),
     // 4: secret fares
     () => loop(5600, () => { q('.tut-gate').classList.add('go'); cursorOff(); baseLeg1(); tip(null); q('[data-deal]').classList.remove('show'); pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 26, false], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); clockFrom(21);
       at(700, () => cursorTo(q('[data-c="bcn"]'), 0, 0)); at(1500, () => tip('bcn', `<b>${place(C.bcn)}</b><small>Spain · destination</small><div class="modes"><span class="deal">🚆 <em>$21</em> 🏷️</span><span>🚌 <em>$26</em></span><span class="off">✈️ <em>$95</em></span></div><small class="hint">tap to add as a stop</small>`));
       at(2100, () => { q('[data-deal]').classList.add('show'); pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 21, true], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); });
-      at(2700, () => { tip(null); callout('Found one: it stays cheap for you', q('[data-row="bcn"] .dl')); }); }),
+      at(2700, () => { tip(null); callout('A secret fare. It stays cheap once you find it', q('[data-row="bcn"] .dl')); }); }),
     // 5: finish and submit
     () => loop(9000, () => { q('.tut-gate').classList.add('go'); cursorOff(); baseLeg1(); tip(null); q('[data-deal]').classList.remove('show'); q('[data-report]').hidden = true; pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 21, true], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); clockFrom(24);
       at(600, () => cursorTo(q('[data-c="bcn"]'), 0, 0)); at(1300, () => { click(); cityState({ cur: 'mad', on: ['lis'], pend: 'bcn', reach: ['sev', 'por'], far: ['mrs', 'alg', 'tan'] }); spokes('mad', ['sev', 'por'], true); links([{ from: 'lis', to: 'mad', leg: LEG1 }], ['mad', 'bcn']); pickerOpts('mad', 'bcn', OPTS2, null, { cost: 48, hours: 3.17 }); });
       at(2100, () => cursorTo(q('[data-opt="0"]'), 40, 0)); at(2800, () => { click(); pickerOpts('mad', 'bcn', OPTS2, 0, { cost: 48, hours: 3.17 }); });
       at(3600, () => cursorTo(q('[data-addleg]'), 20, 4)); at(4300, () => { click(); cityState({ cur: 'bcn', on: ['lis', 'mad'], far: ['mrs', 'alg', 'tan', 'sev', 'por'] }); spokes('bcn', []); links([{ from: 'lis', to: 'mad', leg: LEG1 }, { from: 'mad', to: 'bcn', leg: LEG2, draw: true }]); stops([{ to: 'mad', leg: LEG1 }, { to: 'bcn', leg: LEG2 }], true); gauges(69, 5.92); sub('You made it. Submit when you are ready.'); q('[data-picker]').innerHTML = ''; q('[data-est]').hidden = false; q('.tut-plan').classList.add('arrived'); const s = q('[data-submit]'); s.disabled = false; s.classList.add('ready'); });
-      at(5300, () => cursorTo(q('[data-submit]'), 30, 6)); at(6100, () => { click(); const r = q('[data-report]'); r.innerHTML = `<div class="rs"><p class="kicker">Expedition report</p><div class="rs-top"><div class="rs-rating expert"><span class="ic">🧭</span><div><b>Expert</b><small>96% of the planner's score</small></div></div><div class="rs-big"><b data-n="9120">0</b><small>score</small></div><p class="rs-verdict tie"><b>🎯 You found the planner's route</b> The best balance of money and time on the board today.</p></div><div class="chain"><span>Lisbon</span><i>→</i><span>Madrid</span><i>→</i><span>Barcelona</span></div><p class="rs-dist"><b>1,130 km</b> · $69 · 5h 55m · 1 secret fare</p></div>`; r.hidden = false; cursorOff(); const b = r.querySelector('[data-n]'), t0 = performance.now(); const run = () => { const p = Math.min(1, (performance.now() - t0) / (900 * SLOW)); b.textContent = Math.round(9120 * (1 - Math.pow(1 - p, 3))).toLocaleString(); if (p < 1) requestAnimationFrame(run); }; requestAnimationFrame(run); }); }),
+      at(5300, () => cursorTo(q('[data-submit]'), 30, 6)); at(6100, () => { click(); const r = q('[data-report]'); r.innerHTML = `<div class="rs"><p class="kicker">Expedition report</p><div class="rs-top"><div class="rs-rating expert"><span class="ic">🧭</span><div><b>Expert</b><small>96% of the planner's score</small></div></div><div class="rs-big"><b data-n="9120">0</b><small>score</small></div><p class="rs-verdict tie"><b>🎯 You found the planner's route</b> That's the best balance of money and time anyone could find today.</p></div><div class="chain"><span>Lisbon</span><i>→</i><span>Madrid</span><i>→</i><span>Barcelona</span></div><p class="rs-dist"><b>1,130 km</b> · $69 · 5h 55m · 1 secret fare</p></div>`; r.hidden = false; cursorOff(); const b = r.querySelector('[data-n]'), t0 = performance.now(); const run = () => { const p = Math.min(1, (performance.now() - t0) / (900 * SLOW)); b.textContent = Math.round(9120 * (1 - Math.pow(1 - p, 3))).toLocaleString(); if (p < 1) requestAnimationFrame(run); }; requestAnimationFrame(run); }); }),
   ];
 
   /* ---------- the card ---------- */

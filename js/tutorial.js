@@ -124,14 +124,25 @@
   function callout(text, el, at, side) { // a label with a hand-drawn arrow to the element
     if (!el) return; reveal(el);
     const scr = q('.tut-screen'), s = scr.getBoundingClientRect(), r = el.getBoundingClientRect();
+    // on phones the chart is a short strip, so notes show one at a time in its top-left corner and never cover the panel
+    if (scr.classList.contains('col')) { clearCallouts(); at = [8, 8]; side = 'bottom'; }
     const tx = (r.left - s.left) / scale, ty = (r.top - s.top) / scale, tw = r.width / scale, th = r.height / scale;
     const n = document.createElement('div'); n.className = 'tut-note'; n.textContent = text; n.style.left = at[0] + 'px'; n.style.top = at[1] + 'px'; scr.appendChild(n);
     const nr = n.getBoundingClientRect(), nx = (nr.left - s.left) / scale, ny = (nr.top - s.top) / scale, nw = nr.width / scale, nh = nr.height / scale;
-    const from = side === 'left' ? [nx, ny + nh / 2] : side === 'right' ? [nx + nw, ny + nh / 2] : side === 'top' ? [nx + nw / 2, ny] : [nx + nw / 2, ny + nh];
-    const cx = tx + tw / 2, cy = ty + th / 2;
-    const to = Math.abs(cx - from[0]) > Math.abs(cy - from[1]) ? [cx < from[0] ? tx + tw + 6 : tx - 6, cy] : [cx, cy < from[1] ? ty + th + 6 : ty - 6];
-    const mx = (from[0] + to[0]) / 2, my = (from[1] + to[1]) / 2, dx = to[0] - from[0], dy = to[1] - from[1];
-    const c1 = [mx - dy * .25, my + dx * .25], ang = Math.atan2(to[1] - c1[1], to[0] - c1[0]) * 180 / Math.PI;
+    let from = side === 'left' ? [nx, ny + nh / 2] : side === 'right' ? [nx + nw, ny + nh / 2] : side === 'top' ? [nx + nw / 2, ny] : [nx + nw / 2, ny + nh];
+    const cx = tx + tw / 2, cy = ty + th / 2, plan = el.closest('.tut-plan'), col = scr.classList.contains('col');
+    let to, c1;
+    if (plan && !col) { // a panel target: the arrow stops at the panel's edge, level with the row, instead of crossing the panel's words
+      const pr = plan.getBoundingClientRect(), pl = (pr.left - s.left) / scale; to = [pl - 5, cy - 10 + 20 * ((tx - pl) / (pr.width / scale))]; from = [nx + nw, ny + nh / 2];
+      c1 = [(from[0] + to[0]) / 2 + 20, from[1] + (to[1] - from[1]) * .15];
+    } else if (plan) { // on phones the panel is below the note: the arrow runs down the panel's left margin to the row
+      from = [nx + 2, ny + nh]; to = [tx - 5, cy]; c1 = [from[0] - 8, (from[1] + to[1]) / 2];
+    } else {
+      to = Math.abs(cx - from[0]) > Math.abs(cy - from[1]) ? [cx < from[0] ? tx + tw + 6 : tx - 6, cy] : [cx, cy < from[1] ? ty + th + 6 : ty - 6];
+      const mx = (from[0] + to[0]) / 2, my = (from[1] + to[1]) / 2, dx = to[0] - from[0], dy = to[1] - from[1];
+      c1 = [mx - dy * .25, my + dx * .25];
+    }
+    const ang = Math.atan2(to[1] - c1[1], to[0] - c1[0]) * 180 / Math.PI;
     const NS = 'http://www.w3.org/2000/svg', p = document.createElementNS(NS, 'path'); p.setAttribute('d', `M${from[0]},${from[1]} Q${c1[0]},${c1[1]} ${to[0]},${to[1]}`); q('[data-arrows]').appendChild(p);
     const h = document.createElementNS(NS, 'path'); h.setAttribute('class', 'ah'); h.setAttribute('d', 'M-9,-5.5 L0,0 L-9,5.5'); h.setAttribute('transform', `translate(${to[0]},${to[1]}) rotate(${ang})`); q('[data-arrows]').appendChild(h);
   }
@@ -140,9 +151,11 @@
   function clearCallouts() { qa('.tut-note').forEach(n => n.remove()); const a = q('[data-arrows]'); if (a) a.querySelectorAll('path').forEach(p => p.remove()); }
 
   /* ---------- the scenes: each one is a looping timeline ---------- */
-  const at = (ms, fn) => timers.push(setTimeout(fn, reduced ? Math.min(ms, 400 + ms * .25) : ms));
+  // Alex (2026-10-08): the walkthrough should move about five times slower than the game and hold each state ten times longer
+  const SLOW = 5, HOLD = 10;
+  const at = (ms, fn) => { ms *= SLOW; timers.push(setTimeout(fn, reduced ? Math.min(ms, 2000 + ms * .25) : ms)); };
   function clearScene() { timers.forEach(clearTimeout); timers = []; clearTimeout(loopT); cancelAnimationFrame(raf); clearCallouts(); }
-  function loop(len, fn) { fn(); loopT = setTimeout(() => { clearScene(); loop(len, fn); }, reduced ? Math.max(2500, len * .5) : len); }
+  function loop(len, fn) { fn(); loopT = setTimeout(() => { clearScene(); loop(len, fn); }, reduced ? Math.max(12000, len * 2.5) : len * HOLD); }
   const baseLeg1 = () => { cityState({ cur: 'mad', on: ['lis'], reach: ['bcn', 'sev', 'por'], far: ['mrs', 'alg', 'tan'] }); spokes('mad', ['bcn', 'sev', 'por']); links([{ from: 'lis', to: 'mad', leg: LEG1 }]); stops([{ to: 'mad', leg: LEG1 }]); gauges(48, 3.17); sub("You're in Madrid. <span class=\"pace good\">Ahead of pace</span>"); q('.tut-plan').classList.remove('arrived'); q('[data-submit]').disabled = true; q('[data-submit]').classList.remove('ready'); q('[data-est]').hidden = true; };
   const clockFrom = sec => { const el = q('[data-clock]'); if (!el) return; started = performance.now() - sec * 1000; const tick = () => { if (!el.isConnected) return; el.textContent = T.secsF((performance.now() - started) / 1000); timers.push(setTimeout(tick, 250)); }; tick(); };
   const SCENES = [
@@ -165,27 +178,30 @@
     () => loop(6000, () => { q('.tut-gate').classList.add('go'); cursorOff(); baseLeg1(); tip(null); pickerOpts('mad', 'bcn', OPTS2, null, { cost: 48, hours: 3.17 }); clockFrom(14);
       at(400, () => callout('$32 left to spend', q('[data-g="cost"]'), [250, 60], 'right'));
       at(1300, () => callout('8h 50m before the deadline', q('[data-g="time"]'), [40, 120], 'top'));
-      at(2200, () => callout('Decide fast for a bonus', q('[data-g="clock"]'), [280, 180], 'top'));
-      at(3300, () => callout('Grayed out: it would break the budget', q('[data-opt="2"]'), [20, 300], 'right')); }),
+      at(2200, () => callout('Decide fast for a bonus', q('[data-g="clock"]'), [240, 262], 'top'));
+      at(3300, () => callout('Grayed out: it would break the budget', q('[data-opt="2"]'), [232, 302], 'right')); }),
     // 4: secret fares
     () => loop(5600, () => { q('.tut-gate').classList.add('go'); cursorOff(); baseLeg1(); tip(null); q('[data-deal]').classList.remove('show'); pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 26, false], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); clockFrom(21);
       at(700, () => cursorTo(q('[data-c="bcn"]'), 0, 0)); at(1500, () => tip('bcn', `<b>${place(C.bcn)}</b><small>Spain · destination</small><div class="modes"><span class="deal">🚆 <em>$21</em> 🏷️</span><span>🚌 <em>$26</em></span><span class="off">✈️ <em>$95</em></span></div><small class="hint">tap to add as a stop</small>`));
       at(2100, () => { q('[data-deal]').classList.add('show'); pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 21, true], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); });
-      at(2700, () => { tip(null); callout('Found one: it stays cheap for you', q('[data-row="bcn"] .dl'), [40, 330], 'right'); }); }),
+      at(2700, () => { tip(null); callout('Found one: it stays cheap for you', q('[data-row="bcn"] .dl'), [232, 296], 'right'); }); }),
     // 5: finish and submit
     () => loop(9000, () => { q('.tut-gate').classList.add('go'); cursorOff(); baseLeg1(); tip(null); q('[data-deal]').classList.remove('show'); q('[data-report]').hidden = true; pickerList('mad', [['bcn', ['train', 'bus', 'plane'], 21, true], ['sev', ['train', 'bus'], 28], ['por', ['train', 'bus'], 24]]); clockFrom(24);
       at(600, () => cursorTo(q('[data-c="bcn"]'), 0, 0)); at(1300, () => { click(); cityState({ cur: 'mad', on: ['lis'], pend: 'bcn', reach: ['sev', 'por'], far: ['mrs', 'alg', 'tan'] }); spokes('mad', ['sev', 'por'], true); links([{ from: 'lis', to: 'mad', leg: LEG1 }], ['mad', 'bcn']); pickerOpts('mad', 'bcn', OPTS2, null, { cost: 48, hours: 3.17 }); });
       at(2100, () => cursorTo(q('[data-opt="0"]'), 40, 0)); at(2800, () => { click(); pickerOpts('mad', 'bcn', OPTS2, 0, { cost: 48, hours: 3.17 }); });
       at(3600, () => cursorTo(q('[data-addleg]'), 20, 4)); at(4300, () => { click(); cityState({ cur: 'bcn', on: ['lis', 'mad'], far: ['mrs', 'alg', 'tan', 'sev', 'por'] }); spokes('bcn', []); links([{ from: 'lis', to: 'mad', leg: LEG1 }, { from: 'mad', to: 'bcn', leg: LEG2, draw: true }]); stops([{ to: 'mad', leg: LEG1 }, { to: 'bcn', leg: LEG2 }], true); gauges(69, 5.92); sub('You made it. Submit when you are ready.'); q('[data-picker]').innerHTML = ''; q('[data-est]').hidden = false; q('.tut-plan').classList.add('arrived'); const s = q('[data-submit]'); s.disabled = false; s.classList.add('ready'); });
-      at(5300, () => cursorTo(q('[data-submit]'), 30, 6)); at(6100, () => { click(); const r = q('[data-report]'); r.innerHTML = `<div class="rs"><p class="kicker">Expedition report</p><div class="rs-top"><div class="rs-rating expert"><span class="ic">🧭</span><div><b>Expert</b><small>96% of the planner's score</small></div></div><div class="rs-big"><b data-n="9120">0</b><small>score</small></div><p class="rs-verdict tie"><b>🎯 You found the planner's route</b> The best balance of money and time on the board today.</p></div><div class="chain"><span>Lisbon</span><i>→</i><span>Madrid</span><i>→</i><span>Barcelona</span></div><p class="rs-dist"><b>1,130 km</b> · $69 · 5h 55m · 1 secret fare</p></div>`; r.hidden = false; cursorOff(); const b = r.querySelector('[data-n]'), t0 = performance.now(); const run = () => { const p = Math.min(1, (performance.now() - t0) / 900); b.textContent = Math.round(9120 * (1 - Math.pow(1 - p, 3))).toLocaleString(); if (p < 1) requestAnimationFrame(run); }; requestAnimationFrame(run); }); }),
+      at(5300, () => cursorTo(q('[data-submit]'), 30, 6)); at(6100, () => { click(); const r = q('[data-report]'); r.innerHTML = `<div class="rs"><p class="kicker">Expedition report</p><div class="rs-top"><div class="rs-rating expert"><span class="ic">🧭</span><div><b>Expert</b><small>96% of the planner's score</small></div></div><div class="rs-big"><b data-n="9120">0</b><small>score</small></div><p class="rs-verdict tie"><b>🎯 You found the planner's route</b> The best balance of money and time on the board today.</p></div><div class="chain"><span>Lisbon</span><i>→</i><span>Madrid</span><i>→</i><span>Barcelona</span></div><p class="rs-dist"><b>1,130 km</b> · $69 · 5h 55m · 1 secret fare</p></div>`; r.hidden = false; cursorOff(); const b = r.querySelector('[data-n]'), t0 = performance.now(); const run = () => { const p = Math.min(1, (performance.now() - t0) / (900 * SLOW)); b.textContent = Math.round(9120 * (1 - Math.pow(1 - p, 3))).toLocaleString(); if (p < 1) requestAnimationFrame(run); }; requestAnimationFrame(run); }); }),
   ];
 
   /* ---------- the card ---------- */
   function fit() {
     const wrap = q('.tut-wrap'), scr = q('.tut-screen'); if (!wrap || !scr) return;
     const col = wrap.clientWidth < 520; scr.classList.toggle('col', col);
-    const bw = col ? 400 : 720; scale = Math.min(1, wrap.clientWidth / bw); scr.style.transform = `scale(${scale})`;
-    wrap.style.height = Math.round(scr.offsetHeight * scale) + 'px';
+    const bw = col ? 400 : 720; scale = Math.min(1, wrap.clientWidth / bw);
+    // the instructions must stay on screen beside the animation, so the miniature also shrinks to fit the viewport height
+    const card = wrap.closest('.tut'); wrap.style.height = '0px';
+    const spare = innerHeight - 32 - card.offsetHeight; if (spare < scr.offsetHeight * scale) scale = Math.max(.38, spare / scr.offsetHeight);
+    scr.style.transform = `scale(${scale})`; wrap.style.height = Math.round(scr.offsetHeight * scale) + 'px';
   }
   function render(dir) {
     const s = STEPS[i]; clearScene();

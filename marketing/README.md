@@ -20,3 +20,13 @@ Start with `MKT/00-system.md`: the evidence rules (FACT / INFERENCE / HYPOTHESIS
 | `marketing-priorities` | Score and rank the backlog (`score.py`) | `07-backlog.csv`, `07-backlog.md` |
 
 Loop: audit → research → score → execute → weekly review → re-score.
+
+Also vendored from coreyhaines31/marketingskills (see `.claude/skills/THIRD-PARTY.md`): `programmatic-seo`, `schema`, `referrals`, `social`, `launch`, `directory-submissions`, `ai-seo`, `influencer-marketing`. They read `.claude/product-marketing.md`.
+
+## Tooling in the repo
+
+| What | File | Setup still needed |
+|---|---|---|
+| Google Search Console MCP (`mcp-search-console` 0.4.1 via `uvx`) | `.mcp.json`, `tools/mcp/gsc.sh` | Verify the Domain property, create a Google Cloud service account, add it in Search Console as a **Restricted** user, and store its key JSON as the environment secret `GSC_SERVICE_ACCOUNT_JSON` (cloud) or point `GSC_OAUTH_CLIENT_SECRETS_FILE` at an OAuth client file (local) |
+| Lighthouse CI on every PR (warn-only, report as an artifact) | `.github/workflows/lighthouse.yml`, `lighthouserc.json` | None |
+| IndexNow ping on pushes to main (Bing, Yandex and others) | `.github/workflows/indexnow.yml`, `<key>.txt` at the root | None; it skips until the site is live and has a `sitemap.xml` |

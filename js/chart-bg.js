@@ -1,5 +1,6 @@
 /* The home-page globe: a vintage chart painted once onto an equirectangular texture, then wrapped on a
-   sphere by a tiny WebGL shader and turned accurately on its axis. Without WebGL the chart is drawn once, still.
+   sphere by a tiny WebGL shader and turned accurately on its axis, never still. Without WebGL the same sphere is
+   computed on the CPU at a lower resolution and still keeps turning.
    d3, topojson and a simplified world outline load lazily after the page has painted. */
 (function () {
   'use strict';
@@ -92,31 +93,39 @@
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     const uLon = gl.getUniformLocation(prog, 'lon'), uTilt = gl.getUniformLocation(prog, 'tilt'), uRing = gl.getUniformLocation(prog, 'ring');
     gl.uniform1f(uTilt, tilt); gl.uniform1f(uRing, (R + 7) / R); gl.clearColor(0, 0, 0, 0);
-    const SPEED = (2 * Math.PI) / 150; // one full turn every two and a half minutes, like a desk globe given a push
+    const SPEED = (2 * Math.PI) / (reduced ? 300 : 150); // one full turn every two and a half minutes (gentler under reduced motion, but never still), like a desk globe given a push
     let lon = mid[0] * Math.PI / 180, last = performance.now(), raf = 0;
     const draw = () => { gl.clear(gl.COLOR_BUFFER_BIT); gl.uniform1f(uLon, lon); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); };
     const frame = now => { const dt = Math.min(0.1, (now - last) / 1000); last = now; lon += SPEED * dt; draw(); raf = requestAnimationFrame(frame); };
     draw(); cv.classList.add('on');
-    if (!reduced) {
-      raf = requestAnimationFrame(frame);
-      document.addEventListener('visibilitychange', () => { cancelAnimationFrame(raf); if (!document.hidden) { last = performance.now(); raf = requestAnimationFrame(frame); } });
-    }
+    raf = requestAnimationFrame(frame);
+    document.addEventListener('visibilitychange', () => { cancelAnimationFrame(raf); if (!document.hidden) { last = performance.now(); raf = requestAnimationFrame(frame); } });
     let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { fit(); gl.uniform1f(uRing, (R + 7) / R); draw(); }, 150); });
   }
 
-  /* no WebGL: one still frame of the globe */
+  /* no WebGL: the same sphere on the CPU at a low resolution, upscaled by CSS, a few frames a second */
   function drawStill(chart, mid, tilt) {
-    const R = Math.max(innerWidth, innerHeight) * 0.62, size = Math.ceil(R * 2 + 40), dpr = 1;
-    cv.width = size; cv.height = size; cv.style.width = cv.style.height = size + 'px';
-    const ctx = cv.getContext('2d'), img = ctx.createImageData(size, size), d = img.data, cd = chart.getContext('2d').getImageData(0, 0, chart.width, chart.height).data, W = chart.width, H = chart.height;
-    const ct = Math.cos(tilt), st = Math.sin(tilt), cl = Math.cos(mid[0] * Math.PI / 180), sl = Math.sin(mid[0] * Math.PI / 180);
-    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-      const vx = (x - size / 2) / R, vy = -(y - size / 2) / R, r2 = vx * vx + vy * vy; if (r2 > 1) continue;
-      const z = Math.sqrt(1 - r2); const py = vy * ct - z * st, pz0 = vy * st + z * ct; const px = vx * cl + pz0 * sl, pz = -vx * sl + pz0 * cl;
-      const lat = Math.asin(py), ln = Math.atan2(px, pz); const u = Math.floor((ln / (2 * Math.PI) + 0.5) * W) % W, v = Math.floor((0.5 - lat / Math.PI) * H);
-      const si = (v * W + u) * 4, di = (y * size + x) * 4, limb = 1 - 0.55 * Math.max(0, (Math.sqrt(r2) - 0.7) / 0.3);
-      d[di] = cd[si] * limb; d[di + 1] = cd[si + 1] * limb; d[di + 2] = cd[si + 2] * limb; d[di + 3] = 255;
+    const R0 = Math.max(innerWidth, innerHeight) * 0.62, css = Math.ceil(R0 * 2 + 40);
+    const R = Math.min(R0, 240), size = Math.ceil(R * 2 + 10);
+    cv.width = size; cv.height = size; cv.style.width = cv.style.height = css + 'px';
+    const ctx = cv.getContext('2d'), img = ctx.createImageData(size, size), d = img.data;
+    const cd = chart.getContext('2d').getImageData(0, 0, chart.width, chart.height).data, W = chart.width, H = chart.height;
+    const ct = Math.cos(tilt), st = Math.sin(tilt);
+    let lon = mid[0] * Math.PI / 180, last = performance.now();
+    const SPEED = (2 * Math.PI) / (reduced ? 300 : 150);
+    function render() {
+      const cl = Math.cos(lon), sl = Math.sin(lon);
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+        const vx = (x - size / 2) / R, vy = -(y - size / 2) / R, r2 = vx * vx + vy * vy, di = (y * size + x) * 4;
+        if (r2 > 1) { d[di + 3] = 0; continue; }
+        const z = Math.sqrt(1 - r2); const py = vy * ct - z * st, pz0 = vy * st + z * ct; const px = vx * cl + pz0 * sl, pz = -vx * sl + pz0 * cl;
+        const lat = Math.asin(py), ln = Math.atan2(px, pz); const u = ((Math.floor((ln / (2 * Math.PI) + 0.5) * W) % W) + W) % W, v = Math.min(H - 1, Math.max(0, Math.floor((0.5 - lat / Math.PI) * H)));
+        const si = (v * W + u) * 4, limb = 1 - 0.55 * Math.max(0, (Math.sqrt(r2) - 0.7) / 0.3);
+        d[di] = cd[si] * limb; d[di + 1] = cd[si + 1] * limb; d[di + 2] = cd[si + 2] * limb; d[di + 3] = 255;
+      }
+      ctx.putImageData(img, 0, 0);
     }
-    ctx.putImageData(img, 0, 0); cv.classList.add('on');
+    render(); cv.classList.add('on');
+    setInterval(() => { if (document.hidden) { last = performance.now(); return; } const now = performance.now(); lon += SPEED * Math.min(0.5, (now - last) / 1000); last = now; render(); }, 120);
   }
 })();

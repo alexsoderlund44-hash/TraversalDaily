@@ -23,7 +23,7 @@ Day #1 is 1 Oct 2026 and launch day (7 Oct) is puzzle #7, so the archive opens w
 
 ## TraversleDaily Plus (paid archive)
 
-The last 7 puzzles are free to replay. Older ones are locked behind Plus (`plus.html`, `archive.html`): a single one-time payment of $20, no subscription (a decision from 2026-10-08, until the game has a following). Membership is read from `localStorage` under `traverse.plus` (`{active:true, plan:'life', since}`); nothing in the site writes it yet, so the plan buttons show a "payments open soon" note.
+The last 7 puzzles are free to replay. Older ones are locked behind Plus (`plus.html`, `archive.html`): a single one-time payment of $2.99 for lifetime access, no subscription (a decision from 2026-10-08, until the game has a following). Membership is read from `localStorage` under `traverse.plus` (`{active:true, plan:'life', since}`); nothing in the site writes it yet, so the plan buttons show a "payments open soon" note.
 
 To take real payments on a static site: create Stripe Payment Links for the two prices, put the URLs in the two `data-checkout` buttons in `tools/build-designs.py` (PLUS body), and have each link redirect to `plus.html?session_id={CHECKOUT_SESSION_ID}`. A small serverless function (Cloudflare Worker or Vercel function) verifies the session with your Stripe secret key and the page then stores the membership. Accounts with sync are the longer-term answer, so a purchase follows the player across devices.
 

@@ -690,10 +690,8 @@ body.td-modal-open{overflow:hidden}
 @media(max-width:900px){.tv-mission{grid-template-columns:1fr 1fr}} /* restated: the base rule above comes later in the file */
 
 /* ===================== home: the chart table ===================== */
-.hm-bg{position:fixed;left:50%;top:50%;z-index:-3;opacity:0;transform:translate(-50%,-50%) rotate(-1.5deg) scale(1.06);transition:opacity 1.6s ease;pointer-events:none}
-.hm-bg.on{opacity:1;animation:hmdrift 140s ease-in-out infinite alternate}
-@keyframes hmdrift{0%{transform:translate(-50%,-50%) rotate(-1.5deg) scale(1.06)}50%{transform:translate(-53%,-48%) rotate(1.2deg) scale(1.18)}100%{transform:translate(-47%,-52%) rotate(-.6deg) scale(1.1)}}
-@media(prefers-reduced-motion:reduce){.hm-bg.on{animation:none}}
+.hm-bg{position:fixed;left:50%;top:60%;z-index:-3;opacity:0;transform:translate(-50%,-50%);transition:opacity 1.6s ease,transform .5s ease;pointer-events:none}
+.hm-bg.on{opacity:1}
 body.p-index{background:var(--page)}
 body.p-index:before{background:radial-gradient(70% 60% at 50% 42%,rgba(223,201,149,.22),rgba(223,201,149,.62) 70%,rgba(150,110,55,.8) 100%),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .2 0 0 0 0 .12 0 0 0 0 .05 0 0 0 .14 0'/></filter><rect width='240' height='240' filter='url(%23g)'/></svg>")}
 .td-home-min{min-height:calc(100vh - 66px);display:flex;flex-direction:column;align-items:center;gap:26px;padding:44px 20px 56px;position:relative;z-index:1}
@@ -753,3 +751,22 @@ body.p-index:before{background:radial-gradient(70% 60% at 50% 42%,rgba(223,201,1
 /* keyboard focus everywhere, not only on buttons */
 a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--red);outline-offset:3px}
 .tbl td a{padding:2px 0;display:inline-block}
+
+/* ===================== motion: one moment per action ===================== */
+@view-transition{navigation:auto}
+::view-transition-old(root){animation:tdfade .28s ease-in both}
+::view-transition-new(root){animation:tdrise .42s cubic-bezier(.2,.8,.2,1) both}
+@keyframes tdfade{to{opacity:0}}
+@keyframes tdrise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.td-home-min{transition:opacity .4s ease,transform .45s cubic-bezier(.4,0,.6,1)}
+body.leaving .td-home-min{opacity:0;transform:translateY(-24px) scale(.97)}
+body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
+.tv-gate-card{animation:tvgate .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes tvgate{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:none}}
+.tv-brief{animation:tvbrief .6s cubic-bezier(.2,.8,.2,1) .25s both}
+@keyframes tvbrief{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
+.tv-stops li,.tv-stoprow,.tv-opt{animation:tvmodal .3s cubic-bezier(.2,.8,.2,1) both}
+.rs-rating{animation:tvstamp .6s cubic-bezier(.2,1.5,.3,1) .3s both;transform-origin:50% 50%}
+@keyframes tvstamp{from{opacity:0;transform:scale(1.7) rotate(-9deg)}60%{opacity:1}to{opacity:1;transform:none}}
+.tv-gauge .bar i{transition:width .6s cubic-bezier(.2,.8,.2,1)}
+@media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root),.tv-gate-card,.tv-brief,.tv-stops li,.tv-stoprow,.tv-opt,.rs-rating{animation:none}.td-home-min,.hm-bg{transition:none}}

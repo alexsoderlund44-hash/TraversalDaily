@@ -32,6 +32,8 @@
     const rh = T.rhythmOf(ch.n); if (rh.twist.id === ch.twistId) g('hm-day').textContent += ' · ' + rh.label;
     if (ch.title) { g('hm-theme').innerHTML = `<b>${T.esc(ch.title)}.</b> ${T.esc(ch.blurb)}`; g('hm-theme').hidden = false; }
     window.TD_FOCUS = { from: ch.from, to: ch.to };
+    // leaving for the game: the page lifts away and the globe comes closer before the mission screen arrives
+    g('hm-play').addEventListener('click', e => { if (e.metaKey || e.ctrlKey || e.shiftKey || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; e.preventDefault(); document.body.classList.add('leaving'); setTimeout(() => { location.href = g('hm-play').href; }, 380); });
     setTimeout(() => { const M = T.mission(ch); g('hm-mission').innerHTML = mis(M); g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> for under <em>${T.money(M.budget)}</em>?`; }, 30);
     const meta = () => g('hm-meta').innerHTML = `<span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>next puzzle in <b>${resetIn()}</b></span>`; meta(); setInterval(meta, 30000);
     if (R[ch.key]) { g('hm-play').textContent = 'See your expedition report'; g('hm-sub').innerHTML = `${R[ch.key].tier ? R[ch.key].tier + ' · ' : ''}you scored <b>${R[ch.key].score.toLocaleString()}</b> today`; }

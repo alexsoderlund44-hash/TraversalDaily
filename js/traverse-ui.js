@@ -117,13 +117,13 @@
   renderBrief();
   const rhythm = ch.n ? T.rhythmOf(ch.n) : null;
   $('#tv-gate-day').textContent = title + ' · ' + dayLabel + (rhythm && rhythm.twist.id === tw.id ? ' · ' + rhythm.label : '');
-  $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} <span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></span><span class="arr">→</span><span class="city">${T.flagImg(ch.to, 40)} <span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></span>`;
+  $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} <span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></span><span class="arr" aria-hidden="true"></span><span class="city">${T.flagImg(ch.to, 40)} <span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></span>`;
   $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km, no direct route. You have ${DEC} decisions to get there.${ch.blurb ? ' ' + ch.blurb : ''}`;
   $('#tv-gate-mission').innerHTML = `
     <div class="mi big"><span class="ic">🧭</span><b>${DEC}</b><span>decisions</span></div>
     <div class="mi diff ${M.difficulty.toLowerCase()}"><span class="ic lv" aria-hidden="true"><i></i><i></i><i></i></span><b>${M.difficulty}</b><span>${WAYS.length === 1 ? 'one charted route' : WAYS.length + ' charted routes'}</span></div>
     <div class="mi"><span class="ic">${tw.icon}</span><b>${T.esc(tw.name)}</b><span>${T.esc(tw.desc)}</span></div>
-    <div class="mi"><span class="ic">🎟️</span><b>${M.deals} secret fare${M.deals === 1 ? '' : 's'}</b><span>cheap legs, if you look</span></div>`;
+    <div class="mi"><span class="ic">🎟️</span><b>${M.deals}</b><span>secret fare${M.deals === 1 ? '' : 's'} · cheap legs, if you look</span></div>`;
   $('#tv-gate-rules').innerHTML = `<li>Each step shows a few ways onward. Pick one and you travel there. Every pick costs a decision.</li><li>Reach ${T.esc(ch.to.name)} before the decisions run out. Spend less and arrive sooner than the planner for a better score.</li>`;
   $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'Everyone playing today gets this same route, and one scored attempt.';
   if (resume) { $('#tv-start').textContent = 'Continue the journey'; $('#tv-gate-note').textContent = `You left with ${resume.route.length} leg${resume.route.length === 1 ? '' : 's'} in place and ${resume.decisions} decision${resume.decisions === 1 ? '' : 's'} left.`; }
@@ -224,7 +224,7 @@
   $('#tv-zout').onclick = () => svg.transition().call(zoom.scaleBy, 1 / 1.6);
   $('#tv-zfit').onclick = () => fitRoute();
   document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === '+' || e.key === '=') $('#tv-zin').click(); else if (e.key === '-') $('#tv-zout').click(); else if (e.key === 'Escape') { if (!$('#tv-modal').hidden) closeModal(); else unselect(); } else if (/^[1-3]$/.test(e.key) && playing && !riding && choices[+e.key - 1]) { if (sel === +e.key - 1) travel(sel); else select(+e.key - 1); } else if (e.key === 'Enter' && sel !== null && playing && !riding) travel(sel); });
-  function fitTo(points, pad, dur, ease, delay, offset) {
+  function fitTo(points, pad, dur, ease, delay, offset, dockUp) {
     const xs = points.map(p => pos(p)[0]), ys = points.map(p => pos(p)[1]);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
     const r = stage.getBoundingClientRect(); const aspect = r.width / r.height;
@@ -234,7 +234,7 @@
     const cx = (x0 + x1) / 2 + (window.innerWidth > 900 ? (offset == null ? 120 : offset) / kk : 0);
     // on a phone the planning sheet covers the lower part of the chart, so the route lands in the strip above it
     // the choice dock covers the lower part of the chart while you decide, so the picture lands in the strip above it
-    const dk = $('#tv-choices'), docked = dk && !dk.hidden, cy = docked ? (window.innerWidth <= 900 ? 150 : 205) : 250;
+    const dk = $('#tv-choices'), docked = dockUp != null ? dockUp : dk && !dk.hidden, cy = docked ? (window.innerWidth <= 900 ? 150 : 205) : 250;
     return svg.transition().delay(delay || 0).duration(dur == null ? 750 : dur).ease(ease || d3.easeCubicOut).call(zoom.transform, d3.zoomIdentity.translate(480 - kk * cx, cy - kk * (y0 + y1) / 2).scale(kk));
   }
   function fitRoute() { fitTo([ch.from, ch.to, ...route.map(r => T.byId[r.to]), ...(showPar ? wayPath().map(e => T.byId[e.to]) : [])], 1.8); }
@@ -264,7 +264,8 @@
     gLinks.selectAll('path').data(links).join('path').attr('class', function (d) { return 'tv-link ' + d.cls + (this.classList.contains('draw') ? ' draw' : '') + (this.classList.contains('undraw') ? ' undraw' : ''); }).attr('d', d => d.d).style('stroke', d => d.col || null).style('stroke-width', strokeW).style('stroke-dasharray', function (d) { return this.classList.contains('draw') ? '1' : dashFor(d.cls); });
     const badges = route.map((r, i) => { const [x, y] = mid(T.byId[r.from], T.byId[r.to]); return { x, y, cls: '', txt: `${i + 1} · ${r.leg.icon} ${T.money(r.leg.cost)} · ${T.dur(r.leg.hours)}${r.leg.deal ? ' 🎟️' : ''}` }; });
     if (showPar) wayPath().forEach(e => { if (route.some(r => r.from === e.from && r.to === e.to && r.leg.mode === e.mode)) return; const [x, y] = mid(T.byId[e.from], T.byId[e.to]); badges.push({ x, y: y + 14 / k, cls: 'par', txt: `${T.MODES[e.mode].icon} ${T.money(e.cost)} · ${T.dur(e.hours)}` }); });
-    const bsel = gBadges.selectAll('g').data(badges).join(enter => { const gg = enter.append('g'); gg.append('rect'); gg.append('text'); return gg; });
+    const kept = []; const shown = badges.filter(b => { const w = (b.txt.length * 4.9 + 12) / k, h = 16 / k, bx = { x0: b.x - w / 2, x1: b.x + w / 2, y0: b.y - h / 2, y1: b.y + h / 2 }; if (kept.some(o => bx.x0 < o.x1 && bx.x1 > o.x0 && bx.y0 < o.y1 && bx.y1 > o.y0)) return false; kept.push(bx); return true; });
+    const bsel = gBadges.selectAll('g').data(shown).join(enter => { const gg = enter.append('g'); gg.append('rect'); gg.append('text'); return gg; });
     bsel.attr('class', d => 'tv-badge ' + d.cls).attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / k})`);
     bsel.select('text').text(d => d.txt).attr('y', 3);
     bsel.select('rect').each(function (d) { const w = d.txt.length * 4.9 + 12; d3.select(this).attr('x', -w / 2).attr('y', -8).attr('width', w).attr('height', 16).attr('rx', 8); });
@@ -292,7 +293,7 @@
     const cur = at();
     if (!playing || ended || atDest() || !choices.length) { dock.hidden = true; dock.innerHTML = ''; return; }
     dock.hidden = false;
-    dock.innerHTML = `<p class="tv-choices-h"><span>From <b>${T.esc(cur.name)}</b></span><span class="n">${choices.length === 1 ? 'the only way onward · ' : ''}${decisions} decision${decisions === 1 ? '' : 's'} left</span></p>
+    dock.innerHTML = `<p class="tv-choices-h"><span>From <b>${T.esc(cur.name)}</b></span>${choices.length === 1 ? '<span>· the only way onward</span>' : ''}</p>
       <div class="tv-cards">${choices.map((x, i) => { const l = x.leg, fin = x.c.id === ch.to.id, gain = Math.round(x.gain); return `<button class="tv-choice${sel === i ? ' sel' : ''}${fin ? ' fin' : ''}${l.deal ? ' deal' : ''}" data-i="${i}" aria-pressed="${sel === i}">
         <span class="key">${i + 1}</span>
         <span class="city">${T.flagImg(x.c)} <b>${T.esc(x.c.name)}</b><small>${fin ? 'Destination' : T.esc(x.c.country)}</small></span>
@@ -303,7 +304,7 @@
       </button>`; }).join('')}</div>`;
     dock.querySelectorAll('.tv-choice').forEach(b => { b.onclick = () => { const i = +b.dataset.i; if (sel === i) travel(i); else select(i); }; b.onmouseenter = () => { if (sel === null) preview(+b.dataset.i); }; b.onmouseleave = () => { if (sel === null) preview(null); }; });
   }
-  let hover = null;
+  let hover = null, framed = false;
   function preview(i) { hover = i; gSpokes.selectAll('path').classed('hot', (d, j) => j === i); }
   function select(i) {
     if (riding || ended) return; sel = i; const x = choices[i];
@@ -317,7 +318,7 @@
     choices.forEach(x => noteDeals(at(), x.c, [x.leg]));
     renderBrief(); renderChoices(); drawMap(); fresh();
     if (!choices.length) { fail('No way onward from ' + at().name + '.'); return; }
-    fitTo([at(), ...choices.map(x => x.c)], 1.9, 800);
+    if (!framed) fitTo([at(), ...choices.map(x => x.c)], 1.9, 800); framed = false;
     emit('step', { from: at(), choices, decisions });
   }
   /* travel: the leg draws itself, a rider follows it, the decision is spent, then the next step or the ending */
@@ -330,7 +331,9 @@
     drawMap(); drawNewLeg(x.c.id);
     stage.classList.add('riding');
     const dur = reducedMotion ? 0 : 1000;
-    fitTo([from, x.c], 2.0, Math.min(dur, 700));
+    // the camera makes one move per decision: it follows the ride and lands with the next choices already in frame
+    const next = x.c.id === ch.to.id || decisions <= 0 ? [] : choicesFrom(x.c).map(y => y.c); framed = next.length > 0;
+    fitTo([from, x.c, ...next], next.length ? 1.9 : 2.0, dur, d3.easeCubicInOut, 0, undefined, next.length > 0);
     ride(from, x.c, x.leg, dur, () => {
       stage.classList.remove('riding'); riding = false; markCity(x.c.id, 'born', 700);
       emit('travel', { to: x.c, legs: route.length, decisions });
@@ -394,7 +397,7 @@
     const picked = resume; resume = null; if (!picked) clearRun();
     if (picked) { route = picked.route; found = new Set(picked.found || []); decisions = Math.max(1, picked.decisions); }
     stage.classList.remove('arrived', 'lost', 'intro'); $('#tv-stamp').hidden = true; hideTip();
-    $('#tv-result').hidden = true; $('#tv-board').hidden = true; dock.hidden = true;
+    $('#tv-result').hidden = true; $('#tv-board').hidden = true; dock.hidden = true; $('#tv-ways').hidden = true; stage.classList.remove('gated');
     const gate = $('#tv-gate'); gate.classList.add('off'); stage.classList.add('zooming');
     gCourse.selectAll('path').remove();
     const dur = reducedMotion ? 0 : 1100;
@@ -488,6 +491,7 @@
   function waysHtml() {
     return `<div class="rs-ways" role="group" aria-label="Routes on the chart"><span class="lab">On the chart</span>${WAYS.map((w, i) => `<button type="button" class="wt${shownWay === i ? ' on' : ''}" data-w="${i}" aria-pressed="${shownWay === i}">${wayName(i)}<small>${T.money(w.cost)} · ${T.dur(w.hours)} · ${w.legs} legs</small></button>`).join('')}</div>`;
   }
+  function showWays(wire) { const w = $('#tv-ways'); w.innerHTML = waysHtml(); w.hidden = false; wire(w); }
   function setWay(i) {
     shownWay = i; showPar = i >= 0; parPending = false;
     document.querySelectorAll('.rs-ways .wt').forEach(b => { const on = +b.dataset.w === i; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
@@ -614,7 +618,7 @@
     stage.classList.add('lost'); drawMap();
     const wire = root => { root.querySelectorAll('.tv-again').forEach(b => (b.onclick = () => { closeModal(); stage.classList.remove('lost'); $('#tv-stamp').hidden = true; start(); })); root.querySelectorAll('.tv-map').forEach(b => (b.onclick = () => { closeModal(); $('#tv-stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); })); root.querySelectorAll('.tv-par').forEach(b => (b.onclick = () => { closeModal(); setWay(0); $('#tv-stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); })); wireWays(root); };
     shownWay = -1;
-    $('#tv-result').innerHTML = `<div class="rs">${waysHtml()}${buildFail(res, isPractice, true)}</div>`; $('#tv-result').hidden = false; wire($('#tv-result'));
+    $('#tv-result').innerHTML = `<div class="rs">${buildFail(res, isPractice, true)}</div>`; $('#tv-result').hidden = false; wire($('#tv-result')); showWays(wire);
     st = T.load(); st.results = st.results || {}; if (mode === 'today') showBoard();
     if (quiet) { fitRoute(); return; }
     $('#tv-modal').innerHTML = `<div class="tv-modal-card rs" role="dialog" aria-modal="true" aria-label="Expedition ended"><button class="tv-modal-x" id="tv-modal-close" aria-label="Close">✕</button>${buildFail(res, isPractice)}</div>`;
@@ -632,9 +636,9 @@
     route = res.route.map((r, i) => ({ from: i ? res.route[i - 1].to : ch.from.id, to: r.to, leg: { mode: r.mode, cost: r.cost, hours: r.hours, icon: T.MODES[r.mode].icon, deal: r.deal } }));
     drawMap();
     shownWay = quiet ? 0 : -1;
-    $('#tv-result').innerHTML = `<div class="rs">${waysHtml()}${buildSummary(res, isPractice, xpGain, earned, true)}</div>`;
+    $('#tv-result').innerHTML = `<div class="rs">${buildSummary(res, isPractice, xpGain, earned, true)}</div>`;
     $('#tv-result').hidden = false;
-    wireSummary($('#tv-result'), res);
+    wireSummary($('#tv-result'), res); showWays(wireWays);
     st = T.load(); st.results = st.results || {}; showBoard();
     if (quiet) { setTimeout(() => animateRoutes('both'), 150); return; }
     // your finished route draws itself across the chart, then the report arrives
@@ -659,7 +663,7 @@
   else {
     // the chart opens on the whole world, then carries you to today's region; the course line draws once it lands
     gCourse.append('path').attr('class', 'tv-course').attr('d', arc(ch.from, ch.to)).attr('pathLength', 1);
-    stage.classList.add('zooming'); stage.classList.add('intro');
+    stage.classList.add('zooming'); stage.classList.add('intro'); stage.classList.add('gated');
     setTimeout(() => fitTo([ch.from, ch.to], 3.2, reducedMotion ? 0 : 2300, d3.easeCubicInOut, reducedMotion ? 0 : 450, window.innerWidth >= 1100 ? 250 : 120).on('end interrupt', () => { stage.classList.remove('zooming'); relayout(); stage.classList.add('landed'); }), 50);
   }
 })();

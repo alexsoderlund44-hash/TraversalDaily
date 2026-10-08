@@ -51,6 +51,7 @@ HOW_MODAL = '''<div class="td-modal" id="hm-howmodal" hidden><div class="td-moda
 # ----- shared page bodies (design-neutral markup; themes do the rest) -----
 HOME = '''
 <canvas class="hm-bg" id="hm-bg" aria-hidden="true"></canvas>
+<div class="hm-fade" aria-hidden="true"></div>
 <main class="td-home-min hm">
   <header class="hm-hero">
     <h1 class="hm-brand" aria-label="Traversle Daily"><span class="hm-word">Traversle</span><span class="hm-stamp">Daily</span>
@@ -88,6 +89,7 @@ PLAY = '''
     <div class="tv-deal" id="tv-deal" hidden aria-live="polite"></div>
     <div class="tv-stamp" id="tv-stamp" hidden></div>
     <div class="tv-choices" id="tv-choices" hidden aria-live="polite"></div>
+    <div class="tv-ways" id="tv-ways" hidden></div>
     <div class="tv-gate" id="tv-gate"><div class="tv-gate-card">
       <p class="tv-gate-kicker" id="tv-gate-day"></p>
       <h1 id="tv-gate-title"></h1>

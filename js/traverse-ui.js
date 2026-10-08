@@ -67,18 +67,19 @@
     for (let round = 0; round < DEC; round++) { let moved = false; Object.keys(fin).forEach(x => rev[x].forEach(y => { if (fin[y] === undefined || fin[y] > fin[x] + 1) { fin[y] = fin[x] + 1; moved = true; } })); if (!moved) break; }
     return fin;
   }
-  /* two or three ways onward: every way that carries on from here is always among them (the destination only when a
-     way ends there), then detours: first ones you could still recover from, closest to the finish, then the rest */
+  /* two or three ways onward: the destination whenever a leg reaches it, every charted route that carries on from
+     here, then detours: first ones you could still recover from, closest to the finish, then the rest */
   function choicesFrom(cur) {
     const F = finishTable(), on = onRouteIds(), left = decisions - 1, toGo = T.km(cur, ch.to);
     const nexts = (wayStops[cur.id] || []).map(x => x.e.to).filter(id => !on.has(id));
-    let cands = T.C.filter(c => !on.has(c.id) && c.id !== cur.id && (c.id !== ch.to.id || nexts.includes(c.id))).map(c => { const ls = allowed(cur, c); if (!ls.length) return null; const leg = pickLeg(cur, c, ls); const f = F[c.id]; return { c, leg, fin: f === undefined ? 99 : f, safe: f !== undefined && f <= left, gain: toGo - T.km(c, ch.to) }; }).filter(Boolean);
+    let cands = T.C.filter(c => !on.has(c.id) && c.id !== cur.id).map(c => { const ls = allowed(cur, c); if (!ls.length) return null; const leg = pickLeg(cur, c, ls); const f = F[c.id]; return { c, leg, fin: f === undefined ? 99 : f, safe: f !== undefined && f <= left, gain: toGo - T.km(c, ch.to) }; }).filter(Boolean);
     // never offer a dead end: a stop with no way onward to somewhere new (the destination is always fine)
     const s0 = twState(), onward = x => x.c.id === ch.to.id || T.C.some(c => c.id !== x.c.id && c.id !== cur.id && !on.has(c.id) && T.legs(x.c, c, ch.seed).some(l => tw.allow(l, tw.state(s0, x.leg), c.id === ch.to.id)));
     const live = cands.filter(onward); if (live.length) cands = live;
     const out = [], take = x => { if (x && !out.some(o => o.c.id === x.c.id) && out.length < 3) out.push(x); };
+    take(cands.find(x => x.c.id === ch.to.id));
     nexts.forEach(id => take(cands.find(x => x.c.id === id)));
-    // while you stand on a way, a detour never jumps straight onto another way's stops: that would be a fourth way
+    // while you stand on a charted route, a detour never jumps straight onto another one's stops
     const rest = cands.filter(x => !out.includes(x) && (!nexts.length || !wayCity.has(x.c.id)));
     const safe = rest.filter(x => x.safe).sort((p, q) => q.gain - p.gain), unsafe = rest.filter(x => !x.safe).sort((p, q) => q.gain - p.gain);
     if (safe.length) { take(safe[0]); take(safe.slice().sort((p, q) => p.leg.cost - q.leg.cost)[0]); }
@@ -111,7 +112,7 @@
       <span class="ln"></span><span></span>
       <span class="pin d"></span><b>${T.flagImg(ch.to)} ${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></b></div>
       <div class="dec" aria-label="${decisions} of ${DEC} decisions left"><span class="pips">${pips()}</span><b>${decisions}</b><small>decision${decisions === 1 ? '' : 's'} left</small></div>
-      <p class="meta"><span class="diff ${M.difficulty.toLowerCase()}" title="${WAYS.length === 1 ? 'One route gets you there' : WAYS.length + ' routes get you there'}">${M.difficulty}</span><span>${atDest() ? '<b>Arrived</b>' : playing && route.length ? `<b>${go.toLocaleString()} km</b> to go` : `<b>${go.toLocaleString()} km</b> apart`}</span>${tw.id !== 'open' ? `<span class="twist" title="${T.esc(tw.desc)}">${tw.icon} ${T.esc(tw.name)}</span>` : ''}${found.size ? `<span title="Secret fares found">🎟️ ${found.size}</span>` : ''}</p>`;
+      <p class="meta"><span class="diff ${M.difficulty.toLowerCase()}" title="${WAYS.length === 1 ? 'One charted route' : WAYS.length + ' charted routes'}">${M.difficulty}</span><span>${atDest() ? '<b>Arrived</b>' : playing && route.length ? `<b>${go.toLocaleString()} km</b> to go` : `<b>${go.toLocaleString()} km</b> apart`}</span>${tw.id !== 'open' ? `<span class="twist" title="${T.esc(tw.desc)}">${tw.icon} ${T.esc(tw.name)}</span>` : ''}${found.size ? `<span title="Secret fares found">🎟️ ${found.size}</span>` : ''}</p>`;
   }
   renderBrief();
   const rhythm = ch.n ? T.rhythmOf(ch.n) : null;
@@ -120,7 +121,7 @@
   $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km, no direct route. You have ${DEC} decisions to get there.${ch.blurb ? ' ' + ch.blurb : ''}`;
   $('#tv-gate-mission').innerHTML = `
     <div class="mi big"><span class="ic">🧭</span><b>${DEC}</b><span>decisions</span></div>
-    <div class="mi diff ${M.difficulty.toLowerCase()}"><span class="ic lv" aria-hidden="true"><i></i><i></i><i></i></span><b>${M.difficulty}</b><span>${WAYS.length === 1 ? 'one route gets you there' : WAYS.length + ' routes get you there'}</span></div>
+    <div class="mi diff ${M.difficulty.toLowerCase()}"><span class="ic lv" aria-hidden="true"><i></i><i></i><i></i></span><b>${M.difficulty}</b><span>${WAYS.length === 1 ? 'one charted route' : WAYS.length + ' charted routes'}</span></div>
     <div class="mi"><span class="ic">${tw.icon}</span><b>${T.esc(tw.name)}</b><span>${T.esc(tw.desc)}</span></div>
     <div class="mi"><span class="ic">🎟️</span><b>${M.deals} secret fare${M.deals === 1 ? '' : 's'}</b><span>cheap legs, if you look</span></div>`;
   $('#tv-gate-rules').innerHTML = `<li>Each step shows a few ways onward. Pick one and you travel there. Every pick costs a decision.</li><li>Reach ${T.esc(ch.to.name)} before the decisions run out. Spend less and arrive sooner than the planner for a better score.</li>`;
@@ -467,7 +468,7 @@
           <div class="side par"><h5>The planner</h5><b data-count="${Math.round(M.par.cost)}" data-fmt="money">${T.money(M.par.cost)}</b><span>${T.dur(M.par.hours)} · ${M.par.legs} legs</span></div>
         </div>
         <p class="verdict ${v.cls}"><b>${v.h}</b><small>${v.t}</small></p>
-        <details class="rs-legs"><summary>Compare the routes leg by leg${WAYS.length > 1 ? ` · ${WAYS.length} routes got there today` : ''}</summary>
+        <details class="rs-legs"><summary>Compare the routes leg by leg${WAYS.length > 1 ? ` · ${WAYS.length} charted routes` : ''}</summary>
           ${WAYS.length > 1 ? `<div class="rs-waytabs" role="group" aria-label="Which route to compare">${WAYS.map((w, i) => `<button type="button" class="${i ? '' : 'on'}" data-w="${i}">${i === 0 ? 'Planner' : 'Route ' + (i + 1)}</button>`).join('')}</div>` : ''}
           <div class="cols">${routeCol('Your route', res.route, res.cost, res.hours, 'you')}<span class="vs">vs</span><div class="waycols">${WAYS.map((w, i) => `<div class="wc" data-w="${i}"${i ? ' hidden' : ''}>${routeCol(wayName(i), wayRoute(w), w.cost, w.hours, 'par')}</div>`).join('')}</div></div>
           <div class="tags">${tags.map(t => `<span class="${t[0]}">${t[1]}</span>`).join('')}</div>
@@ -603,9 +604,9 @@
         <div class="chain">${chain}<i>→</i><span class="x">✕ ${T.esc(ch.to.name)}</span></div>
         <div class="rs-stats"><div><b data-count="${km}" data-fmt="km">${km.toLocaleString()} km</b><span>travelled</span></div><div><b>${res.decisions || res.route.length}/${res.decisionsTotal || DEC}</b><span>decisions</span></div><div><b>${T.esc(endAt.name)}</b><span>final stop</span></div><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div></div>
       </section>
-      <section class="rs-vs"><p class="lab">${WAYS.length === 1 ? 'The one way there' : 'The ' + WAYS.length + ' ways there'}</p>
+      <section class="rs-vs"><p class="lab">${WAYS.length === 1 ? 'The charted route' : 'The ' + WAYS.length + ' charted routes'}</p>
         <div class="rs-waylist">${WAYS.map((w, i) => `<div class="wl"><b>${wayName(i)}</b><span class="chain">${[ch.from, ...w.path.map(e => T.byId[e.to])].map(c => `<span>${T.esc(c.name)}</span>`).join('<i>→</i>')}</span><small>${T.money(w.cost)} · ${T.dur(w.hours)} · ${w.legs} legs</small></div>`).join('')}</div>
-        <p class="rs-note">${isPractice || mode !== 'today' ? '' : 'Today counts as played, so your streak is safe. '}Try again as practice and see if you can find one of them.</p></section>
+        <p class="rs-note">${isPractice || mode !== 'today' ? '' : 'Today counts as played, so your streak is safe. '}Try again as practice and find a way, charted or not.</p></section>
       <div class="actions"><button class="btn primary big tv-again">Try again</button><button class="btn ghost tv-map">See the map</button><button class="btn ghost tv-par">See the routes</button>${full && mode !== 'today' ? '<a class="btn ghost" href="play.html">Today\'s puzzle</a>' : ''}</div>`;
   }
   function showFail(res, isPractice, quiet) {

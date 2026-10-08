@@ -109,7 +109,7 @@
     const out = [];
     const jitter = () => 0.8 + r() * 0.45;
     const land = sameLand(a, b) && !crossesMed(a, b);
-    const add = (m, cost, hours, note, extra) => out.push(Object.assign({ mode: m, icon: MODES[m].icon, name: MODES[m].name, cost: Math.round(cost), hours: Math.round(hours * 12) / 12, note }, extra));
+    const add = (m, cost, hours, note, extra) => out.push(Object.assign({ mode: m, icon: MODES[m].icon, name: MODES[m].name, cost: Math.max(1, Math.round(cost)), hours: Math.round(hours * 12) / 12, note }, extra));
 
     const L = liveFor(seed), lk = a.id + '-' + b.id, live = L && L.routes[lk];
     if (live) add('plane', live.cost, live.hours, 'avg of ' + live.n + ' live fares', { live: true, nonstop: live.nonstop, min: live.min });

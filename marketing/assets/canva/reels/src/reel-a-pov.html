@@ -13,8 +13,9 @@
 /* the choice dock, like the game's cards under the chart */
 #dock{position:absolute;left:70px;width:850px;top:1170px;display:flex;gap:22px}
 .ch{flex:1;min-width:0;background:var(--card);border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink);border-radius:20px;padding:16px 16px 18px;position:relative}
-.ch .c{font-family:'Alegreya';font-weight:700;font-size:40px;white-space:nowrap;line-height:1.1}
-.ch .p{font-family:'Alfa Slab One';font-size:50px;color:var(--red);white-space:nowrap;margin-top:6px}
+.ch .c{font-family:'Alegreya';font-weight:700;font-size:38px;white-space:nowrap;line-height:1.1;letter-spacing:-.5px}
+.ch .p{font-family:'Alfa Slab One';font-size:46px;color:var(--red);white-space:nowrap;margin-top:6px}
+.ch .p .em{font-size:36px;vertical-align:6px}
 .ch .p .deal{font-family:'Alegreya Sans';font-size:22px;font-weight:900;background:var(--brass);color:var(--card);border-radius:8px;padding:2px 9px;margin-left:8px;letter-spacing:2px;vertical-align:8px}
 .ch .g{font-weight:900;font-size:28px;letter-spacing:0;white-space:nowrap;margin-top:6px}
 .ch .g.up{color:var(--teal)} .ch .g.dn{color:var(--red)}
@@ -31,16 +32,16 @@
   <div class="grain"></div><div class="vig"></div>
   <div id="fx"></div>
   <div class="hud" id="hud">
-    <div class="box" style="flex:1.45"><div class="k" id="decK">7 decisions left</div><div class="pips" id="pips"></div></div>
+    <div class="box" style="flex:1.45"><div class="k" id="decK">6 decisions left</div><div class="pips" id="pips"></div></div>
     <div class="box"><div class="k">To go</div><div class="v" id="km">3,874 km</div></div>
     <div class="box" style="flex:.55"><div class="k">Rule</div><div class="v" style="font-size:46px">🚫✈️</div></div>
   </div>
   <div id="dock"></div>
-  <div class="cap" id="hook" style="top:300px;font-size:88px" data-words="POV: you get *7 *decisions to reach San Francisco"></div>
+  <div class="cap" id="hook" style="top:300px;font-size:88px" data-words="POV: you get *6 *decisions to reach San Francisco"></div>
   <div id="hook2" style="position:absolute;left:70px;top:830px"><span class="pill" style="font-size:46px">Cancún → SF · no flights</span></div>
-  <div id="stamp">YOU MADE IT<small>6 OF 7 DECISIONS · $346</small></div>
+  <div id="stamp">YOU MADE IT<small>5 OF 6 DECISIONS · $262</small></div>
   <div id="end">
-    <div class="cap" id="endcap" style="top:250px;font-size:92px" data-words="Could *you make it in 7?"></div>
+    <div class="cap" id="endcap" style="top:250px;font-size:92px" data-words="Could *you make it in 6?"></div>
     <div class="follow" id="endpill"><span class="pill" style="font-size:44px">Follow for tomorrow's route</span></div>
     <div class="url" id="endurl">traversledaily.com</div>
   </div>
@@ -51,15 +52,14 @@ window.DUR = 18.5;
 /* puzzle #8 as the game plays it (choicesFrom in js/traverse-ui.js, run against the engine):
    at each stop the 1-3 places it lights up, with the leg it offers, and how much closer each gets you */
 const STEPS = [
-  { at: 'can', opts: [['mia', '🚢', 93, -296], ['hav', '🚢', 60, -258]], note: 'Both ways go *backwards 😳' },
-  { at: 'mia', opts: [['atl', '🚌', 37, 733, 1]], note: 'Secret fare *−35% 🎟️' },
-  { at: 'atl', opts: [['dal', '🚌', 48, 1054], ['chi', '🚌', 42, 452], ['tor', '🚌', 50, -208]], note: "Cheapest isn't *closest 👀" },
-  { at: 'dal', opts: [['den', '🚌', 54, 858], ['chi', '🚆', 106, -602]] },
-  { at: 'den', opts: [['lax', '🚆', 78, 966, 1]], note: 'Another *secret *fare 🎟️' },
-  { at: 'lax', opts: [['sfo', '🚘', 36, 559]] },
+  { at: 'can', opts: [['hou', '🚌', 76, 1231], ['mex', '🚌', 66, 837], ['nol', '🚌', 53, 781]], note: "The cheapest ticket isn't the *best one 👀" },
+  { at: 'hou', opts: [['aus', '🚌', 15, 229], ['abq', '🚌', 64, 1203], ['sat', '🚘', 24, 249]], note: 'Only *229 km closer? Trust it 🤫' },
+  { at: 'aus', opts: [['phx', '🚆', 91, 1363, 1], ['abq', '🚌', 52, 973], ['sat', '🚌', 12, -20]], note: 'Secret fare *−30% 🎟️' },
+  { at: 'phx', pick: 1, opts: [['sfo', '🚌', 64, 'arr'], ['lax', '🚆', 44, 492, 1], ['sac', '🚌', 49, 930]], note: 'Skip the bus to *San *Francisco? 😳' },
+  { at: 'lax', opts: [['sfo', '🚘', 36, 'arr'], ['sac', '🚌', 36, 438], ['sdg', '🚌', 17, -178]] },
 ];
-const KM = { can: 3874, mia: 4170, atl: 3437, dal: 2383, den: 1525, lax: 559, sfo: 0 };
-const DEC = 7, ROUTE = ['can', 'mia', 'atl', 'dal', 'den', 'lax', 'sfo'];
+const KM = { can: 3874, hou: 2643, aus: 2414, phx: 1051, lax: 559, sfo: 0 };
+const DEC = 6, ROUTE = ['can', 'hou', 'aus', 'phx', 'lax', 'sfo'];
 const chart = makeChart($('#chart'), [[-125, 14], [-74, 50]]);
 const fx = $('#fx'), xyOf = id => chart.proj(CITY[id].ll);
 const hookW = buildCaption($('#hook')), endW = buildCaption($('#endcap'));
@@ -72,11 +72,11 @@ let s = S0;
 STEPS.forEach((st, i) => {
   const multi = st.opts.length > 1;
   st.s = s; st.c = s + (multi ? .9 : .4); st.tr = st.c + .25; st.e = st.tr + TRAV; s = st.e;
-  st.to = st.opts[0][0];
-  st.cards = st.opts.map(([id, em, cost, gain, deal]) => ({ id, el: null, html: `<div class="c">${em} ${CITY[id].n}</div><div class="p">$${cost}${deal ? '<span class="deal">DEAL</span>' : ''}</div><div class="g ${gain >= 0 ? 'up' : 'dn'}">${gain >= 0 ? '▲ ' + gain.toLocaleString() + ' km closer' : '▼ ' + (-gain) + ' km further'}</div>` }));
+  st.pick = st.pick || 0; st.to = st.opts[st.pick][0];
+  st.cards = st.opts.map(([id, em, cost, gain, deal]) => ({ id, el: null, html: `<div class="c">${CITY[id].n}</div><div class="p">$${cost} <span class="em">${em}</span>${deal ? '<span class="deal">DEAL</span>' : ''}</div><div class="g ${gain === 'arr' || gain >= 0 ? 'up' : 'dn'}">${gain === 'arr' ? '★ Arrives' : gain >= 0 ? '▲ ' + gain.toLocaleString() + ' km closer' : '▼ ' + (-gain) + ' km further'}</div>` }));
   st.path = legPath(chart, CITY[st.at].ll, CITY[st.to].ll, i % 2 ? .12 : -.12, { stroke: '#8E2A1E', 'stroke-width': 5, 'stroke-linecap': 'round' });
   st.spokes = st.opts.map(([id]) => legPath(chart, CITY[st.at].ll, CITY[id].ll, 0, { stroke: '#26696D', 'stroke-width': 3, 'stroke-dasharray': '8 8', opacity: 0 }));
-  st.veh = el('veh', st.opts[0][1]);
+  st.veh = el('veh', st.opts[st.pick][1]);
   st.rings = st.opts.map(() => el('ring'));
   if (st.note) { st.noteEl = document.createElement('div'); st.noteEl.className = 'cap'; st.noteEl.style.cssText = 'top:385px;font-size:58px'; st.noteEl.dataset.words = st.note; $('.stage').insertBefore(st.noteEl, $('#dock')); st.noteW = buildCaption(st.noteEl); }
 });
@@ -86,12 +86,12 @@ const dots = {}, lbls = {};
   dots[id] = el('dot' + (id === 'can' ? ' start' : id === 'sfo' ? ' end' : ''));
   lbls[id] = el('lbl', CITY[id].n);
 });
-const BELOW = { can: 1, mia: 1, hav: 1, dal: 1, lax: 1 };
+const BELOW = { can: 1, hou: 1, mex: 1, lax: 1, sdg: 1, sfo: 1 }, LEFT = { sat: 1 }, RIGHT = { sac: 1 };
 
 // camera frames: each decision is framed on where you are plus every place on offer
 function frame(ids, maxK = 2.3) {
   const P = ids.map(xyOf), x0 = Math.min(...P.map(p => p[0])), x1 = Math.max(...P.map(p => p[0])), y0 = Math.min(...P.map(p => p[1])), y1 = Math.max(...P.map(p => p[1]));
-  return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, k: Math.min(maxK, 600 / Math.max(1, x1 - x0), 380 / Math.max(1, y1 - y0)) };
+  return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, k: Math.min(maxK, 600 / Math.max(1, x1 - x0), 330 / Math.max(1, y1 - y0)) };
 }
 const F = STEPS.map(st => frame([st.at, ...st.opts.map(o => o[0])]));
 const F_END = frame(ROUTE, 9); F_END.k = 560 / (Math.max(...ROUTE.map(id => xyOf(id)[0])) - Math.min(...ROUTE.map(id => xyOf(id)[0])));
@@ -100,7 +100,7 @@ const mixF = (a, b, f) => ({ x: lerp(a.x, b.x, f), y: lerp(a.y, b.y, f), k: Math
 
 window.render = function (t) {
   // ---- camera
-  let cam, sx = 500, sy = 800;
+  let cam, sx = 500, sy = 860;
   if (t < 2.9) cam = mixF(F0, Object.assign({}, F0, { k: F0.k * 1.12 }), E.inOut(P(t, 0, 2.9)));
   else if (t < S0) cam = mixF(Object.assign({}, F0, { k: F0.k * 1.12 }), F[0], E.inOut(P(t, 2.9, S0 - 2.9)));
   else if (t < LEGS_END) {
@@ -140,7 +140,7 @@ window.render = function (t) {
     const active = i === curStep && t < LEGS_END, choose = t >= st.s && t < st.tr + .25;
     const lit = E.spring(P(t, st.s, .45)) * (1 - E.in(P(t, st.tr, .3)));
     st.opts.forEach(([id], k) => {
-      const [x, y] = scr(chart, xyOf(id)), picked = k === 0 && t >= st.c;
+      const [x, y] = scr(chart, xyOf(id)), picked = k === st.pick && t >= st.c;
       const pulse = 1 + Math.sin((t - st.s) * 9 + k) * .1;
       css(st.rings[k], { display: active && lit > .01 ? 'block' : 'none', left: x + 'px', top: y + 'px', opacity: picked ? 1 : t >= st.c ? lerp(1, .25, P(t, st.c, .2)) : 1, transform: `scale(${lit * pulse * (picked ? 1.25 : 1)})`, borderColor: picked ? 'var(--red)' : 'var(--teal)' });
       st.spokes[k].setAttribute('opacity', active ? .9 * lit * (t >= st.c && !picked ? .3 : 1) : 0);
@@ -151,7 +151,7 @@ window.render = function (t) {
       const n = st.cards.length;
       $('#dock').style.width = n === 1 ? '440px' : '850px';
       st.cards.forEach((c, k) => {
-        const inn = E.spring(P(t, st.s + k * .07, .45)), out = E.in(P(t, st.tr - .05, .3)), picked = k === 0 && t >= st.c;
+        const inn = E.spring(P(t, st.s + k * .07, .45)), out = E.in(P(t, st.tr - .05, .3)), picked = k === st.pick && t >= st.c;
         c.el.classList.toggle('pick', picked);
         if (picked && !c.el.querySelector('.tick')) c.el.insertAdjacentHTML('beforeend', '<div class="tick">✓</div>');
         if (!picked) { const tk = c.el.querySelector('.tick'); if (tk) tk.remove(); }
@@ -176,12 +176,12 @@ window.render = function (t) {
     const [x, y] = scr(chart, xyOf(id));
     const ri = ROUTE.indexOf(id), reached = ri === 0 ? t >= 2.9 : ri > 0 && t >= STEPS[ri - 1].e - .05;
     const offered = curStep >= 0 && STEPS[curStep].opts.some(o => o[0] === id) && t >= STEPS[curStep].s && t < STEPS[curStep].tr + .3;
-    const here = curStep >= 0 ? STEPS[curStep].at === id : (t >= 2.9 && t < S0 && id === 'can');
+    const here = curStep >= 0 ? STEPS[curStep].at === id && t < STEPS[curStep].tr + .05 : (t >= 2.9 && t < S0 && id === 'can');
     const showDot = reached || offered || id === 'sfo' && t >= 2.9;
     css(dots[id], { left: x + 'px', top: y + 'px', transform: `scale(${showDot ? 1 : 0})` });
     const showLbl = outro ? ri >= 0 : (here || offered || (id === 'sfo' && t >= 2.9 && t < S0 + .1));
     const off = id === 'sfo' && !outro && !offered ? -1 : 1; // destination label hangs above
-    css(lbls[id], { left: x + 'px', top: y + 'px', opacity: showLbl ? 1 : 0, transform: `translate(-50%,${BELOW[id] && off > 0 ? (outro ? 30 : 60) : (outro ? -135 : -175)}%)` });
+    css(lbls[id], { left: x + 'px', top: y + 'px', opacity: showLbl ? 1 : 0, transform: LEFT[id] && !outro ? 'translate(calc(-100% - 30px),-50%)' : RIGHT[id] && !outro ? 'translate(30px,-50%)' : `translate(-50%,${BELOW[id] && off > 0 && !(outro && id === 'sfo') ? (outro ? 30 : 60) : (outro ? -135 : -175)}%)` });
   });
 
   // ---- stamp under the finished route, then the end card

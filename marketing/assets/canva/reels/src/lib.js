@@ -97,13 +97,16 @@ const CITY = {
   sfo: { n: 'San Francisco', ll: [-122.42, 37.77] },
   // the other places the game offers along the way (choices at each decision)
   hav: { n: 'Havana', ll: [-82.37, 23.11] }, chi: { n: 'Chicago', ll: [-87.63, 41.88] }, tor: { n: 'Toronto', ll: [-79.38, 43.65] },
+  // game v18 (408 cities): the stops and choices on puzzle #8 now
+  hou: { n: 'Houston', ll: [-95.37, 29.76] }, aus: { n: 'Austin', ll: [-97.74, 30.27] }, phx: { n: 'Phoenix', ll: [-112.07, 33.45] },
+  nol: { n: 'New Orleans', ll: [-90.07, 29.95] }, mex: { n: 'Mexico City', ll: [-99.13, 19.43] }, abq: { n: 'Albuquerque', ll: [-106.65, 35.08] },
+  sat: { n: 'San Antonio', ll: [-98.49, 29.42] }, sac: { n: 'Sacramento', ll: [-121.49, 38.58] }, sdg: { n: 'San Diego', ll: [-117.16, 32.72] },
 };
 const PERFECT = [
-  { a: 'can', b: 'mia', mode: '🚢', name: 'Ferry', cost: 93 },
-  { a: 'mia', b: 'atl', mode: '🚌', name: 'Bus', cost: 37, deal: '-35%' },
-  { a: 'atl', b: 'dal', mode: '🚌', name: 'Bus', cost: 48 },
-  { a: 'dal', b: 'den', mode: '🚌', name: 'Bus', cost: 54 },
-  { a: 'den', b: 'lax', mode: '🚆', name: 'Train', cost: 78, deal: '-35%' },
+  { a: 'can', b: 'hou', mode: '🚌', name: 'Bus', cost: 76 },
+  { a: 'hou', b: 'aus', mode: '🚌', name: 'Bus', cost: 15 },
+  { a: 'aus', b: 'phx', mode: '🚆', name: 'Train', cost: 91, deal: '-30%' },
+  { a: 'phx', b: 'lax', mode: '🚆', name: 'Train', cost: 44, deal: '-35%' },
   { a: 'lax', b: 'sfo', mode: '🚘', name: 'Rideshare', cost: 36 },
 ];
 

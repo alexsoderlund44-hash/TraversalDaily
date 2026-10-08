@@ -3,7 +3,7 @@
 <style>
 .dock{position:absolute;left:70px;width:850px;display:flex;gap:22px}
 .ch{flex:1;min-width:0;background:var(--card);border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink);border-radius:20px;padding:18px 20px 20px;position:relative}
-.ch .c{font-family:'Alegreya';font-weight:700;font-size:46px;white-space:nowrap;line-height:1.1}
+.ch .c{font-family:'Alegreya';font-weight:700;font-size:38px;letter-spacing:-.5px;white-space:nowrap;line-height:1.1}
 .ch .p{font-family:'Alfa Slab One';font-size:56px;color:var(--red);white-space:nowrap;margin-top:6px}
 .ch .g{font-weight:900;font-size:32px;white-space:nowrap;margin-top:6px}
 .up{color:var(--teal)} .dn{color:var(--red)}
@@ -27,45 +27,45 @@
   <!-- 1 cover -->
   <div class="scene" id="s1">
     <div class="grain"></div><div class="vig"></div>
-    <div class="cap" style="top:230px;font-size:82px" data-words="Can you get from Cancún to San Francisco in *7 *decisions?"></div>
+    <div class="cap" style="top:230px;font-size:82px" data-words="Can you get from Cancún to San Francisco in *6 *decisions?"></div>
     <div style="position:absolute;left:70px;top:720px"><span class="pill" style="font-size:42px;transform:rotate(-2deg);display:inline-block">🚫✈️ No flights</span></div>
     <div class="swipe" style="top:1360px">Play along. Swipe 👉</div>
   </div>
   <!-- 2 first decision -->
   <div class="scene" id="s2">
     <div class="grain"></div><div class="vig"></div>
-    <div class="chip hot">Decision 1 of 7</div>
-    <div class="cap" style="top:320px;font-size:70px" data-words="You're in *Cancún. Both choices go the wrong way 😳"></div>
+    <div class="chip hot">Decision 1 of 6</div>
+    <div class="cap" style="top:320px;font-size:70px" data-words="You're in *Cancún. Which bus do you take? 🚌"></div>
     <div class="dock" style="top:1080px" id="d2"></div>
     <div class="swipe" style="top:1370px">Pick one, then swipe 👉</div>
   </div>
   <!-- 3 answer -->
   <div class="scene" id="s3">
     <div class="grain"></div><div class="vig"></div>
-    <div class="cap" style="top:230px;font-size:84px" data-words="*Miami was the right call ✅"></div>
-    <div class="note" style="top:1010px">The Havana boat is <b>$33 cheaper</b>, but the only boat out of Havana goes to Miami anyway. That costs a whole decision, so you'd reach San Francisco on your <b>very last one</b>.</div>
+    <div class="cap" style="top:230px;font-size:84px" data-words="*Houston was the right call ✅"></div>
+    <div class="note" style="top:1040px">Houston is the planner's first stop. Mexico City works too, for <b>$226</b>, but that trip takes <b>almost a day longer</b>.</div>
   </div>
-  <!-- 4 Atlanta -->
+  <!-- 4 Phoenix -->
   <div class="scene" id="s4">
     <div class="grain"></div><div class="vig"></div>
-    <div class="chip hot">Decision 3 of 7</div>
-    <div class="cap" style="top:320px;font-size:70px" data-words="A $37 bus later, you're in *Atlanta. Where next?"></div>
+    <div class="chip hot">Decision 4 of 6</div>
+    <div class="cap" style="top:320px;font-size:66px" data-words="In *Phoenix. San Francisco is one bus away 👀"></div>
     <div id="o4"></div>
     <div class="swipe" style="top:1400px">Pick one, then swipe 👉</div>
   </div>
   <!-- 5 reveal -->
   <div class="scene" id="s5">
     <div class="grain"></div><div class="vig"></div>
-    <div class="chip">From Atlanta</div>
-    <div class="cap" style="top:320px;font-size:70px" data-words="One wrong turn and you're *stranded 💀"></div>
+    <div class="chip">From Phoenix</div>
+    <div class="cap" style="top:320px;font-size:70px" data-words="The direct bus *wasn't the best 😳"></div>
     <div id="o5"></div>
   </div>
   <!-- 6 the route -->
   <div class="scene" id="s6">
     <div class="grain"></div><div class="vig"></div>
     <div class="cap" style="top:230px;font-size:80px" data-words="The perfect route 🏆"></div>
-    <div class="stat" data-qa><div><div class="k">Decisions</div><div class="v">6 of 7</div></div><div><div class="k">Cost</div><div class="v">$346</div></div><div><div class="k">Time</div><div class="v">3d 19h</div></div></div>
-    <div style="position:absolute;left:70px;top:1350px"><span class="pill" style="font-size:40px;letter-spacing:6px;background:var(--card);color:var(--ink)">🚢 🚌 🚌 🚌 🚆 🚘</span></div>
+    <div class="stat" data-qa><div><div class="k">Decisions</div><div class="v">5 of 6</div></div><div><div class="k">Cost</div><div class="v">$262</div></div><div><div class="k">Time</div><div class="v">1d 21h</div></div></div>
+    <div style="position:absolute;left:70px;top:1350px"><span class="pill" style="font-size:40px;letter-spacing:6px;background:var(--card);color:var(--ink)">🚌 🚌 🚆 🚆 🚘</span></div>
   </div>
   <!-- 7 ask -->
   <div class="scene end" id="s7">
@@ -80,7 +80,7 @@
 <script src="d3.min.js"></script><script src="topojson-client.min.js"></script><script src="world-lite.js"></script><script src="lib.js"></script><script src="slides-lib.js"></script>
 <script>
 const B = [[-125, 14], [-74, 50]];
-const card = (c, em, cost, gain, n) => `<div class="ch"><div class="n">${n}</div><div class="c">${em} ${c}</div><div class="p">$${cost}</div><div class="g ${gain >= 0 ? 'up' : 'dn'}">${gain >= 0 ? '▲ ' + gain.toLocaleString() + ' km closer' : '▼ ' + (-gain) + ' km further'}</div></div>`;
+const card = (c, em, cost, gain, n) => `<div class="ch"><div class="n">${n}</div><div class="c">${c}</div><div class="p">$${cost} <span style="font-size:40px;vertical-align:6px">${em}</span></div><div class="g ${gain >= 0 ? 'up' : 'dn'}">${gain >= 0 ? '▲ ' + gain.toLocaleString() + ' km' : '▼ ' + (-gain) + ' km'}</div></div>`;
 
 // 1: just the start, the finish and a long question mark between them
 { const ch = mapIn($('#s1'), B); fitView(ch, ['can', 'sfo'], 540, 1120, 640, 360);
@@ -89,40 +89,40 @@ const card = (c, em, cost, gain, n) => `<div class="ch"><div class="n">${n}</div
   label(ch, 'can', 'b'); label(ch, 'sfo', 'b');
   put(ch, 'bub', '❓', midOf(ch, p)); }
 
-// 2: Cancún with Miami and Havana lit up, as the game shows it
-{ const ch = mapIn($('#s2'), B); fitView(ch, ['can', 'mia', 'hav'], 500, 800, 640, 300);
-  ['mia', 'hav'].forEach(id => leg(ch, 'can', id, 0, { stroke: '#26696D', 'stroke-width': 5, 'stroke-dasharray': '10 10' }));
-  ['mia', 'hav'].forEach(id => put(ch, 'ring', null, at(ch, id)));
-  put(ch, 'dot start', null, at(ch, 'can')); put(ch, 'dot', null, at(ch, 'mia')); put(ch, 'dot', null, at(ch, 'hav'));
-  label(ch, 'can', 'b'); label(ch, 'mia', 'r'); label(ch, 'hav', 'b');
-  $('#d2').innerHTML = card('Miami', '🚢', 93, -296, 'A') + card('Havana', '🚢', 60, -258, 'B'); }
+// 2: Cancún with the three places the game lights up (v18)
+{ const ch = mapIn($('#s2'), B); fitView(ch, ['can', 'hou', 'mex', 'nol'], 500, 760, 660, 300);
+  ['hou', 'mex', 'nol'].forEach(id => leg(ch, 'can', id, 0, { stroke: '#26696D', 'stroke-width': 5, 'stroke-dasharray': '10 10' }));
+  ['hou', 'mex', 'nol'].forEach(id => put(ch, 'ring', null, at(ch, id)));
+  put(ch, 'dot start', null, at(ch, 'can')); ['hou', 'mex', 'nol'].forEach(id => put(ch, 'dot', null, at(ch, id)));
+  label(ch, 'can', 'b'); label(ch, 'hou', 'l'); label(ch, 'mex', 'b'); label(ch, 'nol', 'r');
+  $('#d2').innerHTML = card('Houston', '🚌', 76, 1231, 'A') + card('Mexico City', '🚌', 66, 837, 'B') + card('New Orleans', '🚌', 53, 781, 'C'); }
 
-// 3: Miami straight away vs Havana and back
-{ const ch = mapIn($('#s3'), B); fitView(ch, ['can', 'mia', 'hav'], 500, 720, 640, 300);
-  leg(ch, 'can', 'hav', .1, { stroke: '#8E2A1E', 'stroke-width': 5, 'stroke-dasharray': '10 12' });
-  const back = leg(ch, 'hav', 'mia', .25, { stroke: '#8E2A1E', 'stroke-width': 5, 'stroke-dasharray': '10 12' });
-  const good = leg(ch, 'can', 'mia', -.18, { stroke: '#26696D', 'stroke-width': 9 });
-  put(ch, 'dot start', null, at(ch, 'can')); put(ch, 'dot', null, at(ch, 'mia')); put(ch, 'dot', null, at(ch, 'hav'));
-  label(ch, 'can', 'b'); label(ch, 'mia', 'r'); label(ch, 'hav', 'b');
-  put(ch, 'bub', '✅', midOf(ch, good)); put(ch, 'bub', '🔁', midOf(ch, back)); }
+// 3: Houston, with the slower Mexico City way faded
+{ const ch = mapIn($('#s3'), B); fitView(ch, ['can', 'hou', 'mex', 'nol'], 500, 720, 680, 360);
+  leg(ch, 'can', 'mex', .12, { stroke: '#5E3E0C', 'stroke-width': 5, 'stroke-dasharray': '10 12', opacity: .7 });
+  leg(ch, 'can', 'nol', -.1, { stroke: '#5E3E0C', 'stroke-width': 5, 'stroke-dasharray': '10 12', opacity: .7 });
+  const good = leg(ch, 'can', 'hou', -.14, { stroke: '#26696D', 'stroke-width': 9 });
+  put(ch, 'dot start', null, at(ch, 'can')); ['hou', 'mex', 'nol'].forEach(id => put(ch, 'dot', null, at(ch, id)));
+  label(ch, 'can', 'b'); label(ch, 'hou', 'l'); label(ch, 'mex', 'b'); label(ch, 'nol', 'r');
+  put(ch, 'bub', '✅', midOf(ch, good)); }
 
-// 4 + 5: the three places lit up in Atlanta (choicesFrom on puzzle #8), then what each one leads to
+// 4 + 5: the three places lit up in Phoenix (v18), then where each one leads, each played through in the game
 const OPT = [
-  { c: 'Dallas', cost: 48, time: '17h 30m', gain: 1054, res: '🏆 Made it in 6', sub: "The planner's route · $346", bg: 'var(--teal)' },
-  { c: 'Chicago', cost: 42, time: '14h 35m', gain: 452, res: '😅 Made it on the 7th', sub: 'Zero decisions to spare · $446', bg: 'var(--brass)' },
-  { c: 'Toronto', cost: 50, time: '17h 50m', gain: -208, res: '💀 Stranded', sub: 'Out of decisions in LA, 559 km short', bg: 'var(--red)' },
+  { c: 'San Francisco', em: '🚌', cost: 64, time: '16h', gain: 'arr', res: '😮 Made it in 4', sub: '4h 40m slower than the planner · $246', bg: 'var(--brass)' },
+  { c: 'Los Angeles', em: '🚆', cost: 44, time: '3h 5m · DEAL', gain: 492, res: '🏆 Perfect', sub: "The planner's route · $262", bg: 'var(--teal)' },
+  { c: 'Sacramento', em: '🚌', cost: 49, time: '15h 35m', gain: 930, res: '🙂 Made it in 5', sub: '6h 20m slower than the planner · $245', bg: '#2F5E86' },
 ];
 OPT.forEach((o, i) => {
   const top = 590 + i * 268;
-  $('#o4').insertAdjacentHTML('beforeend', `<div class="opt" style="top:${top}px"><div class="n">${i + 1}</div><div class="c">🚌 ${o.c}</div><div class="p">$${o.cost}<small>· ${o.time}</small></div><div class="g ${o.gain >= 0 ? 'up' : 'dn'}">${o.gain >= 0 ? '▲ ' + o.gain.toLocaleString() + ' km closer' : '▼ ' + (-o.gain) + ' km further'}</div></div>`);
-  $('#o5').insertAdjacentHTML('beforeend', `<div class="opt res" style="top:${top}px;background:${o.bg}"><div class="n">${i + 1}</div><div class="big">${o.res}</div><div class="sm">${o.c} · ${o.sub}</div></div>`);
+  $('#o4').insertAdjacentHTML('beforeend', `<div class="opt" style="top:${top}px"><div class="n">${i + 1}</div><div class="c">${o.em} ${o.c}</div><div class="p">$${o.cost}<small>· ${o.time}</small></div><div class="g up">${o.gain === 'arr' ? '★ Arrives' : '▲ ' + o.gain.toLocaleString() + ' km closer'}</div></div>`);
+  $('#o5').insertAdjacentHTML('beforeend', `<div class="opt res" style="top:${top}px;background:${o.bg}"><div class="n">${i + 1}</div><div class="big">${o.res}</div><div class="sm">${o.c}<br>${o.sub}</div></div>`);
 });
 
 // 6: the planner's whole route with the transport on each leg
-{ const ch = mapIn($('#s6'), B); fitView(ch, ['can', 'mia', 'atl', 'dal', 'den', 'lax', 'sfo'], 540, 800, 700, 560);
+{ const ch = mapIn($('#s6'), B); fitView(ch, ['can', 'hou', 'aus', 'phx', 'lax', 'sfo'], 540, 800, 700, 560);
   PERFECT.forEach((l, i) => leg(ch, l.a, l.b, i % 2 ? .14 : -.14, { stroke: '#8E2A1E', 'stroke-width': 8 }));
-  ['can', 'mia', 'atl', 'dal', 'den', 'lax', 'sfo'].forEach(id => put(ch, 'dot' + (id === 'can' ? ' start' : id === 'sfo' ? ' end' : ''), null, at(ch, id)));
-  const SIDE = { can: 'b', mia: 'l', atl: 't', dal: 'b', den: 't', lax: 'b', sfo: 't' };
+  ['can', 'hou', 'aus', 'phx', 'lax', 'sfo'].forEach(id => put(ch, 'dot' + (id === 'can' ? ' start' : id === 'sfo' ? ' end' : ''), null, at(ch, id)));
+  const SIDE = { can: 'b', hou: 'b', aus: 't', phx: 't', lax: 'b', sfo: 't' };
   Object.keys(SIDE).forEach(id => label(ch, id, SIDE[id])); }
 
 showSlides();

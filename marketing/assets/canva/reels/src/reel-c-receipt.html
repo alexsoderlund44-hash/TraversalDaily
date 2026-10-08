@@ -13,7 +13,7 @@
 .receipt{position:absolute;left:90px;width:810px;top:470px;background:#FBF6EA;padding:34px 40px 46px;box-shadow:16px 16px 0 rgba(0,0,0,.55);transform-origin:50% 0}
 .receipt h3{font-family:'Alfa Slab One';font-size:52px;text-align:center;margin-bottom:6px}
 .receipt .meta{text-align:center;font-weight:800;letter-spacing:5px;font-size:28px;color:var(--brass);margin-bottom:22px}
-.line{display:flex;align-items:baseline;font-size:42px;font-weight:700;padding:5px 0;white-space:nowrap;border-bottom:3px dashed rgba(43,31,20,.3)}
+.line{display:flex;align-items:baseline;font-size:38px;font-weight:700;padding:5px 0;white-space:nowrap;border-bottom:3px dashed rgba(43,31,20,.3)}
 .line .no{width:52px;font-family:'Alfa Slab One';font-size:34px;color:var(--brass)}
 .line .em{width:64px;font-size:40px}
 .line .nm{flex:1}
@@ -29,15 +29,15 @@
   <svg class="chart" id="chart" viewBox="0 0 1080 1920"></svg>
   <div class="grain"></div><div class="vig"></div><div id="dim"></div>
   <div id="hookwrap">
-    <div class="hook" id="h1" style="top:400px;font-size:132px">I took ONE<br>detour.</div>
-    <div class="hook" id="h2" style="top:770px;right:200px;font-size:98px;color:#E36A55">Big<br>mistake. 💀</div>
-    <div id="h3" style="position:absolute;left:70px;top:1080px"><span class="pill" style="font-size:42px">7 decisions · Cancún → SF</span></div>
+    <div class="hook" id="h1" style="top:360px;font-size:104px">I bought the<br>cheapest<br>ticket.</div>
+    <div class="hook" id="h2" style="top:760px;right:200px;font-size:98px;color:#E36A55">Big<br>mistake. 💀</div>
+    <div id="h3" style="position:absolute;left:70px;top:1090px"><span class="pill" style="font-size:42px">6 decisions · Cancún → SF</span></div>
   </div>
-  <div class="meter" id="meter"><div class="row"><span class="k">DECISIONS LEFT</span><span class="v" id="left">7</span></div><div class="pipz" id="pipz"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-  <div class="receipt" id="rc1"><h3>MY EXPEDITION</h3><div class="meta">TRAVERSLE #8 · 7 DECISIONS</div><div id="l1"></div><div class="stampx" id="bust" style="color:var(--red);border-color:var(--red);font-size:76px;text-align:center">OUT OF<br>DECISIONS</div><div class="zig"></div></div>
-  <div class="receipt" id="rc2"><h3>THE PLANNER'S ROUTE</h3><div class="meta">SAME PUZZLE · SAME 7 DECISIONS</div><div id="l2"></div><div class="tot" id="tot2"><span>6 DECISIONS</span><span>$346</span></div><div class="stampx" id="perf" style="color:var(--teal);border-color:var(--teal);font-size:84px">PERFECT 🏆</div><div class="zig"></div></div>
-  <div class="cap" id="c1" style="top:1330px;font-size:66px" data-words="Stranded *559 km short 🥲"></div>
-  <div class="cap" id="c2" style="top:235px;font-size:62px" data-words="Just go to *Dallas 🤫"></div>
+  <div class="meter" id="meter"><div class="row"><span class="k">DECISIONS LEFT</span><span class="v" id="left">6</span></div><div class="pipz" id="pipz"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div class="receipt" id="rc1"><h3>MY EXPEDITION</h3><div class="meta">TRAVERSLE #8 · 6 DECISIONS</div><div id="l1"></div><div class="tot" id="tot1"><span>2d 6h 40m</span><span>$313</span></div><div class="stampx" id="bust" style="color:var(--red);border-color:var(--red);font-size:72px;text-align:center">$51 OVER<br>9 HRS SLOWER</div><div class="zig"></div></div>
+  <div class="receipt" id="rc2"><h3>THE PLANNER'S ROUTE</h3><div class="meta">SAME PUZZLE · SAME 6 DECISIONS</div><div id="l2"></div><div class="tot" id="tot2"><span>1d 21h 30m</span><span>$262</span></div><div class="stampx" id="perf" style="color:var(--teal);border-color:var(--teal);font-size:84px">PERFECT 🏆</div><div class="zig"></div></div>
+  <div class="cap" id="c1" style="top:1330px;font-size:58px" data-words="Made it. The *expensive way 🥲"></div>
+  <div class="cap" id="c2" style="top:235px;font-size:62px" data-words="Just go to *Houston 🤫"></div>
   <div id="end" style="position:absolute;inset:0">
     <div class="hook" id="e1" style="top:380px;font-size:120px">Think<br>you'd make<br>it?</div>
     <div id="e2" style="position:absolute;left:70px;top:820px"><span class="pill" style="font-size:44px;background:var(--card);color:var(--ink)">traversledaily.com</span></div>
@@ -50,11 +50,12 @@
 window.DUR = 16.5;
 const chart = makeChart($('#chart'), [[-125, 14], [-74, 50]]);
 const caps = {}; $$('.cap').forEach(c => caps[c.id] = buildCaption(c));
-// a real losing run on puzzle #8, every option as the game offered it: one wrong turn at Atlanta and the decisions run out in LA
-const MINE = [['🚢', 'Cancún → Miami', 93], ['🚌', 'Miami → Atlanta', 37, 'deal'], ['🚌', 'Atlanta → Toronto', 50, 'detour'], ['🚌', 'Toronto → Chicago', 35], ['🚆', 'Chicago → Dallas', 106], ['🚌', 'Dallas → Denver', 54], ['🚆', 'Denver → LA', 78, 'deal']];
+// a real run on puzzle #8 (game v18), every option as the game offered it: the cheapest first ticket (New Orleans),
+// then the card that gets closest each time. It arrives in 5 decisions but $51 over and 9h 10m slower than the planner.
+const MINE = [['🚌', 'Cancún → New Orleans', 53, 'cheap'], ['🚌', 'New Orleans → Dallas', 44], ['🚌', 'Dallas → Albuquerque', 44], ['🚆', 'Albuquerque → Sacramento', 158], ['🚌', 'Sacramento → SF', 14]];
 const mk = (host, rows) => rows.map(r => {
   const d = document.createElement('div'); d.className = 'line';
-  d.innerHTML = `<span class="no">${rows.indexOf(r) + 1}</span><span class="em">${r[0]}</span><span class="nm">${r[1]}</span>${r[3] === 'detour' ? '<span class="dt">DETOUR</span>' : r[3] ? '<span class="dl">DEAL</span>' : ''}<span class="pr">$${r[2]}</span>`;
+  d.innerHTML = `<span class="no">${rows.indexOf(r) + 1}</span><span class="em">${r[0]}</span><span class="nm">${r[1]}</span>${r[3] === 'cheap' ? '<span class="dt">CHEAPEST</span>' : r[3] ? '<span class="dl">DEAL</span>' : ''}<span class="pr">$${r[2]}</span>`;
   $(host).appendChild(d); return d;
 });
 const L1 = mk('#l1', MINE);
@@ -65,8 +66,8 @@ $('#c1').style.top = '250px'; $('#c1').style.right = '50px'; // takes the meter'
 // receipts grow as they print: [time, height in px] steps, eased between
 const RH1 = $('#rc1').offsetHeight, RH2 = $('#rc2').offsetHeight; // measured before render() hides them
 const bottomOf = el => el.offsetTop + el.offsetHeight + 14;
-const REV1 = [[R1, bottomOf($('#rc1 .meta'))]].concat(L1.map((d, i) => [R1 + .3 + i * PER1, bottomOf(d)]), [[7.4, RH1 + 40]]);
-const REV2 = [[R2 - .2, bottomOf($('#rc2 .meta'))]].concat(L2.map((d, i) => [R2 + .2 + i * PER2, bottomOf(d)]), [[R2 + .2 + 6 * PER2, bottomOf($('#tot2'))], [12.95, RH2 + 40]]);
+const REV1 = [[R1, bottomOf($('#rc1 .meta'))]].concat(L1.map((d, i) => [R1 + .3 + i * PER1, bottomOf(d)]), [[R1 + .3 + L1.length * PER1, bottomOf($('#tot1'))], [7.4, RH1 + 40]]);
+const REV2 = [[R2 - .2, bottomOf($('#rc2 .meta'))]].concat(L2.map((d, i) => [R2 + .2 + i * PER2, bottomOf(d)]), [[R2 + .2 + L2.length * PER2, bottomOf($('#tot2'))], [12.95, RH2 + 40]]);
 function reveal(t, steps) {
   let h = steps[0][1];
   for (let i = 1; i < steps.length; i++) h = lerp(h, steps[i][1], E.out(P(t, steps[i][0], .3)));
@@ -88,7 +89,7 @@ window.render = function (t) {
 
   // meter
   const mIn = E.spring(P(t, 2.2, .5)), mOut = E.in(P(t, 7.6, .25));
-  const used = MINE.filter((r, i) => t >= R1 + .3 + i * PER1 + .15).length, left = 7 - used;
+  const used = MINE.filter((r, i) => t >= R1 + .3 + i * PER1 + .15).length, left = 6 - used;
   $('#left').textContent = left;
   $('#left').style.color = left <= 2 ? 'var(--red)' : 'var(--ink)';
   $$('#pipz i').forEach((p, j) => { p.className = j >= left ? 'off' : ''; p.style.background = j < left && left <= 2 ? 'var(--red)' : ''; });
@@ -107,7 +108,8 @@ window.render = function (t) {
   const r2 = E.out(P(t, R2 - .2, .5)), r2Out = E.in(P(t, 13.4, .35));
   css($('#rc2'), { display: t > R2 - .2 && t < 13.8 ? 'block' : 'none', top: '370px', clipPath: `inset(0 -60px ${RH2 + 40 - reveal(t, REV2)}px -60px)`, transform: `translate(${(1 - r2) * 1200}px,${r2Out * 1400}px) rotate(${lerp(10, 1.2, r2)}deg)` });
   L2.forEach((d, i) => { const p = P(t, R2 + .2 + i * PER2, .25); css(d, { opacity: p, transform: `translateX(${(1 - E.out(p)) * 60}px)` }); });
-  css($('#tot2'), { opacity: P(t, R2 + .2 + 6 * PER2, .2) });
+  css($('#tot2'), { opacity: P(t, R2 + .2 + L2.length * PER2, .2) });
+  css($('#tot1'), { opacity: P(t, R1 + .3 + L1.length * PER1, .2) });
   const ps = P(t, 12.95, .35);
   css($('#perf'), { opacity: ps > 0 ? 1 : 0, transform: `rotate(-4deg) scale(${lerp(2.2, 1, E.out5(ps))})` });
   revealWords(caps.c2, t, 10.5, .13);

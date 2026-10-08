@@ -33,7 +33,7 @@
   </div>
   <!-- 3 rules -->
   <div class="scene bg-teal" id="r1"><div class="rule-k" style="top:420px;color:#F7EEDB">Rule 1</div><div class="rule-v" style="top:500px;color:#F7EEDB">One route.<br>Same for everyone.</div><div class="big-emoji" id="r1e" style="top:1050px">🌍</div></div>
-  <div class="scene bg-page" id="r2"><div class="grain"></div><div class="rule-k" style="top:420px;color:var(--brass)">Rule 2 · Limited decisions</div><div class="rule-v" id="r2n" style="top:490px;font-size:300px;color:var(--red)">7</div><div class="sub" style="top:830px;text-align:left">decisions to get from Cancún to San Francisco</div></div>
+  <div class="scene bg-page" id="r2"><div class="grain"></div><div class="rule-k" style="top:420px;color:var(--brass)">Rule 2 · Limited decisions</div><div class="rule-v" id="r2n" style="top:490px;font-size:300px;color:var(--red)">6</div><div class="sub" style="top:830px;text-align:left">decisions to get from Cancún to San Francisco</div></div>
   <div class="scene bg-red" id="r3"><div class="rule-k" style="top:420px;color:#F7EEDB">Today's twist</div><div class="rule-v" style="top:500px;color:#F7EEDB">No flights.</div><div class="big-emoji" id="r3e" style="top:900px">🚫✈️</div></div>
   <!-- 4 gameplay -->
   <div class="scene bg-page" id="s4"><div class="grain"></div>
@@ -63,7 +63,7 @@ const caps = {}; $$('.cap').forEach(c => caps[c.id] = buildCaption(c));
 const word = 'TRAVERSLE', cls = ['c1', 'c2', 'c1', 'c3', 'c1', 'c1', 'c2', 'c1', 'c1'];
 const tiles = word.split('').map((ch, i) => { const d = document.createElement('div'); d.className = 'tile'; d.innerHTML = `<span>${ch}</span>`; $('#tiles').appendChild(d); return d; });
 // the game's real share text for this run (shareText() in js/traverse-ui.js)
-const SHARE = '🌎 TRAVERSLE #008\nCancún → San Francisco\n💰 $346 · ⏱️ 3d 19h 25m · 🎟️ 2/3 deals\n🏆 PERFECT · 9,545\n💰 ██████████\n⏱️ █████████░\n🎟️ ███████░░░\n🎯 Matched the planner\'s route\n6/7 decisions · 🚆 🚌 🚢 🚘\ntraversledaily.com';
+const SHARE = '🌎 TRAVERSLE #008 · Medium\nCancún → San Francisco\n💰 $262 · ⏱️ 1d 21h 30m · 🎟️ 2/3 deals\n🏆 PERFECT · 9,383\n💰 ██████████\n⏱️ █████████░\n🎟️ ███████░░░\n🎯 Matched the planner\'s route\n5/6 decisions · 🚆 🚌 🚘\ntraversledaily.com'; // the game's own share text after the planner's route (v18)
 const vid = $('#vid');
 const seek = s => new Promise(r => { setTimeout(r, 3000); if (Math.abs(vid.currentTime - s) < 1e-3) return r(); vid.addEventListener('seeked', () => r(), { once: true }); vid.currentTime = s; });
 
@@ -96,7 +96,7 @@ window.render = async function (t) {
 
   // 3 rules
   css($('#r1e'), { transform: `rotate(${t * 40}deg) scale(${E.spring(P(t, 5.4, .5))})` });
-  $('#r2n').textContent = Math.round(lerp(0, 7, E.out(P(t, 6.7, .7))));
+  $('#r2n').textContent = Math.round(lerp(0, 6, E.out(P(t, 6.7, .7))));
   const st = P(t, 8.05, .35);
   css($('#r3e'), { transform: `rotate(-8deg) scale(${lerp(2.2, 1, E.out5(st))}) translateX(${st < 1 && st > 0 ? Math.sin(t * 90) * 12 : 0}px)`, opacity: st > 0 ? 1 : 0 });
 

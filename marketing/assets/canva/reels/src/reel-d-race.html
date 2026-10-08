@@ -17,6 +17,7 @@ body{background:var(--page)}
 .opt .g{position:absolute;left:126px;top:200px;font-weight:900;font-size:36px;white-space:nowrap}
 .opt .g.up{color:var(--teal)} .opt .g.dn{color:var(--red)}
 .opt .back{transform:rotateX(180deg);color:var(--card);display:flex;flex-direction:column;justify-content:center}
+.opt .back .kk{font-weight:900;font-size:28px;letter-spacing:4px;text-transform:uppercase;opacity:.85;margin-bottom:6px}
 .opt .back .big{font-family:'Alfa Slab One';font-size:56px;line-height:1.05}
 .opt .back .sm{font-weight:800;font-size:36px;margin-top:12px;line-height:1.15}
 #end{position:absolute;inset:0;background:var(--red)}
@@ -25,13 +26,13 @@ body{background:var(--page)}
 </style></head><body>
 <div class="stage">
   <div class="grain"></div>
-  <div id="title" data-qa>Atlanta → San Francisco</div>
-  <div id="tags" data-qa><span class="hot">5 decisions left</span><span>🚫✈️ No flights</span></div>
-  <div class="cap" id="hook" style="top:400px;font-size:64px;right:50px" data-words="Which would *you pick? 🤔"></div>
+  <div id="title" data-qa>Phoenix → San Francisco</div>
+  <div id="tags" data-qa><span class="hot">3 decisions left</span><span>🚫✈️ No flights</span></div>
+  <div class="cap" id="hook" style="top:400px;font-size:64px;right:50px" data-words="San Francisco is one bus away. *Take it? 🤔"></div>
   <div class="cap" id="c2" style="top:400px;font-size:64px;right:50px" data-words="Pause and *pick 👀"></div>
   <div id="count" data-qa>3</div>
   <div class="cap" id="c3" style="top:400px;font-size:64px;right:50px" data-words="Here's what *happens 👇"></div>
-  <div class="cap" id="c4" style="top:400px;font-size:64px;right:50px" data-words="One wrong turn = *stranded"></div>
+  <div class="cap" id="c4" style="top:400px;font-size:64px;right:50px" data-words="The direct bus *wasn't the best 😳"></div>
   <div id="opts"></div>
   <div id="end">
     <div class="big" id="e1">A daily travel puzzle.</div>
@@ -44,18 +45,18 @@ body{background:var(--page)}
 <script src="lib.js"></script>
 <script>
 window.DUR = 15.5;
-/* puzzle #8 at Atlanta, step 3, as the game offers it (choicesFrom, run against the engine). Outcomes checked with the same
-   engine: Dallas is the planner's route (6 decisions, $346); Chicago still arrives on the 7th and last decision ($446 in all);
-   from Toronto San Francisco is 5 legs away with 4 decisions left, so no choice afterwards can finish. */
+/* puzzle #8 at Phoenix (game v18), the three places the game lights up, in its order. Each outcome was played through
+   in the game: Los Angeles is the planner's route (5 decisions, $262, PERFECT); the direct bus arrives in 4 for $246 but
+   4h 40m slower; Sacramento arrives in 5 for $245, 6h 20m slower. */
 const OPT = [
-  { c: 'Dallas', em: '🚌', cost: 48, time: '17h 30m', gain: '▲ 1,054 km closer', up: 1, res: '🏆 Made it in 6', sub: "The planner's route · $346", bg: 'var(--teal)', rev: 8.9 },
-  { c: 'Chicago', em: '🚌', cost: 42, time: '14h 35m', gain: '▲ 452 km closer', up: 1, res: '😅 Made it on the 7th', sub: 'Zero decisions to spare · $446', bg: 'var(--brass)', rev: 7.4 },
-  { c: 'Toronto', em: '🚌', cost: 50, time: '17h 50m', gain: '▼ 208 km further', up: 0, res: '💀 Stranded', sub: 'At best: out of decisions in LA, 559 km short', bg: 'var(--red)', rev: 5.9 },
+  { c: 'San Francisco', em: '🚌', cost: 64, time: '16h', gain: '★ Arrives', up: 1, res: '😮 Made it in 4', sub: '4h 40m slower than the planner · $246', bg: 'var(--brass)', rev: 5.9 },
+  { c: 'Los Angeles', em: '🚆', cost: 44, time: '3h 5m · DEAL', gain: '▲ 492 km closer', up: 1, res: '🏆 Perfect', sub: "The planner's route · $262", bg: 'var(--teal)', rev: 8.9 },
+  { c: 'Sacramento', em: '🚌', cost: 49, time: '15h 35m', gain: '▲ 930 km closer', up: 1, res: '🙂 Made it in 5', sub: '6h 20m slower than the planner · $245', bg: '#2F5E86', rev: 7.4 },
 ];
 const cards = OPT.map((o, i) => {
-  const d = document.createElement('div'); d.className = 'opt'; d.style.top = (590 + i * 296) + 'px'; d.dataset.qa = ''; d.dataset.qaName = o.c;
+  const d = document.createElement('div'); d.className = 'opt'; d.style.top = (622 + i * 284) + 'px'; d.dataset.qa = ''; d.dataset.qaName = o.c;
   d.innerHTML = `<div class="face front"><div class="n">${i + 1}</div><div class="c">${o.em} ${o.c}</div><div class="p">$${o.cost}<small>· ${o.time}</small></div><div class="g ${o.up ? 'up' : 'dn'}">${o.gain}</div></div>
-    <div class="face back" style="background:${o.bg}"><div class="big">${o.res}</div><div class="sm">${o.sub}</div></div>`;
+    <div class="face back" style="background:${o.bg}"><div class="kk">${o.c}</div><div class="big">${o.res}</div><div class="sm">${o.sub}</div></div>`;
   $('#opts').appendChild(d); return d;
 });
 const caps = {}; $$('.cap').forEach(c => caps[c.id] = buildCaption(c));
@@ -81,7 +82,7 @@ window.render = function (t) {
   revealWords(caps.c4, t, HOLD0, .1);
   cards.forEach((d, i) => {
     const o = OPT[i], intro = E.spring(P(t + .5, i * .08, .5)), flip = E.inOut(P(t, o.rev, .6));
-    const sh = (t > o.rev + .55 && t < o.rev + .9 && i === 2) ? Math.sin(t * 80) * 8 : 0;
+    const sh = 0;
     d.style.transform = `translateX(${(1 - intro) * 1100 + sh}px)`;
     const pop = 1 + Math.sin(P(t, o.rev + .5, .35) * Math.PI) * .04;
     d.querySelector('.front').style.transform = `rotateX(${flip * 180}deg)`;

@@ -930,3 +930,10 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 .hm-card .mi{text-align:center}.tv-mission .mi{text-align:left}
 @media(max-width:520px){.hm-card .mi b{font-size:1.5rem}.hm-card .mi{padding:14px 8px 12px}}
 @media(max-width:900px){.tv-mission .mi b{font-size:1.45rem}.tv-mission .mi{padding:12px 10px}}
+
+/* mission tiles in the site's own voice: a brass kicker on top, the value in the display serif */
+.hm-card .mi span:first-child,.tv-mission .mi span:first-child{font:700 .68rem var(--ui);letter-spacing:.2em;text-transform:uppercase;color:var(--brass)}
+.hm-card .mi b,.tv-mission .mi b{font:500 1.75rem var(--disp);color:var(--ink);letter-spacing:.01em}
+.hm-card .mi,.tv-mission .mi{padding:18px 10px 16px;gap:6px;background:var(--panel-2)}
+.hm-card .mi small,.tv-mission .mi small{font:italic 400 .82rem var(--disp);color:var(--ink-2)}
+@media(max-width:520px){.hm-card .mi b{font-size:1.55rem}}

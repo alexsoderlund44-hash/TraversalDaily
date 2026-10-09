@@ -163,7 +163,7 @@
   $('#tv-gate-mission').innerHTML = `
     <div class="mi big"><span>Decisions</span><b>${DEC}</b></div>
     <div class="mi money"><span>Budget</span><b>${T.money(M.budget)}</b><small>${M.deals} secret fare${M.deals === 1 ? '' : 's'} to find</small></div>
-    <div class="mi diff ${M.difficulty.toLowerCase()}"><span>Difficulty</span><b>${M.difficulty}</b><small>${WAYS.length === 1 ? 'one charted route' : WAYS.length + ' charted routes'}</small></div>
+    <div class="mi diff ${M.difficulty.toLowerCase()}"><span>Difficulty</span><b>${M.difficulty}</b></div>
     <div class="mi"><span>Twist</span><b>${T.esc(tw.name)}</b><small>${T.esc(tw.desc)}</small></div>`;
   $('#tv-gate-rules').innerHTML = `<li>Each step offers a few ways onward. Every card shows its fare, its time and how many decisions the rest of the trip needs. Pick one and you travel there.</li><li>Reach ${T.esc(ch.to.name)} before the decisions run out. Money counts most, then time, then decisions. Going over budget costs you.</li>`;
   $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'Everyone playing today gets this same route, and one scored attempt.';

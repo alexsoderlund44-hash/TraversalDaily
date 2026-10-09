@@ -17,7 +17,7 @@ def shell(design, page, body, scripts, prefix, css):
     body = body.replace('@HOW@', HOW_MODAL)
     icons = '<div class="td-icons"><button id="td-help" aria-label="How to play" title="How to play">?</button><button id="td-stats" aria-label="Your stats" title="Your stats"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2" y="10" width="4" height="8" fill="currentColor"/><rect x="8" y="4" width="4" height="14" fill="currentColor"/><rect x="14" y="7" width="4" height="11" fill="currentColor"/></svg></button></div>' if page == 'play' else ''
     nav = ''.join(f'<a href="{p}.html" class="{"on " if p==page else ""}{"plus" if p=="plus" else ""}">{n}</a>' for p,n in NAV)
-    topnav = '<nav class="td-nav" aria-label="Main">' + ('' if page == 'play' else '<a class="play" href="play.html">Play</a>') + f'<a href="how.html" class="{"on" if page=="how" else ""}">How to play</a><a href="archive.html" class="{"on" if page=="archive" else ""}">Archive</a></nav>'
+    topnav = ''  # every page lives in the menu; nothing sits loose in the header
     canon = '<link rel="canonical" href="https://traversledaily.com/">' if (page=='index' and prefix=='') else ''
     return f'''<!doctype html>
 <html lang="en"><head>
@@ -66,10 +66,11 @@ HOME = '''
     <div class="mission" id="hm-mission"></div>
     <a class="btn primary big wide" href="play.html" id="hm-play">Play today's puzzle</a>
     <p class="sub" id="hm-sub">One scored attempt a day, and everyone plays the same puzzle.</p>
+    <p class="hm-new" id="hm-new" hidden>New here? <a href="how.html">How to play</a> takes two minutes, or just press Play and learn by doing.</p>
     <div id="hm-level" class="hm-level" hidden></div>
     <p class="meta" id="hm-meta"></p>
   </section>
-  <nav class="hm-links" aria-label="More"><a href="how.html" id="hm-howlink">How to play</a><a href="archive.html">Past puzzles</a><a href="stats.html">Your stats</a><a href="plus.html" class="plus">✦ Traversle +</a></nav>
+  <a class="hm-plus" href="plus.html"><span class="mark">✦</span><span><b>Traversle +</b><small>Every puzzle since day one, with the planner's route shown. $2.99 once, no subscription.</small></span><span class="go">See it</span></a>
   @HOW@
 </main>'''
 HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script><script src="@/js/chart-bg.js" defer></script>'

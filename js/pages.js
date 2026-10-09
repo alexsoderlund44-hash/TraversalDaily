@@ -41,7 +41,7 @@
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }
     const wk = g('hm-week'); if (wk) { const wd = new Date(ch.key).getUTCDay(); wk.innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => { const rh = T.rhythmOf(ch.n + ((d - wd + 7) % 7)); return `<li class="${d === wd ? 'now' : ''}"><span class="ic">${rh.twist.icon}</span><b>${T.esc(rh.label)}</b><span>${T.esc(rh.desc)}</span></li>`; }).join(''); }
   }
-  if (page === 'index') { const hl = $('#hm-howlink'); if (hl && !runs.length) { hl.textContent = 'New here? How to play'; hl.classList.add('new'); } }
+  if (page === 'index') { const nw = $('#hm-new'); if (nw && !runs.length) nw.hidden = false; }
   if (page === 'how') {
     const KIND = { open: 'none', nofly: 'hard', oneflight: 'hard', overland: 'hard', ferry: 'soft', rail: 'soft', threemodes: 'soft' };
     const WHAT = {

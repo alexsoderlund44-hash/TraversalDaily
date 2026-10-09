@@ -937,3 +937,8 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 .hm-card .mi,.tv-mission .mi{padding:18px 10px 16px;gap:6px;background:var(--panel-2)}
 .hm-card .mi small,.tv-mission .mi small{font:italic 400 .82rem var(--disp);color:var(--ink-2)}
 @media(max-width:520px){.hm-card .mi b{font-size:1.55rem}}
+/* equal tiles, and the two word tiles a step smaller so Mix It Up and Overland Arrival sit on one or two tidy lines */
+.hm-card .mission,.tv-mission{grid-template-columns:repeat(4,minmax(0,1fr))}
+.hm-card .mi.diff b,.tv-mission .mi.diff b,.hm-card .mi:last-child b,.tv-mission .mi:last-child b{font-size:1.4rem;line-height:1.15;text-wrap:balance}
+@media(max-width:520px){.hm-card .mission{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.tv-mission{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -8,7 +8,7 @@ FONTS = {
  'atlas':   'https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Alegreya:ital,wght@0,400..900;1,400..900&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&display=swap',
 }
 TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – Every puzzle, forever','how':'How to play – TraversleDaily'}
-DESC = "A daily travel puzzle. Everyone gets the same start, destination and budget. Chain trains, buses, ferries and flights, beat the deadline, and see if you can out-plan the planner."
+DESC = "A daily travel puzzle. Everyone gets the same start, destination and budget. Pick your way across trains, buses, ferries and flights, one decision at a time, and see if you can beat the planner."
 LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"The daily travel puzzle. One start city, one destination, one budget. Plan the smartest route across trains, buses, ferries and flights, then compare it with the planner.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
 NAV = [('index','Home'),('play','Play'),('how','How to play'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
 MARK = '<svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg>'
@@ -123,7 +123,7 @@ STATS = '''
     <div class="tile"><span>Best streak</span><b id="st-max">0</b></div>
     <div class="tile"><span>Best score</span><b id="st-best">—</b></div>
     <div class="tile"><span>Planner's routes found</span><b id="st-par">0</b></div>
-    <div class="tile"><span>Deals found</span><b id="st-deals">0</b></div>
+    <div class="tile"><span>Secret fares found</span><b id="st-deals">0</b></div>
     <div class="tile"><span>Legs traveled</span><b id="st-legs">0</b></div>
     <div class="tile"><span>Distance</span><b id="st-km">0 km</b></div>
     <div class="tile"><span>Countries</span><b id="st-countries">0</b></div>
@@ -132,7 +132,7 @@ STATS = '''
   </section>
   <section class="two">
     <div class="card"><h2>How you travel</h2><div id="st-modes"></div><p class="muted"><span id="st-spent">$0</span> spent and <span id="st-hours">0h</span> on the move in total.</p></div>
-    <div class="card"><h2>Journey log</h2><div class="tbl"><table><thead><tr><th>Day</th><th>Route</th><th>Legs</th><th class="r">Spent</th><th class="r">Time</th><th class="r">Decided</th><th class="r">Score</th></tr></thead><tbody id="st-history"></tbody></table></div></div>
+    <div class="card"><h2>Journey log</h2><div class="tbl"><table><thead><tr><th>Day</th><th>Route</th><th>Legs</th><th class="r">Spent</th><th class="r">Time</th><th class="r">Decided in</th><th class="r">Score</th></tr></thead><tbody id="st-history"></tbody></table></div></div>
   </section>
 </main>'''
 PROFILE = '''
@@ -153,7 +153,7 @@ PROFILE = '''
     <p class="pf-legend"><span><i class="t1"></i>Arrived</span><span><i class="t2"></i>Wayfarer</span><span><i class="t3"></i>Navigator</span><span><i class="t4"></i>Expert</span><span><i class="t5"></i>Perfect</span></p></section>
   <section class="card"><h2>Passport</h2><p class="muted" id="pf-pp-count"></p><div class="pf-continents" id="pf-continents"></div><div class="pf-stamps" id="pf-passport"></div></section>
   <section class="card"><h2>Name</h2>
-    <label class="field"><span>Display name</span><input id="pf-name" type="text" maxlength="24" placeholder="How should we call you?"></label>
+    <label class="field"><span>Display name</span><input id="pf-name" type="text" maxlength="24" placeholder="What should we call you?"></label>
     <div class="row"><button class="btn primary" id="pf-save">Save name</button><span class="saved" id="pf-saved" hidden>Saved</span></div>
   </section>
   <section class="card danger"><h2>Reset</h2><p>Replay today from scratch, or wipe everything saved in this browser.</p><div class="row"><button class="btn ghost" id="pf-reset-today">Reset today's puzzle</button><button class="btn ghost" id="pf-reset">Erase my data</button></div></section>
@@ -169,13 +169,13 @@ HOW = '''
       <li><span class="n">2</span><b>Choose.</b><p>Tap a place to pick it, then tap Travel. Every pick spends one decision, and you only have a handful. No card ever leads somewhere you could not finish from, but a card marked Risky needs every decision you have left.</p></li>
       <li><span class="n">3</span><b>Travel.</b><p>The leg draws itself across the chart and the next choices light up. Reach the destination before the decisions run out and the expedition is complete.</p></li>
     </ol>
-    <p class="how-note">You never plan the whole route up front. You decide one leg at a time, and every card gives up something to get something: the cheapest leg is rarely the fastest, and the biggest step forward is rarely the cheapest. A long cheap crawl and a short dear hop can both arrive; the score decides which was the better journey.</p>
+    <p class="how-note">You never plan the whole route up front. You decide one leg at a time, and every card gives up something to get something: the cheapest leg is rarely the fastest, and the biggest step forward is rarely the cheapest. A long, cheap crawl and a short, pricey hop can both arrive; the score decides which was the better journey.</p>
   </section>
 
   <section class="how-sec" id="decisions"><h2>Decisions, difficulty and charted routes</h2>
     <div class="how-grid">
       <div class="how-card"><span class="ic">🧭</span><b>Decisions</b><p>Your scarcest resource. The counter shows how many are left, and every card says how many the rest of the trip needs from there. The day gives you one more than its longest charted route, and never fewer than four.</p></div>
-      <div class="how-card"><span class="ic lv"><i></i><i></i><i></i></span><b>Difficulty</b><p>Each day has one, two or three charted routes that reach the destination. Three means Easy, two Medium, one Hard. You can flick through them on the chart after you finish.</p></div>
+      <div class="how-card"><span class="ic lv"><i></i><i></i><i></i></span><b>Difficulty</b><p>Each day has one, two or three charted routes that reach the destination. Three means Easy, two Medium, one Hard. You can see each one on the chart after you finish.</p></div>
       <div class="how-card"><span class="ic">🏁</span><b>Any way that arrives wins</b><p>The charted routes are the planner's answers, not the only ones. Any path that reaches the destination within your decisions is a finish.</p></div>
       <div class="how-card"><span class="ic">🛑</span><b>Out of decisions</b><p>Run out before you arrive and the expedition ends where you stand. The day still counts as played, your streak is safe, and you can try again as practice.</p></div>
     </div>
@@ -225,7 +225,7 @@ HOW = '''
       <details><summary>Is everyone playing the same puzzle?</summary><p>Yes. The start, the destination, the rule, the fares and the secret fares are the same for everyone on the same UTC day. That is what makes the scores comparable.</p></details>
       <details><summary>Why is the shortest route not always best?</summary><p>Money is half the score, time 30% and decisions 20%. A two-leg hop that costs more and a five-leg crawl that costs less can both arrive, and the score decides which was the better journey. Fewer legs help, but a cheap route beats a short one.</p></details>
       <details><summary>Can I get stuck?</summary><p>No. A card is only offered if the rest of the journey can still be finished from there within your decisions, and each card says how many it needs. Run the counter to zero without arriving and the expedition ends, but it never traps you a step earlier.</p></details>
-      <details><summary>Do I have to follow a charted route?</summary><p>No. They are the planner's answers and they set the difficulty. Any route that arrives within your decisions is a finish, and you can flick through the charted ones on the chart afterwards.</p></details>
+      <details><summary>Do I have to follow a charted route?</summary><p>No. They are the planner's answers and they set the difficulty. Any route that arrives within your decisions is a finish, and you can see the charted ones on the chart afterward.</p></details>
       <details><summary>What happens when I run out of decisions?</summary><p>The expedition ends where you are. The day counts as played, your streak is safe, and you can try again as practice.</p></details>
       <details><summary>Where is my progress saved?</summary><p>In this browser. Scores, streaks, badges and your profile stay on this device for now.</p></details>
     </div>

@@ -1,8 +1,8 @@
 # Twist ideas (parked, to refine later)
 
 A twist is a rule the route search can verify, so every day still has a guaranteed planner's route that fits the budget.
-Shipped so far: Open road, Grounded (no flights), One ticket (one flight max), Sea legs (ferry required), Rail pass (two trains),
-Overland arrival (no flying into the destination), Mix it up (three modes).
+Shipped so far: Open Road, Grounded (no flights), One Ticket (one flight max), Sea Legs (ferries half price), Rail Pass (trains half price),
+Overland Arrival (no flying into the destination), Mix It Up (flights cost double).
 
 ## Transport passes
 - **Eurail Day.** Rail only. Trains cost a flat pass fare ($49 pass, $0 per leg). Pure routing puzzle. Only on days where both cities are in rail countries.

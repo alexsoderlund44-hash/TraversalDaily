@@ -53,14 +53,14 @@
 
   /* ---------- twists: one rule that changes the puzzle for the day ---------- */
   const TWISTS = [
-    { id: 'open', icon: '🧭', name: 'Open road', desc: 'No extra rule today. Spend less, arrive sooner.', state: () => 0, allow: () => true, done: () => true, status: () => '' },
+    { id: 'open', icon: '🧭', name: 'Open Road', desc: 'No extra rule today. Spend less, arrive sooner.', state: () => 0, allow: () => true, done: () => true, status: () => '' },
     { id: 'nofly', icon: '🚫', name: 'Grounded', desc: 'No flights today. Ground and sea only.', state: () => 0, allow: l => l.mode !== 'plane', done: () => true, status: () => 'no flights allowed' },
-    { id: 'oneflight', icon: '🎫', name: 'One ticket', desc: 'One flight, no more.', state: (s, l) => Math.min(2, s + (l.mode === 'plane' ? 1 : 0)), allow: (l, s) => !(l.mode === 'plane' && s >= 1), done: () => true, status: s => s >= 1 ? 'your one flight is used' : 'one flight still available' },
+    { id: 'oneflight', icon: '🎫', name: 'One Ticket', desc: 'One flight, no more.', state: (s, l) => Math.min(2, s + (l.mode === 'plane' ? 1 : 0)), allow: (l, s) => !(l.mode === 'plane' && s >= 1), done: () => true, status: s => s >= 1 ? 'your one flight is used' : 'one flight still available' },
     // fare rules: nothing is removed, a kind of transport is repriced, so every card shows the rule's effect
-    { id: 'ferry', icon: '🚢', name: 'Sea legs', desc: 'Ferries are half price today.', fare: { ferry: 0.5 }, state: () => 0, allow: () => true, done: () => true, status: () => 'ferries half price' },
-    { id: 'rail', icon: '🚆', name: 'Rail pass', desc: 'Trains are half price today.', fare: { train: 0.5 }, state: () => 0, allow: () => true, done: () => true, status: () => 'trains half price' },
-    { id: 'overland', icon: '🛬', name: 'Overland arrival', desc: "You can't fly into the destination.", state: () => 0, allow: (l, s, toDest) => !(toDest && l.mode === 'plane'), done: () => true, status: () => 'no flying into the destination' },
-    { id: 'threemodes', icon: '🎲', name: 'Mix it up', desc: 'Flights cost double today. Mix your transport.', fare: { plane: 2 }, state: () => 0, allow: () => true, done: () => true, status: () => 'flights cost double' },
+    { id: 'ferry', icon: '🚢', name: 'Sea Legs', desc: 'Ferries are half price today.', fare: { ferry: 0.5 }, state: () => 0, allow: () => true, done: () => true, status: () => 'ferries half price' },
+    { id: 'rail', icon: '🚆', name: 'Rail Pass', desc: 'Trains are half price today.', fare: { train: 0.5 }, state: () => 0, allow: () => true, done: () => true, status: () => 'trains half price' },
+    { id: 'overland', icon: '🛬', name: 'Overland Arrival', desc: "You can't fly into the destination.", state: () => 0, allow: (l, s, toDest) => !(toDest && l.mode === 'plane'), done: () => true, status: () => 'no flying into the destination' },
+    { id: 'threemodes', icon: '🎲', name: 'Mix It Up', desc: 'Flights cost double today. Mix your transport.', fare: { plane: 2 }, state: () => 0, allow: () => true, done: () => true, status: () => 'flights cost double' },
   ];
   const pop = x => { let n = 0; while (x) { n += x & 1; x >>= 1; } return n; };
   const twistById = {}; TWISTS.forEach(t => (twistById[t.id] = t));
@@ -414,35 +414,35 @@
       ferryLegs: modeCount.ferry || 0, quick: runs.filter(r => r.secs < 45).length, maxLegs: runs.reduce((a, r) => Math.max(a, r.route.length), 0),
       thrifty: runs.filter(r => r.cost < 100).length, level: progression(results).level,
       early: runs.some(r => hourOf(r) < 7), late: runs.some(r => hourOf(r) >= 23),
-      flawless: runs.some(r => r.tier === 'Perfect' && !r.hints && !r.undos), quickPar: runs.some(r => r.parMatch && r.secs < 60), gapReturn,
+      flawless: runs.some(r => r.tier === 'Perfect' && r.deals && r.deals.total > 0 && r.deals.found >= r.deals.total), quickPar: runs.some(r => r.parMatch && r.secs < 60), gapReturn,
     };
   }
 
   /* ---------- achievements: tiered (bronze, silver, gold) so there is always a next goal, plus a few secret ones ---------- */
   const TIER_NAMES = ['Bronze', 'Silver', 'Gold'];
   const ACH = [
-    { id: 'first', ic: '🧭', name: 'First Departure', what: 'Submit your first journey', v: s => s.played, t: [1] },
+    { id: 'first', ic: '🧭', name: 'First Departure', what: 'Finish your first journey', v: s => s.played, t: [1] },
     { id: 'streak', ic: '🔥', name: 'On a Roll', what: 'Play {n} days in a row', v: s => s.maxStreak, t: [7, 30, 100] },
     { id: 'played', ic: '🎒', name: 'Seasoned', what: 'Play {n} days', v: s => s.played, t: [10, 50, 200] },
     { id: 'par', ic: '🎯', name: "Planner's Match", what: "Find the planner's route {n}", v: s => s.parDays, t: [1, 10, 50], times: true },
-    { id: 'deals', ic: '🏷️', name: 'Deal Hunter', what: 'Find every hidden deal in a day {n}', v: s => s.dealDays, t: [1, 10, 50], times: true },
+    { id: 'deals', ic: '🏷️', name: 'Deal Hunter', what: 'Find every secret fare in a day {n}', v: s => s.dealDays, t: [1, 10, 50], times: true },
     { id: 'perfect', ic: '🏆', name: 'Perfect Day', what: 'Earn a Perfect rating {n}', v: s => s.perfect, t: [1, 5, 25], times: true },
     { id: 'expert', ic: '🥇', name: 'Consistent', what: 'Rate Expert or better on {n} days', v: s => s.expert, t: [3, 15, 60] },
     { id: 'passport', ic: '🛂', name: 'Passport', what: 'Pass through {n} countries', v: s => s.countries.size, t: [10, 25, 50] },
     { id: 'continents', ic: '🌍', name: 'Continental', what: 'Travel on {n} continents', v: s => s.continents.size, t: [2, 4, 6] },
-    { id: 'distance', ic: '🛰️', name: 'Long Haul', what: 'Travel {n} km in total', v: s => s.km, t: [10000, 40075, 384400], note: ['', 'once round the Earth', 'as far as the Moon'] },
+    { id: 'distance', ic: '🛰️', name: 'Long Haul', what: 'Travel {n} km in total', v: s => s.km, t: [10000, 40075, 384400], note: ['', 'once around the Earth', 'as far as the Moon'] },
     { id: 'twists', ic: '🎲', name: 'Rule Bender', what: 'Play {n} different twists', v: s => s.twists.size, t: [3, 5, 7] },
     { id: 'modes', ic: '🚆', name: 'Mixed Company', what: 'Use {n} kinds of transport', v: s => Object.keys(s.modeCount).length, t: [3, 5, 7] },
     { id: 'noplane', ic: '🚌', name: 'Grounded', what: 'Finish {n} without flying', v: s => s.noFly, t: [1, 10, 30], journeys: true },
     { id: 'ferry', ic: '🚢', name: 'Sea Legs', what: 'Take {n} ferries', v: s => s.ferryLegs, t: [1, 10, 30] },
-    { id: 'quick', ic: '⚡', name: 'Snap Decision', what: 'Submit in under 45 seconds {n}', v: s => s.quick, t: [1, 10, 30], times: true },
+    { id: 'quick', ic: '⚡', name: 'Snap Decision', what: 'Finish in under 45 seconds {n}', v: s => s.quick, t: [1, 10, 30], times: true },
     { id: 'scenic', ic: '🗺️', name: 'The Scenic Route', what: 'Finish a journey with {n} legs', v: s => s.maxLegs, t: [4, 5, 6] },
     { id: 'thrifty', ic: '💰', name: 'Thrifty', what: 'Finish {n} for under $100', v: s => s.thrifty, t: [1, 10, 30], journeys: true },
     { id: 'level', ic: '🧳', name: 'Climbing', what: 'Reach level {n}', v: s => s.level, t: [3, 5, 8] },
-    { id: 'flawless', ic: '💎', name: 'Flawless', what: 'A Perfect rating with no hints and no undos', v: s => +s.flawless, t: [1], secret: true },
+    { id: 'flawless', ic: '💎', name: 'Flawless', what: 'A Perfect rating with every secret fare of the day found', v: s => +s.flawless, t: [1], secret: true },
     { id: 'quickpar', ic: '🚀', name: 'Back of an Envelope', what: "Find the planner's route in under a minute", v: s => +s.quickPar, t: [1], secret: true },
-    { id: 'early', ic: '🌅', name: 'Early Bird', what: 'Submit a journey before 7 am', v: s => +s.early, t: [1], secret: true },
-    { id: 'late', ic: '🌙', name: 'Last Train', what: 'Submit a journey after 11 pm', v: s => +s.late, t: [1], secret: true },
+    { id: 'early', ic: '🌅', name: 'Early Bird', what: 'Finish a journey before 7 am', v: s => +s.early, t: [1], secret: true },
+    { id: 'late', ic: '🌙', name: 'Last Train', what: 'Finish a journey after 11 pm', v: s => +s.late, t: [1], secret: true },
     { id: 'return', ic: '🔁', name: 'Back on the Road', what: 'Come back after more than a week away', v: s => +s.gapReturn, t: [1], secret: true },
   ];
   const goalText = (a, n) => { const num = n.toLocaleString('en-US'); return a.what.replace('{n}', a.times ? (n === 1 ? 'once' : num + ' times') : a.journeys ? (n === 1 ? 'a journey' : num + ' journeys') : num); };

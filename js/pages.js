@@ -36,7 +36,7 @@
     g('hm-play').addEventListener('click', e => { if (e.metaKey || e.ctrlKey || e.shiftKey || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; e.preventDefault(); document.body.classList.add('leaving'); setTimeout(() => { location.href = g('hm-play').href; }, 380); });
     setTimeout(() => { const M = T.mission(ch); g('hm-mission').innerHTML = mis(M); g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> in <em>${T.decisionsFor(M)} decisions</em>?`; }, 30);
     const meta = () => g('hm-meta').innerHTML = `<span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>next puzzle in <b>${resetIn()}</b></span>${R[ch.key] ? `<span>tomorrow is <b>${T.esc(T.rhythmOf(ch.n + 1).label)}</b></span>` : ''}`; meta(); setInterval(meta, 30000);
-    if (R[ch.key]) { g('hm-play').textContent = 'See your expedition report'; g('hm-sub').innerHTML = `${R[ch.key].tier ? R[ch.key].tier + ' · ' : ''}you scored <b>${R[ch.key].score.toLocaleString()}</b> today`; }
+    if (R[ch.key]) { g('hm-play').textContent = 'See your expedition report'; g('hm-sub').innerHTML = `You scored <b>${R[ch.key].score.toLocaleString()}</b> today${R[ch.key].tier ? ', rated ' + T.esc(R[ch.key].tier) : ''}.`; }
     else if (streak) g('hm-sub').textContent = `🔥 ${streak} days in a row. Keep it going.`;
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }
     const wk = g('hm-week'); if (wk) { const wd = new Date(ch.key).getUTCDay(); wk.innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => { const rh = T.rhythmOf(ch.n + ((d - wd + 7) % 7)); return `<li class="${d === wd ? 'now' : ''}"><span class="ic">${rh.twist.icon}</span><b>${T.esc(rh.label)}</b><span>${T.esc(rh.desc)}</span></li>`; }).join(''); }
@@ -55,7 +55,7 @@
     };
     const PLAY = {
       open: 'Pure money against time. Look for the secret fares and judge each detour on how much closer it gets you.',
-      nofly: 'Long legs get slow. Favour the big hops that keep moving forward, and read the decisions line before a scenic detour.',
+      nofly: 'Long legs get slow. Favor the big hops that keep moving forward, and read the decisions line before a scenic detour.',
       oneflight: 'Save the flight for the longest gap. One well-placed flight can buy you two decisions.',
       overland: 'Fly early if you fly at all, then line up a city with a road, rail or sea leg into the finish.',
       ferry: 'A half-price ferry is usually the cheapest card on the table and often the slowest. Take it where it carries you a long way.',
@@ -101,7 +101,7 @@
     if (bestEl) bestEl.innerHTML = S.best ? `<a href="play.html${S.best.n === today ? '' : '?day=' + S.best.n}">${S.best.score.toLocaleString()}</a>` : '—';
     setT('#pf-best-sub', S.best ? `best · #${S.best.n} ${S.best.tier || ''}` : 'best game');
     setT('#pf-since', days.length ? new Date(days[0]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : 'today');
-    /* calendar: the last 20 weeks, one square per day, coloured by rating */
+    /* calendar: the last 20 weeks, one square per day, colored by rating */
     const cal = $('#pf-cal');
     if (cal) {
       const WEEKS = 20, tierCls = { Perfect: 't5', Expert: 't4', Navigator: 't3', Wayfarer: 't2', Arrived: 't1' };

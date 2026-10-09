@@ -20,7 +20,6 @@
 
   const page = document.body.dataset.page;
   const plus = T.plus();
-  const archiveRow = n => { const key = T.dayKey(n), c = T.challenge(n), r = R[key], lock = T.dayLocked(n); return `<a class="arow${lock ? ' locked' : ''}" href="${lock ? 'plus.html' : 'play.html?day=' + n}"><span class="n">#${n}<small>${fmtDay(key)}</small></span><span class="rt">${T.flagImg(c.from)} ${T.esc(c.from.name)} <i>→</i> ${T.flagImg(c.to)} ${T.esc(c.to.name)}<small>${c.twist.icon} ${T.esc(c.twist.name)}</small></span><span class="sc">${r ? `<b>${r.score.toLocaleString()}</b><small>${r.tier || 'played'}</small>` : '<small>not played</small>'}</span><span class="go">${lock ? '🔒 Traversle +' : r ? 'Replay' : 'Play'}</span></a>`; };
   if (page === 'index') {
     const g = i => document.getElementById(i), ch = T.challenge(today);
     const resetIn = () => { const ms = T.untilReset(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };
@@ -140,23 +139,6 @@
   const st = T.load(), R = st.results || {}, today = T.dayNumber(), plus = T.plus();
   const fmtDay = k => new Date(k).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   const plusBadge = () => plus.active ? `<span class="plus-on">✦ Traversle + member${plus.since ? ' since ' + new Date(plus.since).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>` : '';
-  if (page === 'archive') {
-    const q = $('#ar-q'); let filter = '';
-    const render = () => {
-      const groups = {}; let shown = 0, locked = 0;
-      for (let n = today - 1; n >= 1; n--) {
-        const key = T.dayKey(n), c = T.challenge(n), r = R[key], lock = T.dayLocked(n);
-        if (filter && !(c.from.name + ' ' + c.to.name + ' ' + c.from.country + ' ' + c.to.country + ' ' + c.twist.name).toLowerCase().includes(filter)) continue;
-        const month = new Date(key).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-        (groups[month] = groups[month] || []).push(`<a class="arow${lock ? ' locked' : ''}" href="${lock ? 'plus.html' : 'play.html?day=' + n}"><span class="n">#${n}<small>${fmtDay(key)}</small></span><span class="rt">${T.flagImg(c.from)} ${T.esc(c.from.name)} <i>→</i> ${T.flagImg(c.to)} ${T.esc(c.to.name)}<small>${c.twist.icon} ${T.esc(T.rhythmOf(n).twist.id === c.twistId ? T.rhythmOf(n).label : c.twist.name)}${c.title ? ' · ' + T.esc(c.title) : ''} · ${Math.round(T.km(c.from, c.to)).toLocaleString()} km</small></span><span class="sc">${r ? `<b>${r.score.toLocaleString()}</b><small>${r.tier || 'played'}</small>` : '<small>not played</small>'}</span><span class="go">${lock ? '🔒 Traversle +' : r ? 'Replay' : 'Play'}</span></a>`);
-        shown++; if (lock) locked++;
-      }
-      $('#ar-list').innerHTML = shown ? Object.entries(groups).map(([m, rows]) => `<h2 class="ar-month">${m}</h2><div class="alist">${rows.join('')}</div>`).join('') : `<div class="alist"><p class="empty">${today <= 1 ? "Today is puzzle #1. Past puzzles will show up here from tomorrow." : 'No puzzles match that search.'}</p></div>`;
-      $('#ar-summary').innerHTML = `${Math.max(0, today - 1)} past puzzle${today === 2 ? '' : 's'} · ${Object.keys(R).length} played${plus.active ? ' · ' + plusBadge() : locked ? ` · <a href="plus.html">${locked} locked, unlock with Traversle +</a>` : ''}`;
-    };
-    if (q) q.oninput = () => { filter = q.value.trim().toLowerCase(); render(); };
-    render();
-  }
   if (page === 'plus') {
     const stat = $('#pl-status');
     stat.innerHTML = plus.active ? `<div class="plus-active"><span class="ic">✦</span><b>You're a Traversle + member for life.</b><p>Every puzzle since day one is open in the <a href="archive.html">archive</a>. Thank you for backing the game.</p></div>` : '';

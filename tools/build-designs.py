@@ -7,7 +7,7 @@ FONTS = {
  'journal': 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Caveat:wght@500;700&display=swap',
  'atlas':   'https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Alegreya:ital,wght@0,400..900;1,400..900&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&display=swap',
 }
-TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – Every puzzle, forever','how':'How to play – TraversleDaily'}
+TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Archive – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – Every puzzle, forever','how':'How to play – TraversleDaily'}
 DESC = "A daily travel puzzle. Everyone gets the same start, destination and budget. Pick your way across trains, buses, ferries and flights, one decision at a time, and see if you can beat the planner."
 LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"The daily travel puzzle. One start city, one destination, one budget. Plan the smartest route across trains, buses, ferries and flights, then compare it with the planner.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
 NAV = [('index','Home'),('play','Play'),('how','How to play'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
@@ -29,7 +29,7 @@ def shell(design, page, body, scripts, prefix, css):
 <link rel="icon" href="{prefix}favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="{FONTS[design]}" rel="stylesheet">
-<link rel="stylesheet" href="{css}">
+<link rel="stylesheet" href="{css}">{'<link rel="stylesheet" href="'+prefix+'css/archive.css">' if page=='archive' else ''}
 </head><body class="p-{page}" data-page="{page}">
 <header class="td-head"><div class="td-wrap">
   <a class="td-brand" href="index.html" aria-label="TraversleDaily home">{MARK}<span>Traversle<b>Daily</b></span></a>
@@ -234,10 +234,9 @@ HOW = '''
 </main>'''
 ARCHIVE = '''
 <main class="td-page">
-  <header class="page-head"><h1>Past puzzles</h1><p id="ar-summary"></p></header>
-  <div class="ar-tools"><input type="search" id="ar-q" placeholder="Search a city, country or twist…" autocomplete="off"><a class="btn ghost" href="play.html">Today's puzzle</a></div>
-  <div id="ar-list"></div>
-  <section class="plus-strip"><div><h2>Missed a day?</h2><p>You can replay the last seven days for free. Traversle + unlocks every puzzle since day one.</p></div><a class="btn primary" href="plus.html">See Traversle +</a></section>
+  <header class="page-head"><h1>Archive</h1><p id="ar-summary"></p></header>
+  <div class="ar-cal" id="ar-cal"></div>
+  <section class="plus-strip" id="ar-plus"><div><h2>Missed a day?</h2><p>The last seven days are free to replay. Traversle + opens every puzzle since day one for one payment of $2.99.</p></div><a class="btn primary" href="plus.html">Get Traversle +</a></section>
 </main>'''
 PLUS = '''
 <main class="td-page narrow plus-page">
@@ -255,7 +254,8 @@ PLUS = '''
   </section>
 </main>'''
 PAGES_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script>'
-PAGES = (('index',HOME,HOME_JS),('play',PLAY,PLAY_JS),('how',HOW,PAGES_JS),('archive',ARCHIVE,PAGES_JS),('achievements',ACH,PAGES_JS),('stats',STATS,PAGES_JS),('profile',PROFILE,PAGES_JS),('plus',PLUS,PAGES_JS))
+ARCHIVE_JS = PAGES_JS + '<script src="@/js/archive.js"></script>'
+PAGES = (('index',HOME,HOME_JS),('play',PLAY,PLAY_JS),('how',HOW,PAGES_JS),('archive',ARCHIVE,ARCHIVE_JS),('achievements',ACH,PAGES_JS),('stats',STATS,PAGES_JS),('profile',PROFILE,PAGES_JS),('plus',PLUS,PAGES_JS))
 
 for page, body, js in PAGES:
     open(os.path.join(ROOT, page+'.html'),'w').write(shell('atlas', page, body, js, '', 'css/atlas.css'))

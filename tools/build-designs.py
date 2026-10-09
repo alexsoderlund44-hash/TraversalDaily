@@ -7,7 +7,7 @@ FONTS = {
  'journal': 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Caveat:wght@500;700&display=swap',
  'atlas':   'https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Alegreya:ital,wght@0,400..900;1,400..900&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&display=swap',
 }
-TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – Every puzzle, forever','how':'How to play – TraversleDaily'}
+TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Archive – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – Every puzzle, forever','how':'How to play – TraversleDaily'}
 DESC = "A daily travel puzzle. Everyone gets the same start, destination and budget. Chain trains, buses, ferries and flights, beat the deadline, and see if you can out-plan the planner."
 LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"The daily travel puzzle. One start city, one destination, one budget. Plan the smartest route across trains, buses, ferries and flights, then compare it with the planner.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
 NAV = [('index','Home'),('play','Play'),('how','How to play'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
@@ -236,7 +236,7 @@ ARCHIVE = '''
 <main class="td-page">
   <header class="page-head"><h1>Archive</h1><p id="ar-summary"></p></header>
   <div class="ar-cal" id="ar-cal"></div>
-  <section class="plus-strip" id="ar-plus"><div><h2>Missed a day?</h2><p>The last seven days are free to replay. Traversle + opens every puzzle since day one for a one-time $2.99.</p></div><a class="btn primary" href="plus.html">Get Traversle +</a></section>
+  <section class="plus-strip" id="ar-plus"><div><h2>Missed a day?</h2><p>The last seven days are free to replay. Traversle + opens every puzzle since day one for one payment of $2.99.</p></div><a class="btn primary" href="plus.html">Get Traversle +</a></section>
 </main>'''
 PLUS = '''
 <main class="td-page narrow plus-page">

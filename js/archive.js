@@ -53,17 +53,17 @@
       shown.push(n); c[s === 'perfect' ? 'solved' : s === 'today' ? 'open' : s]++;
       const r = R[T.dayKey(n)], ch = T.challenge(n), mt = metaOf(n);
       const mk = s === 'solved' || s === 'perfect' ? `<span class="mk">${s === 'perfect' ? '★' : '✓'}</span><span class="sc">${r.score.toLocaleString()}</span>` : s === 'failed' ? '<span class="mk">✕</span>' : s === 'locked' ? LOCK : s === 'today' ? '<span class="mk">Today</span>' : '<span class="mk">Play</span>';
-      const lab = `Puzzle ${n}, ${fmt(n, { weekday: 'long', month: 'long' })}, ${ch.from.name} to ${ch.to.name}, ${{ solved: 'solved', perfect: 'solved, perfect', failed: 'out of decisions', today: "today's puzzle", locked: 'Traversle +', open: 'not played' }[s]}`;
+      const lab = `Puzzle ${n}, ${fmt(n, { weekday: 'long', month: 'long' })}, ${ch.from.name} to ${ch.to.name}, ${{ solved: 'solved', perfect: 'solved, perfect', failed: 'out of decisions', today: "today's puzzle", locked: 'needs Traversle +', open: 'not played' }[s]}`;
       cells += `<button type="button" class="ar-d ${s === 'perfect' ? 'solved perfect' : s}" data-n="${n}" aria-pressed="${n === sel}" aria-label="${T.esc(lab)}"><span class="dn">${k}</span>${mk}${lv(mt && mt.d)}</button>`;
     }
     const tot = shown.length || 1;
     root.innerHTML = `
     <div class="ar-cal-main">
       <div class="ar-top"><button type="button" class="ar-nav" id="ar-prev" aria-label="Previous month"${mi ? '' : ' disabled'}>‹</button><h2 id="ar-month" aria-live="polite">${MONTHS[m]} ${y}</h2><button type="button" class="ar-nav" id="ar-next" aria-label="Next month"${mi < months.length - 1 ? '' : ' disabled'}>›</button></div>
-      <p class="ar-prog"><span><b>${c.solved}</b> solved</span><span><b>${c.failed}</b> out of decisions</span><span><b>${c.open}</b> to play</span>${c.locked ? `<span><b>${c.locked}</b> with Traversle +</span>` : ''}</p>
+      <p class="ar-prog"><span><b>${c.solved}</b> solved</span><span><b>${c.failed}</b> out of decisions</span><span><b>${c.open}</b> to play</span>${c.locked ? `<span><b>${c.locked}</b> need Traversle +</span>` : ''}</p>
       <div class="ar-bar" aria-hidden="true"><i style="width:${100 * c.solved / tot}%" class="s"></i><i style="width:${100 * c.failed / tot}%" class="f"></i></div>
       <div class="ar-grid" role="group" aria-labelledby="ar-month">${WEEK.map(w => `<span class="ar-wd" aria-hidden="true"><b>${SHORT[w]}</b><small>${T.esc(rhythmName(w))}</small></span>`).join('')}${cells}</div>
-      <p class="ar-leg"><span><i class="s"></i>Solved</span><span><i class="p"></i>Perfect</span><span><i class="f"></i>Out of decisions</span><span><i class="o"></i>Not played</span>${plus ? '' : '<span><i class="l"></i>Traversle +</span>'}<span>${lv('Hard')}Difficulty</span></p>
+      <p class="ar-leg"><span><i class="s"></i>Solved</span><span><i class="p"></i>Perfect</span><span><i class="f"></i>Out of decisions</span><span><i class="o"></i>Not played</span>${plus ? '' : '<span><i class="l"></i>Needs Traversle +</span>'}<span>${lv('Hard')}Difficulty</span></p>
     </div>
     <aside class="ar-pick" id="ar-pick" aria-live="polite"></aside>`;
     $('#ar-prev').onclick = () => go(mi - 1); $('#ar-next').onclick = () => go(mi + 1);
@@ -87,8 +87,9 @@
   function panel() {
     const el = $('#ar-pick'); if (!el) return;
     const n = sel, ch = T.challenge(n), r = R[T.dayKey(n)], s = status(n), mt = metaOf(n) || meta[n];
-    const res = r ? (r.failed ? `<p class="ar-res bad"><b>Out of decisions.</b> You used all ${r.decisionsTotal || ''} decisions${r.endedAt && T.byId[r.endedAt] ? ' and stopped in ' + T.esc(T.byId[r.endedAt].name) : ''}.</p>`
-      : `<p class="ar-res ok"><b>Solved.</b> ${r.score.toLocaleString()} points · ${T.esc(r.tier)}${r.decisionsTotal ? ` · ${r.decisions} of ${r.decisionsTotal} decisions` : ''}</p>`)
+    const stop = r && r.endedAt && T.byId[r.endedAt], short = r && r.kmShort ? `, ${Math.round(r.kmShort).toLocaleString()} km short` : '';
+    const res = r ? (r.failed ? `<p class="ar-res bad"><b>${r.reason ? 'Expedition ended.' : 'Out of decisions.'}</b> ${stop ? `You were stranded in ${T.esc(stop.name)}${short}.` : `You didn't reach ${T.esc(ch.to.name)}.`}</p>`
+      : `<p class="ar-res ok"><b>Solved.</b> You scored ${r.score.toLocaleString()} (${T.esc(r.tier)})${r.decisionsTotal ? ` and used ${r.decisions} of ${r.decisionsTotal} decisions` : ''}.</p>`)
       : s === 'locked' ? '<p class="ar-res">This one is more than a week old. Traversle + opens every puzzle since day one.</p>' : '<p class="ar-res">Not played yet.</p>';
     const btn = !playable(n) ? `<a class="btn primary" href="plus.html">${LOCK} Unlock with Traversle +</a>`
       : n === today ? `<a class="btn primary" href="play.html">${r ? 'See your report' : "Play today's puzzle"}</a>`
@@ -97,7 +98,7 @@
       <p class="ar-meta"><span>#${n} · ${fmt(n, { weekday: 'short' })}</span><span>${T.esc(themeOf(n))}</span>${mt ? `<span class="ar-diff ${mt.d.toLowerCase()}">${lv(mt.d)}${mt.d}</span>` : ''}</p>
       <h3 class="ar-route"><span>${T.flagImg(ch.from, 22)} ${T.esc(ch.from.name)}<small>${T.esc(ch.from.country)}</small></span><span class="to">to</span><span>${T.flagImg(ch.to, 22)} ${T.esc(ch.to.name)}<small>${T.esc(ch.to.country)}</small></span></h3>
       ${ch.title ? `<p class="ar-title">${T.esc(ch.title)}</p>` : ''}
-      <dl class="ar-facts"><div><dt>Decisions</dt><dd>${mt ? mt.k : '…'}</dd></div><div><dt>${mt && mt.w === 1 ? 'Route' : 'Routes'}</dt><dd>${mt ? mt.w : '…'}</dd></div><div><dt>km apart</dt><dd>${Math.round(T.km(ch.from, ch.to)).toLocaleString()}</dd></div></dl>
+      <dl class="ar-facts"><div><dt>Decisions</dt><dd>${mt ? mt.k : '…'}</dd></div><div><dt>Charted ${mt && mt.w === 1 ? 'route' : 'routes'}</dt><dd>${mt ? mt.w : '…'}</dd></div><div><dt>Distance</dt><dd>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</dd></div></dl>
       ${res}<div class="ar-acts">${btn}</div>`;
     need([n]);
   }

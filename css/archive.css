@@ -59,7 +59,7 @@ button.ar-d:hover{transform:translateY(-2px);box-shadow:0 4px 0 rgba(43,29,18,.2
 .ar-route .to{font-weight:400;font-size:1rem;color:var(--brass)}
 .ar-title{font:italic 1rem var(--disp);color:var(--ink-2)}
 .ar-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0;padding-block:10px;border-block:1px solid var(--line)}
-.ar-facts div{display:flex;flex-direction:column-reverse;gap:1px}
+.ar-facts div{display:flex;flex-direction:column-reverse;justify-content:flex-end;gap:2px}
 .ar-facts dd{margin:0;font:700 1.1rem var(--disp);font-variant-numeric:tabular-nums}
 .ar-facts dt{font:700 .7rem var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
 .ar-res{font-size:.95rem}.ar-res.ok b{color:var(--teal)}.ar-res.bad b{color:var(--red)}

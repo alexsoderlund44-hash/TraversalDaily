@@ -20,7 +20,6 @@
 
   const page = document.body.dataset.page;
   const plus = T.plus();
-  const archiveRow = n => { const key = T.dayKey(n), c = T.challenge(n), r = R[key], lock = T.dayLocked(n); return `<a class="arow${lock ? ' locked' : ''}" href="${lock ? 'plus.html' : 'play.html?day=' + n}"><span class="n">#${n}<small>${fmtDay(key)}</small></span><span class="rt">${T.flagImg(c.from)} ${T.esc(c.from.name)} <i>→</i> ${T.flagImg(c.to)} ${T.esc(c.to.name)}<small>${c.twist.icon} ${T.esc(c.twist.name)}</small></span><span class="sc">${r ? `<b>${r.score.toLocaleString()}</b><small>${r.tier || 'played'}</small>` : '<small>not played</small>'}</span><span class="go">${lock ? '🔒 Traversle +' : r ? 'Replay' : 'Play'}</span></a>`; };
   if (page === 'index') {
     const g = i => document.getElementById(i), ch = T.challenge(today);
     const resetIn = () => { const ms = T.untilReset(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };

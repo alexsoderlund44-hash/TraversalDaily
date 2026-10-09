@@ -41,6 +41,30 @@
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }
     const wk = g('hm-week'); if (wk) { const wd = new Date(ch.key).getUTCDay(); wk.innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => { const rh = T.rhythmOf(ch.n + ((d - wd + 7) % 7)); return `<li class="${d === wd ? 'now' : ''}"><span class="ic">${rh.twist.icon}</span><b>${T.esc(rh.label)}</b><span>${T.esc(rh.desc)}</span></li>`; }).join(''); }
   }
+  if (page === 'index') { const hl = $('#hm-howlink'); if (hl && !runs.length) { hl.textContent = 'New here? How to play'; hl.classList.add('new'); } }
+  if (page === 'how') {
+    const KIND = { open: 'none', nofly: 'hard', oneflight: 'hard', overland: 'hard', ferry: 'soft', rail: 'soft', threemodes: 'soft' };
+    const WHAT = {
+      open: 'Nothing is removed and nothing is tilted. Every leg the chart has is on the table.',
+      nofly: 'No flight is ever offered. Every leg is a bus, train, ferry, rideshare or car.',
+      oneflight: 'Once you have flown, no more flights are offered for the rest of the journey.',
+      overland: 'No flight into the destination is offered. You can fly earlier, but the last leg is on the ground or at sea.',
+      ferry: 'Where a ferry runs, it is the fare you are shown until you have taken one. The charted routes all take a ferry somewhere.',
+      rail: 'Where a train runs, it is the fare you are shown until you have taken two. The charted routes all ride the train at least twice.',
+      threemodes: 'A kind of transport you have not used yet is the fare you are shown, until you have used three. The charted routes all mix three.'
+    };
+    const PLAY = {
+      open: 'Pure money against time. Look for the secret fares and judge each detour on how much closer it gets you.',
+      nofly: 'Long legs get slow. Favour the big hops that keep moving forward, and count your decisions before a scenic detour.',
+      oneflight: 'Save the flight for the longest gap. One well-placed flight can buy you two decisions.',
+      overland: 'Fly early if you fly at all, then line up a city with a road, rail or sea leg into the finish.',
+      ferry: 'Coast to coast. A ferry is usually slow but cheap, so take it where it carries you a long way.',
+      rail: 'Europe by train. Trains are fast between big cities, so string two of them along the way.',
+      threemodes: 'Three kinds of transport. Mix a bus, a train and a ferry early so you are not forced into an odd leg at the end.'
+    };
+    const tw = $('#how-twists'); if (tw) tw.innerHTML = T.TWISTS.map(t => `<div class="how-twist"><span class="ic">${t.icon}</span><b>${T.esc(t.name)}</b><p class="what"><em class="${KIND[t.id] || 'hard'}">${KIND[t.id] === 'none' ? 'No rule' : KIND[t.id] === 'soft' ? 'Tilts the fares' : 'Removes legs'}</em>${T.esc(WHAT[t.id] || t.desc)}</p><p class="how"><b>Play it:</b> ${T.esc(PLAY[t.id] || '')}</p></div>`).join('');
+    const wk = $('#how-week'); if (wk) { const wd = new Date(T.dayKey(today)).getUTCDay(); wk.innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => { const rh = T.rhythmOf(today + ((d - wd + 7) % 7)); return `<li class="${d === wd ? 'now' : ''}"><span class="ic">${rh.twist.icon}</span><b>${T.esc(rh.label)}</b><span>${T.esc(rh.desc)}${d === wd ? ' · today' : ''}</span></li>`; }).join(''); }
+  }
   if (page === 'achievements') {
     $('#ach-summary').textContent = `${unlocked} of ${ACH.length} badges · ${tiersEarned} of ${tiersAll} tiers earned`;
     const lv = $('#ach-level'); if (lv) lv.innerHTML = levelHTML();

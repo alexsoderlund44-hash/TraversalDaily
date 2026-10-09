@@ -7,16 +7,17 @@ FONTS = {
  'journal': 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Caveat:wght@500;700&display=swap',
  'atlas':   'https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Alegreya:ital,wght@0,400..900;1,400..900&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&display=swap',
 }
-TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – Every puzzle, forever'}
+TITLE = {'index':'TraversleDaily – A new travel puzzle every day','play':"Play today's puzzle – TraversleDaily",'archive':'Past puzzles – TraversleDaily','achievements':'Achievements – TraversleDaily','stats':'Your stats – TraversleDaily','profile':'Profile – TraversleDaily','plus':'Traversle + – Every puzzle, forever','how':'How to play – TraversleDaily'}
 DESC = "A daily travel puzzle. Everyone gets the same start, destination and budget. Chain trains, buses, ferries and flights, beat the deadline, and see if you can out-plan the planner."
 LD = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraversleDaily","alternateName":"Traversle Daily","url":"https://traversledaily.com/","applicationCategory":"GameApplication","operatingSystem":"Web","description":"The daily travel puzzle. One start city, one destination, one budget. Plan the smartest route across trains, buses, ferries and flights, then compare it with the planner.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"genre":["puzzle","geography","travel"]}</script>'
-NAV = [('index','Home'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
+NAV = [('index','Home'),('how','How to play'),('archive','Archive'),('achievements','Achievements'),('stats','Stats'),('profile','Profile'),('plus','✦ Traversle +')]
 MARK = '<svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg>'
 
 def shell(design, page, body, scripts, prefix, css):
     body = body.replace('@HOW@', HOW_MODAL)
     icons = '<div class="td-icons"><button id="td-help" aria-label="How to play" title="How to play">?</button><button id="td-stats" aria-label="Your stats" title="Your stats"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2" y="10" width="4" height="8" fill="currentColor"/><rect x="8" y="4" width="4" height="14" fill="currentColor"/><rect x="14" y="7" width="4" height="11" fill="currentColor"/></svg></button></div>' if page == 'play' else ''
-    nav = ''.join(f'<a href="{p}.html" class="{"on " if p==page else ""}{"plus" if p=="plus" else ""}">{n}</a>' for p,n in NAV) + '<a href="index.html#how">How to play</a>'
+    nav = ''.join(f'<a href="{p}.html" class="{"on " if p==page else ""}{"plus" if p=="plus" else ""}">{n}</a>' for p,n in NAV)
+    topnav = '<nav class="td-nav" aria-label="Main">' + ('' if page == 'play' else '<a class="play" href="play.html">Play</a>') + f'<a href="how.html" class="{"on" if page=="how" else ""}">How to play</a><a href="archive.html" class="{"on" if page=="archive" else ""}">Archive</a></nav>'
     canon = '<link rel="canonical" href="https://traversledaily.com/">' if (page=='index' and prefix=='') else ''
     return f'''<!doctype html>
 <html lang="en"><head>
@@ -32,7 +33,7 @@ def shell(design, page, body, scripts, prefix, css):
 </head><body class="p-{page}" data-page="{page}">
 <header class="td-head"><div class="td-wrap">
   <a class="td-brand" href="index.html" aria-label="TraversleDaily home">{MARK}<span>Traversle<b>Daily</b></span></a>
-  {icons}<button class="td-burger" id="td-burger" aria-label="Menu" aria-expanded="false" aria-controls="td-menu"><span></span><span></span><span></span></button>
+  {topnav}{icons}<button class="td-burger" id="td-burger" aria-label="Menu" aria-expanded="false" aria-controls="td-menu"><span></span><span></span><span></span></button>
   <nav class="td-menu" id="td-menu" aria-label="Sections" hidden>{nav}</nav>
 </div></header>
 {body}
@@ -45,7 +46,7 @@ var how=document.getElementById('hm-howmodal');if(how){{window.tdHow=function(o)
 HOW_MODAL = '''<div class="td-modal" id="hm-howmodal" hidden><div class="td-modal-card how" role="dialog" aria-modal="true" aria-label="How to play"><button class="td-modal-x" onclick="tdHow(false)" aria-label="Close">✕</button>
   <p class="kicker">How to play</p>
   <ol class="hm-how"><li><b>Get from A to B.</b> Every day has one start and one destination, the same for everyone.</li><li><b>Each step shows a few ways onward.</b> Pick one and you travel there. Every pick costs a decision, and you only have a handful.</li><li><b>Reach the destination before the decisions run out.</b> Spend less and arrive sooner than the planner for a better score.</li></ol>
-  <p class="sub">Some legs are secretly cheap. You find them by looking.</p>
+  <p class="sub">Some legs are secretly cheap. You find them by looking. <a href="how.html">The full guide</a> has the rules, the twists and a worked example.</p>
 </div></div>'''
 
 # ----- shared page bodies (design-neutral markup; themes do the rest) -----
@@ -68,12 +69,7 @@ HOME = '''
     <div id="hm-level" class="hm-level" hidden></div>
     <p class="meta" id="hm-meta"></p>
   </section>
-  <section class="hm-panels">
-    <article class="hm-panel" id="how"><h2>How to play</h2>
-      <ol class="hm-how"><li><b>Get from A to B.</b> One start, one destination, the same for everyone today.</li><li><b>Each step shows a few ways onward.</b> Pick one and you travel there. Every pick costs a decision, and you only have a handful.</li><li><b>Reach the destination before the decisions run out.</b> Spend less and arrive sooner than the planner for a better score.</li></ol></article>
-    <article class="hm-panel hm-week" aria-label="The week"><h2>Every day has its own rule</h2><ol id="hm-week"></ol></article>
-    <article class="hm-panel hm-plus"><h2>Traversle +</h2><p>Today's puzzle is always free. Traversle + lets you play every puzzle since day one, shows you the planner's route for each one, and keeps your archive stats on your profile.</p><a class="btn" href="plus.html">See Traversle +</a><a class="lnk" href="archive.html">Browse past puzzles</a></article>
-  </section>
+  <nav class="hm-links" aria-label="More"><a href="how.html" id="hm-howlink">How to play</a><a href="archive.html">Past puzzles</a><a href="stats.html">Your stats</a><a href="plus.html" class="plus">✦ Traversle +</a></nav>
   @HOW@
 </main>'''
 HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script><script src="@/js/chart-bg.js" defer></script>'
@@ -161,6 +157,77 @@ PROFILE = '''
   </section>
   <section class="card danger"><h2>Reset</h2><p>Replay today from scratch, or wipe everything saved in this browser.</p><div class="row"><button class="btn ghost" id="pf-reset-today">Reset today's puzzle</button><button class="btn ghost" id="pf-reset">Erase my data</button></div></section>
 </main>'''
+HOW = '''
+<main class="td-page narrow how-page">
+  <header class="page-head"><p class="eyebrow">How to play</p><h1>One route a day. <em>Choose well.</em></h1><p>Everyone gets the same start, the same destination and the same handful of decisions. Spend less and arrive sooner than the planner, and compare your score with everyone else's. A game takes about five minutes.</p>
+    <p class="how-cta"><a class="btn primary big" href="play.html">Play today's puzzle</a></p></header>
+
+  <section class="how-sec" id="loop"><h2>A day in three moves</h2>
+    <ol class="how-steps">
+      <li><span class="n">1</span><b>Look.</b><p>The chart shows where you are and lights up two or three places you can go next. Each card tells you the fare, the travel time and whether it brings you closer.</p></li>
+      <li><span class="n">2</span><b>Choose.</b><p>Tap a place to pick it, then tap Travel. Every pick spends one decision, and you only have a handful.</p></li>
+      <li><span class="n">3</span><b>Travel.</b><p>The leg draws itself across the chart and the next choices light up. Reach the destination before the decisions run out and the expedition is complete.</p></li>
+    </ol>
+    <p class="how-note">You never plan the whole route up front. You decide one leg at a time, and the fewest legs is not always the best way: a long cheap crawl and a short dear hop can both arrive.</p>
+  </section>
+
+  <section class="how-sec" id="decisions"><h2>Decisions, difficulty and charted routes</h2>
+    <div class="how-grid">
+      <div class="how-card"><span class="ic">🧭</span><b>Decisions</b><p>Your one resource. The counter shows how many are left. The day gives you one more than its longest charted route, and never fewer than four.</p></div>
+      <div class="how-card"><span class="ic lv"><i></i><i></i><i></i></span><b>Difficulty</b><p>Each day has one, two or three charted routes that reach the destination. Three means Easy, two Medium, one Hard. You can flick through them on the chart after you finish.</p></div>
+      <div class="how-card"><span class="ic">🏁</span><b>Any way that arrives wins</b><p>The charted routes are the planner's answers, not the only ones. Any path that reaches the destination within your decisions is a finish.</p></div>
+      <div class="how-card"><span class="ic">🛑</span><b>Out of decisions</b><p>Run out before you arrive and the expedition ends where you stand. The day still counts as played, your streak is safe, and you can try again as practice.</p></div>
+    </div>
+  </section>
+
+  <section class="how-sec" id="score"><h2>Money, time and score</h2>
+    <p>Two things are measured when you arrive: what you spent and how long you travelled. Each is compared with the best route that fits the day, so a cheap route scores well on money and a fast one on time. The best scores do well at both. Deciding quickly adds a bonus of up to 20% and never takes anything away.</p>
+    <div class="how-grid two">
+      <div class="how-card"><span class="ic">🎟️</span><b>Secret fares</b><p>A few legs each day carry a hidden discount. You find one when it turns up among your choices, and the ticket shows the saving. Taking it lowers what you spend. Finding every secret fare of the day earns extra XP.</p></div>
+      <div class="how-card"><span class="ic">🗺️</span><b>Beat the planner</b><p>The planner's route is the balanced charted route. Your rating is your score against the planner's: Perfect at 97% or more, then Expert, Navigator, Wayfarer and Arrived. Cheaper or faster than the planner, and you win the duel.</p></div>
+    </div>
+    <p class="how-note">Scores run from 0 to 10,000. A score, a streak day, a Perfect or Expert rating and a full set of secret fares each add XP, which carries you from Backpacker to Legend and unlocks badges.</p>
+  </section>
+
+  <section class="how-sec" id="twists"><h2>Every day has a rule</h2>
+    <p>The day's rule shapes which legs you are offered. Some rules remove legs outright; others tilt the fare you are shown toward a kind of transport. The charted routes always obey the rule, so following them keeps you honest, and a detour never leaves you with nowhere to go.</p>
+    <div class="how-twists" id="how-twists"></div>
+    <h3>The week</h3>
+    <p>Each weekday has its own rule and its own part of the world, so the week has a rhythm.</p>
+    <ol class="how-week" id="how-week"></ol>
+  </section>
+
+  <section class="how-sec" id="example"><h2>One decision, worked through</h2>
+    <p>Puzzle #8 ran from Cancún to San Francisco with six decisions and no flights. This is the first step.</p>
+    <figure class="how-ex">
+      <svg viewBox="0 0 560 230" role="img" aria-label="From Cancún, three choices: Houston, Mexico City and New Orleans. Houston is picked.">
+        <defs><pattern id="hx-grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="rgba(70,40,10,.12)" stroke-width=".6"/></pattern></defs>
+        <rect width="560" height="230" fill="#E3CC96"/><rect width="560" height="230" fill="url(#hx-grid)"/>
+        <path d="M120 30 C 160 70, 200 90, 250 95 S 360 110, 420 150 S 470 200, 430 230 L 560 230 L 560 0 L 120 0 Z" fill="#D9BE84" opacity=".55"/>
+        <g class="spoke"><path d="M400 180 L 300 70" /><path d="M400 180 L 170 150" /><path d="M400 180 L 460 60" /></g>
+        <g class="opt"><circle cx="300" cy="70" r="7"/><text x="312" y="74">Houston</text><text class="fare" x="312" y="90">$76 · 19h 10m · bus</text></g>
+        <g class="opt"><circle cx="170" cy="150" r="7"/><text x="100" y="140">Mexico City</text><text class="fare" x="100" y="156">$66 · 19h 25m · bus</text></g>
+        <g class="opt"><circle cx="460" cy="60" r="7"/><text x="430" y="42">New Orleans</text><text class="fare" x="430" y="58" dx="-16">$53 · 15h 40m · bus</text></g>
+        <g class="cur"><circle cx="400" cy="180" r="9"/><text x="412" y="196">Cancún · you are here</text></g>
+        <g class="pick"><path d="M400 180 L 300 70"/><text x="322" y="120">picked</text></g>
+        <g class="dec"><rect x="14" y="14" width="150" height="34" rx="4"/><text x="26" y="36">6 decisions left</text></g>
+      </svg>
+      <figcaption>Houston is the furthest forward and sits on a charted route, so it is the safe pick. New Orleans is the cheapest and fastest leg, but it is a detour: it still has a way on, only a longer one. Pick Houston and the counter drops to five.</figcaption>
+    </figure>
+  </section>
+
+  <section class="how-sec" id="faq"><h2>Questions</h2>
+    <div class="faq">
+      <details><summary>How many times can I play a day?</summary><p>Once for a score. After that, today's puzzle and the last seven days replay as practice, which is never scored. Random expeditions are practice too.</p></details>
+      <details><summary>Is everyone playing the same puzzle?</summary><p>Yes. The start, the destination, the rule, the fares and the secret fares are the same for everyone on the same UTC day. That is what makes the scores comparable.</p></details>
+      <details><summary>Why is the shortest route not always best?</summary><p>Money and time both count. A two-leg hop that costs more and a five-leg crawl that costs less can both arrive, and the score decides which was the better journey.</p></details>
+      <details><summary>Do I have to follow a charted route?</summary><p>No. They are the planner's answers and they set the difficulty. Any route that arrives within your decisions is a finish, and you can flick through the charted ones on the chart afterwards.</p></details>
+      <details><summary>What happens when I run out of decisions?</summary><p>The expedition ends where you are. The day counts as played, your streak is safe, and you can try again as practice.</p></details>
+      <details><summary>Where is my progress saved?</summary><p>In this browser. Scores, streaks, badges and your profile stay on this device for now.</p></details>
+    </div>
+    <p class="how-cta end"><a class="btn primary big" href="play.html">Play today's puzzle</a> <a class="btn ghost" href="archive.html">Past puzzles</a></p>
+  </section>
+</main>'''
 ARCHIVE = '''
 <main class="td-page">
   <header class="page-head"><h1>Past puzzles</h1><p id="ar-summary"></p></header>
@@ -184,7 +251,7 @@ PLUS = '''
   </section>
 </main>'''
 PAGES_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/pages.js"></script>'
-PAGES = (('index',HOME,HOME_JS),('play',PLAY,PLAY_JS),('archive',ARCHIVE,PAGES_JS),('achievements',ACH,PAGES_JS),('stats',STATS,PAGES_JS),('profile',PROFILE,PAGES_JS),('plus',PLUS,PAGES_JS))
+PAGES = (('index',HOME,HOME_JS),('play',PLAY,PLAY_JS),('how',HOW,PAGES_JS),('archive',ARCHIVE,PAGES_JS),('achievements',ACH,PAGES_JS),('stats',STATS,PAGES_JS),('profile',PROFILE,PAGES_JS),('plus',PLUS,PAGES_JS))
 
 for page, body, js in PAGES:
     open(os.path.join(ROOT, page+'.html'),'w').write(shell('atlas', page, body, js, '', 'css/atlas.css'))

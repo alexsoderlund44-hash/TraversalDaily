@@ -126,6 +126,7 @@
     <div class="mi"><span class="ic">🎟️</span><b>${M.deals}</b><span>secret fare${M.deals === 1 ? '' : 's'} · cheap legs, if you look</span></div>`;
   $('#tv-gate-rules').innerHTML = `<li>Each step shows a few ways onward. Pick one and you travel there. Every pick costs a decision.</li><li>Reach ${T.esc(ch.to.name)} before the decisions run out. Spend less and arrive sooner than the planner for a better score.</li>`;
   $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'Everyone playing today gets this same route, and one scored attempt.';
+  if (!Object.keys((T.load().results) || {}).length && mode === 'today' && !practice) $('#tv-gate-note').innerHTML += ' New here? <a href="how.html">How to play</a> takes two minutes, or press Begin and learn by doing.';
   if (resume) { $('#tv-start').textContent = 'Continue the journey'; $('#tv-gate-note').textContent = `You left with ${resume.route.length} leg${resume.route.length === 1 ? '' : 's'} in place and ${resume.decisions} decision${resume.decisions === 1 ? '' : 's'} left.`; }
   const locked = mode === 'archive' && T.dayLocked(ch.n);
   if (locked) {

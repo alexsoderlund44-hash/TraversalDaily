@@ -848,7 +848,7 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 .how-twist{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;align-items:start;padding:14px 16px;border:1px solid var(--line-2);border-radius:4px;background:rgba(250,243,225,.7)}
 .how-twist .ic{font-size:1.5rem;line-height:1.2;grid-row:1/4}.how-twist b{font:500 1.15rem var(--disp)}
 .how-twist .what{margin:0;color:var(--ink-2);font-size:.93rem;line-height:1.5}.how-twist .what em{font-style:normal;font:800 .62rem var(--ui);letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:2px;margin-right:6px;vertical-align:middle}
-.how-twist .what em.hard{background:var(--red);color:#FFF4DC}.how-twist .what em.soft{background:var(--brass-2);color:#1A1408}.how-twist .what em.none{background:var(--line-2);color:var(--ink-2)}
+.how-twist .what em.hard{background:var(--red);color:#FFF4DC}.how-twist .what em.soft{background:var(--brass-2);color:#FFF4DC}.how-twist .what em.none{background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line-2)}
 .how-twist .how{margin:0;color:var(--ink-3);font-size:.88rem;line-height:1.45}.how-twist .how b{font:700 .88rem var(--ui);color:var(--brass-2)}
 .how-week{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .how-week li{display:grid;grid-template-columns:auto 1fr;gap:0 12px;align-items:center;padding:6px 10px;border-radius:3px}
@@ -954,3 +954,18 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 @media(max-width:860px){.tbl table{min-width:560px}}
 .ach-grid{border:0;padding:1px}
 @media(max-width:860px){.two>.card{min-width:0}}
+
+/* smoother play (2026-10-09): cards leave as well as arrive, the counter ticks, the report fades out, pages settle in */
+@keyframes tdfall{to{opacity:0;transform:translateY(12px)}}
+.tv-choices.out{animation:tdfall .2s ease-in both;pointer-events:none}
+.tv-cards .tv-choice:nth-child(2){animation-delay:.06s}.tv-cards .tv-choice:nth-child(3){animation-delay:.12s}
+@keyframes tvtick{35%{transform:scale(1.35)}}
+.tv-brief .dec b.tick{display:inline-block;animation:tvtick .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes tvmodalout{to{opacity:0;transform:translateY(10px) scale(.985)}}
+.tv-modal.closing{pointer-events:none}.tv-modal.closing .tv-modal-card{animation:tvmodalout .18s ease-in both}
+.tv-modal{animation:tdfadein .2s ease both}.tv-modal.closing{animation:tdfade .18s ease-in both}
+.tv-result:not([hidden]) .rs,.tv-board:not([hidden]) .card{animation:tdrise .5s cubic-bezier(.2,.8,.2,1) both}
+.tv-ways:not([hidden]){animation:tdrise .4s cubic-bezier(.2,.8,.2,1) both}
+.td-page{animation:tdrise .4s cubic-bezier(.2,.8,.2,1) both}
+.tv-deal.show{transition:none}.tv-deal .ticket{transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.2,1)}
+@media(prefers-reduced-motion:reduce){.tv-choices.out,.tv-brief .dec b.tick,.tv-modal,.tv-modal.closing,.tv-modal.closing .tv-modal-card,.tv-result:not([hidden]) .rs,.tv-board:not([hidden]) .card,.tv-ways:not([hidden]),.td-page{animation:none}}

@@ -36,7 +36,7 @@
     setTimeout(() => { const M = T.mission(ch); g('hm-mission').innerHTML = mis(M); g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> in <em>${T.decisionsFor(M)} decisions</em>?`; }, 30);
     const meta = () => g('hm-meta').innerHTML = `<span><b>${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km</b> apart</span><span>next puzzle in <b>${resetIn()}</b></span>${R[ch.key] ? `<span>tomorrow is <b>${T.esc(T.rhythmOf(ch.n + 1).label)}</b></span>` : ''}`; meta(); setInterval(meta, 30000);
     if (R[ch.key]) { g('hm-play').textContent = 'See your expedition report'; g('hm-sub').innerHTML = `You scored <b>${R[ch.key].score.toLocaleString()}</b> today${R[ch.key].tier ? ', rated ' + T.esc(R[ch.key].tier) : ''}.`; }
-    else if (streak) g('hm-sub').textContent = `🔥 ${streak} days in a row. Keep it going.`;
+    else if (streak) g('hm-sub').textContent = `🔥 ${streak} days in a row. Today makes ${streak + 1}.`;
     if (runs.length) { g('hm-level').innerHTML = levelHTML(); g('hm-level').hidden = false; }
     const wk = g('hm-week'); if (wk) { const wd = new Date(ch.key).getUTCDay(); wk.innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => { const rh = T.rhythmOf(ch.n + ((d - wd + 7) % 7)); return `<li class="${d === wd ? 'now' : ''}"><span class="ic">${rh.twist.icon}</span><b>${T.esc(rh.label)}</b><span>${T.esc(rh.desc)}</span></li>`; }).join(''); }
   }
@@ -71,7 +71,7 @@
       const hide = a.secret && !a.level, pct = a.done ? 100 : Math.min(100, 100 * a.value / a.target);
       const pips = a.max > 1 ? `<span class="pips">${['bronze', 'silver', 'gold'].map((t, i) => `<i class="${t}${i < a.level ? ' on' : ''}" title="${t}"></i>`).join('')}</span>` : '';
       return `<div class="ach${a.level ? ' on' : ''}${a.tier ? ' t-' + a.tier.toLowerCase() : ''}${hide ? ' secret' : ''}"><span class="ic">${hide ? '❔' : a.ic}</span><b>${hide ? 'Secret badge' : T.esc(a.name)}</b>${pips}
-        <p>${hide ? 'Keep playing to find out.' : a.done ? T.esc(a.goal) + '.' : 'Next: ' + T.esc(a.goal) + (a.note ? ' (' + a.note + ')' : '') + '.'}</p>
+        <p>${hide ? "You'll know it when you earn it." : a.done ? T.esc(a.goal) + '.' : 'Next: ' + T.esc(a.goal) + (a.note ? ' (' + a.note + ')' : '') + '.'}</p>
         ${hide ? '' : `<div class="prog"><i style="width:${pct}%"></i></div><small>${a.done ? (a.tier ? a.tier + ' · complete' : 'Unlocked') : Math.min(a.value, a.target).toLocaleString() + ' / ' + a.target.toLocaleString()}${!a.done && a.tier ? ' · ' + a.tier + ' earned' : ''}</small>`}</div>`;
     };
     $('#ach-grid').innerHTML = ACH.filter(a => !a.secret).map(card).join('');

@@ -338,8 +338,12 @@
   const dock = $('#tv-choices');
   function renderChoices() {
     const cur = at();
-    if (!playing || ended || atDest() || !choices.length) { dock.hidden = true; dock.innerHTML = ''; return; }
-    dock.hidden = false;
+    if (!playing || ended || atDest() || !choices.length) {
+      if (!dock.hidden && !reducedMotion && !dock.classList.contains('out')) { dock.classList.add('out'); setTimeout(() => { if (dock.classList.contains('out')) { dock.hidden = true; dock.innerHTML = ''; dock.classList.remove('out'); } }, 200); }
+      else { dock.hidden = true; dock.innerHTML = ''; dock.classList.remove('out'); }
+      return;
+    }
+    dock.classList.remove('out'); dock.hidden = false;
     const coach = coachLine();
     dock.innerHTML = `<p class="tv-choices-h"><span>From <b>${T.esc(cur.name)}</b></span>${choices.length === 1 ? '<span>· the only way onward</span>' : `<span>· ${choices.length} ways onward</span>`}</p>
       ${coach ? `<p class="tv-coach" role="status"><span>${coach}</span><button type="button" class="x" aria-label="Got it">Got it</button></p>` : ''}
@@ -389,6 +393,7 @@
     if (route.length >= 2 && newHere) taught();
     renderBrief(); renderChoices(); saveRun(); buzz(12); hideTip();
     const burn = $('#tv-brief .pips i.on:last-of-type'); if (burn) burn.classList.add('burn');
+    const cnt = $('#tv-brief .dec b'); if (cnt && !reducedMotion) cnt.classList.add('tick');
     const bud = $('#tv-brief .bud'); if (bud && !reducedMotion) { const sp = document.createElement('em'); sp.className = 'spend'; sp.textContent = '−' + T.money(x.leg.cost); bud.appendChild(sp); setTimeout(() => sp.remove(), 1300); }
     drawMap(); drawNewLeg(x.c.id);
     stage.classList.add('riding');
@@ -592,7 +597,7 @@
   }
   function showModal(res, isPractice, xpGain, earned) {
     $('#tv-modal').innerHTML = `<div class="tv-modal-card rs" role="dialog" aria-modal="true" aria-label="Expedition report"><button class="tv-modal-x" id="tv-modal-close" aria-label="Close">✕</button>${buildSummary(res, isPractice, xpGain, earned)}</div>`;
-    $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
+    clearTimeout(closeT); $('#tv-modal').classList.remove('closing'); $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
     $('#tv-modal-close').onclick = closeModal;
     $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
     wireSummary($('#tv-modal'), res);
@@ -617,8 +622,11 @@
     root.querySelectorAll('.bar i[data-w]').forEach(el => { el.style.transition = 'none'; el.style.width = '0%'; });
     requestAnimationFrame(() => requestAnimationFrame(() => root.querySelectorAll('.bar i[data-w]').forEach((el, i) => { el.style.transition = 'width .9s cubic-bezier(.2,.8,.2,1) ' + (delayOf(el) + 0.2 + i * 0.06) + 's'; el.style.width = el.dataset.w + '%'; })));
   }
+  let closeT = null;
   function closeModal() {
-    $('#tv-modal').hidden = true; document.body.classList.remove('tv-modal-open');
+    const m = $('#tv-modal');
+    if (!reducedMotion && !m.hidden && !m.classList.contains('closing')) { m.classList.add('closing'); closeT = setTimeout(() => { m.classList.remove('closing'); m.hidden = true; }, 180); } else { m.classList.remove('closing'); m.hidden = true; }
+    document.body.classList.remove('tv-modal-open');
     if (parPending) { setWay(0); }
     else if (showPar && !drawn) animateRoutes('both'); else fitRoute();
   }
@@ -651,7 +659,7 @@
       <div class="level"><span>Level ${prog.level} · ${prog.title}</span><div class="bar"><i style="width:${prog.next ? Math.round(100 * prog.into / prog.span) : 100}%"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>
       <div class="actions">${todayRes ? '<button class="btn primary" id="tv-stats-share">Share today</button>' : ''}<a class="btn ghost" href="stats.html">Full stats</a><span class="st-next">Next puzzle in <b>${resetIn()}</b></span></div>
     </div>`;
-    $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
+    clearTimeout(closeT); $('#tv-modal').classList.remove('closing'); $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
     $('#tv-modal-close').onclick = closeModal; $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
     const sh = $('#tv-stats-share'); if (sh) sh.onclick = () => share(todayRes);
   }
@@ -688,7 +696,7 @@
     st = T.load(); st.results = st.results || {}; if (mode === 'today') showBoard();
     if (quiet) { fitRoute(); return; }
     $('#tv-modal').innerHTML = `<div class="tv-modal-card rs" role="dialog" aria-modal="true" aria-label="Expedition ended"><button class="tv-modal-x" id="tv-modal-close" aria-label="Close">✕</button>${buildFail(res, isPractice)}</div>`;
-    $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
+    clearTimeout(closeT); $('#tv-modal').classList.remove('closing'); $('#tv-modal').hidden = false; document.body.classList.add('tv-modal-open');
     $('#tv-modal-close').onclick = closeModal; $('#tv-modal').onclick = e => { if (e.target === $('#tv-modal')) closeModal(); };
     wire($('#tv-modal')); animateReport($('#tv-modal .rs')); emit('report', res);
     $('#tv-modal-close').focus({ preventScroll: true });

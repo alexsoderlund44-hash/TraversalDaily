@@ -253,13 +253,15 @@
 
   const parIds = () => new Set(showPar ? wayPath().map(e => e.to) : []);
   const labelOn = c => c.id === ch.from.id || c.id === ch.to.id || onRouteIds().has(c.id) || parIds().has(c.id) || choiceIds().has(c.id) || (c.hub >= 3 && k >= 1.8) || (c.hub >= 2 && k >= 2.6) || (c.hub >= 1 && k >= 3.6) || k >= 5;
+  let badgeBoxes = []; // the leg badges on the chart, so city labels keep clear of them
+  const labelBox = (c, s) => { const [x, y] = pos(c); const w = c.name.length * 5.6 / s, h = 11 / s; return { x0: x + 4 / s, y0: y - h / 2, x1: x + 4 / s + w, y1: y + h / 2 }; };
+  const hits = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
   function layoutLabels() {
-    const s = k, boxes = [], vis = {};
+    const s = k, boxes = badgeBoxes.slice(), vis = {};
     const pri = c => (c.id === ch.from.id || c.id === ch.to.id ? 100 : choiceIds().has(c.id) ? 95 : onRouteIds().has(c.id) ? 90 : parIds().has(c.id) ? 80 : c.hub * 10);
     T.C.filter(labelOn).sort((a, b) => pri(b) - pri(a)).forEach(c => {
-      const [x, y] = pos(c); const w = c.name.length * 5.6 / s, h = 11 / s;
-      const bx = { x0: x + 4 / s, y0: y - h / 2, x1: x + 4 / s + w, y1: y + h / 2 };
-      if (!boxes.some(b => bx.x0 < b.x1 && bx.x1 > b.x0 && bx.y0 < b.y1 && bx.y1 > b.y0)) { boxes.push(bx); vis[c.id] = true; }
+      const bx = labelBox(c, s), ends = c.id === ch.from.id || c.id === ch.to.id;
+      if (ends || !boxes.some(b => hits(bx, b))) { boxes.push(bx); vis[c.id] = true; }
     });
     gLabels.selectAll('text').style('display', c => vis[c.id] ? null : 'none');
   }
@@ -277,7 +279,7 @@
     const cx = (x0 + x1) / 2 + (window.innerWidth > 900 ? (offset == null ? 120 : offset) / kk : 0);
     // on a phone the planning sheet covers the lower part of the chart, so the route lands in the strip above it
     // the choice dock covers the lower part of the chart while you decide, so the picture lands in the strip above it
-    const dk = $('#tv-choices'), docked = dockUp != null ? dockUp : dk && !dk.hidden, cy = docked ? (window.innerWidth <= 900 ? 150 : 205) : 250;
+    const dk = $('#tv-choices'), docked = dockUp != null ? dockUp : dk && !dk.hidden, cy = docked ? (window.innerWidth <= 900 ? 150 : 205) : (window.innerWidth <= 900 ? 300 : 250); // on a phone the brief covers the top of the chart, so the picture sits lower
     return svg.transition().delay(delay || 0).duration(dur == null ? 750 : dur).ease(ease || d3.easeCubicOut).call(zoom.transform, d3.zoomIdentity.translate(480 - kk * cx, cy - kk * (y0 + y1) / 2).scale(kk));
   }
   function fitRoute() { fitTo([ch.from, ch.to, ...route.map(r => T.byId[r.to]), ...(showPar ? wayPath().map(e => T.byId[e.to]) : [])], 1.8); }
@@ -298,7 +300,6 @@
       + KEEP.filter(k => this.classList.contains(k)).map(k => ' ' + k).join(''); });
     gLabels.selectAll('text').classed('far', c => live && !opts.has(c.id) && c.id !== ch.to.id && c.id !== ch.from.id && !on.has(c.id));
     gCities.selectAll('circle').attr('r', c => (2 + c.hub * 0.5 + (c.id === cur.id && live ? 1.5 : live && opts.has(c.id) ? 1.2 : c.id === ch.from.id || c.id === ch.to.id || on.has(c.id) || par.has(c.id) ? 1 : 0)) / k).style('stroke-width', c => ((c.id === cur.id && live) ? 8 : c.id === picked ? 6 : 1) / k);
-    layoutLabels();
     const plinks = showPar ? wayPath().map(e => ({ cls: 'par', d: arc(T.byId[e.from], T.byId[e.to]) })) : [];
     gPar.selectAll('path').data(plinks).join('path').attr('class', function () { return 'tv-link par' + (this.classList.contains('draw') ? ' draw' : ''); }).attr('d', d => d.d).style('stroke-width', strokeW).style('stroke-dasharray', function () { return this.classList.contains('draw') ? '1' : dashFor('par'); });
     const links = [];
@@ -307,7 +308,10 @@
     gLinks.selectAll('path').data(links).join('path').attr('class', function (d) { return 'tv-link ' + d.cls + (this.classList.contains('draw') ? ' draw' : '') + (this.classList.contains('undraw') ? ' undraw' : ''); }).attr('d', d => d.d).style('stroke', d => d.col || null).style('stroke-width', strokeW).style('stroke-dasharray', function (d) { return this.classList.contains('draw') ? '1' : dashFor(d.cls); });
     const badges = route.map((r, i) => { const [x, y] = mid(T.byId[r.from], T.byId[r.to]); return { x, y, cls: '', txt: `${i + 1} · ${r.leg.icon} ${T.money(r.leg.cost)} · ${T.dur(r.leg.hours)}${r.leg.deal ? ' 🎟️' : ''}` }; });
     if (showPar) wayPath().forEach(e => { if (route.some(r => r.from === e.from && r.to === e.to && r.leg.mode === e.mode)) return; const [x, y] = mid(T.byId[e.from], T.byId[e.to]); badges.push({ x, y: y + 14 / k, cls: 'par', txt: `${T.MODES[e.mode].icon} ${T.money(e.cost)} · ${T.dur(e.hours)}` }); });
-    const kept = []; const shown = badges.filter(b => { const w = (b.txt.length * 4.9 + 12) / k, h = 16 / k, bx = { x0: b.x - w / 2, x1: b.x + w / 2, y0: b.y - h / 2, y1: b.y + h / 2 }; if (kept.some(o => bx.x0 < o.x1 && bx.x1 > o.x0 && bx.y0 < o.y1 && bx.y1 > o.y0)) return false; kept.push(bx); return true; });
+    const ends = [labelBox(ch.from, k), labelBox(ch.to, k)], box = b => { const w = (b.txt.length * 4.9 + 12) / k, h = 16 / k; return { x0: b.x - w / 2, x1: b.x + w / 2, y0: b.y - h / 2, y1: b.y + h / 2 }; };
+    badges.forEach(b => { for (let t = 0; t < 2 && ends.some(e => hits(box(b), e)); t++) b.y += 18 / k; }); // a badge never sits on the start or destination name
+    const kept = []; const shown = badges.filter(b => { const bx = box(b); if (kept.some(o => hits(bx, o))) return false; kept.push(bx); return true; });
+    badgeBoxes = kept; layoutLabels();
     const bsel = gBadges.selectAll('g').data(shown).join(enter => { const gg = enter.append('g'); gg.append('rect'); gg.append('text'); return gg; });
     bsel.attr('class', d => 'tv-badge ' + d.cls).attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / k})`);
     bsel.select('text').text(d => d.txt).attr('y', 3);
@@ -513,7 +517,7 @@
     const bar = (lab, pts, max, you, best) => { const w = Math.round(100 * pts / max); return `<div class="brow"><span>${lab}<small>${you} · best ${best}</small></span><div class="bar"><i style="width:${w}%" data-w="${w}"></i></div><b><span data-count="${pts}">${pts.toLocaleString()}</span> <small>/ ${max.toLocaleString()}</small></b></div>`; };
     const tags = [res.cost < M.par.cost - 0.5 ? ['you', 'Cheaper'] : res.cost > M.par.cost + 0.5 ? ['par', 'Planner cheaper'] : ['tie', 'Same cost'], res.hours < M.par.hours - 0.05 ? ['you', 'Faster'] : res.hours > M.par.hours + 0.05 ? ['par', 'Planner faster'] : ['tie', 'Same time'], res.route.length < M.par.legs ? ['you', 'Fewer legs'] : res.route.length > M.par.legs ? ['par', 'Planner fewer legs'] : ['tie', 'Same legs'], [found >= parDeals ? 'you' : 'par', `Secret fares used ${res.deals ? res.deals.used : 0} vs ${parDeals}`]];
     return `
-      <p class="kicker"><b>Journey complete</b> · ${isPractice ? (mode === 'today' ? 'practice run, not scored' : mode === 'archive' ? 'archive practice, not scored' : 'random expedition, not scored') : 'official result · ' + dayLabel}</p>
+      <p class="kicker"><b>Journey complete</b> · ${isPractice ? (mode === 'today' ? 'practice run, not scored' : mode === 'archive' ? 'archive practice, not scored' : 'random expedition, not scored') : `official result · <span class="nw">${dayLabel}</span>`}</p>
       <section class="rs-journey">
         <p class="lab">Your journey</p>
         <div class="chain">${chain}</div>
@@ -660,7 +664,7 @@
     const chain = stops.map(c => `<span>${T.esc(c.name)}</span>`).join('<i>→</i>');
     const km = Math.round(stops.slice(1).reduce((a, c, i) => a + T.km(stops[i], c), 0)), short = res.kmShort != null ? res.kmShort : Math.round(T.km(endAt, ch.to));
     return `
-      <p class="kicker"><b>Expedition ended</b> · ${isPractice ? 'practice run' : 'official result · ' + dayLabel}</p>
+      <p class="kicker"><b>Expedition ended</b> · ${isPractice ? 'practice run' : `official result · <span class="nw">${dayLabel}</span>`}</p>
       <section class="rs-top lost">
         <div class="rs-rating stranded"><span class="ic">🧭</span><div><b>Out of decisions</b><small>${res.reason ? T.esc(res.reason) : `You used all ${res.decisionsTotal || DEC} decisions before reaching ${T.esc(ch.to.name)}.`}</small></div></div>
         <div class="rs-big"><b>${short.toLocaleString()}<small class="u">km</small></b><small>short of ${T.esc(ch.to.name)}</small></div>

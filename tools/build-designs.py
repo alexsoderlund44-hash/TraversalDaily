@@ -129,6 +129,7 @@ STATS = '''
     <div class="tile"><span>Countries</span><b id="st-countries">0</b></div>
     <div class="tile"><span>Average score</span><b id="st-avg">—</b></div>
     <div class="tile"><span>Favorite transport</span><b id="st-mode">—</b></div>
+    <div class="tile"><span>Perfect days</span><b id="st-perfect">0</b></div>
   </section>
   <section class="two">
     <div class="card"><h2>How you travel</h2><div id="st-modes"></div><p class="muted"><span id="st-spent">$0</span> spent and <span id="st-hours">0h</span> on the move in total.</p></div>
@@ -149,7 +150,7 @@ PROFILE = '''
       <div><b id="pf-km">0</b><span>km traveled</span></div><div><b id="pf-badges">0</b><span><a href="achievements.html">badges</a></span></div>
     </div>
   </section>
-  <section class="card pf-cal-card"><h2>Last 20 weeks</h2><div class="pf-cal" id="pf-cal"></div>
+  <section class="card pf-cal-card"><h2 id="pf-cal-h">Last 20 weeks</h2><div class="pf-cal" id="pf-cal"></div>
     <p class="pf-legend"><span><i class="t1"></i>Arrived</span><span><i class="t2"></i>Wayfarer</span><span><i class="t3"></i>Navigator</span><span><i class="t4"></i>Expert</span><span><i class="t5"></i>Perfect</span></p></section>
   <section class="card"><h2>Passport</h2><p class="muted" id="pf-pp-count"></p><div class="pf-continents" id="pf-continents"></div><div class="pf-stamps" id="pf-passport"></div></section>
   <section class="card"><h2>Name</h2>
@@ -207,12 +208,12 @@ HOW = '''
         <defs><pattern id="hx-grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="rgba(70,40,10,.12)" stroke-width=".6"/></pattern></defs>
         <rect width="560" height="230" fill="#E3CC96"/><rect width="560" height="230" fill="url(#hx-grid)"/>
         <path d="M120 30 C 160 70, 200 90, 250 95 S 360 110, 420 150 S 470 200, 430 230 L 560 230 L 560 0 L 120 0 Z" fill="#D9BE84" opacity=".55"/>
-        <g class="spoke"><path d="M400 180 L 300 70" /><path d="M400 180 L 170 150" /><path d="M400 180 L 460 60" /></g>
-        <g class="opt"><circle cx="300" cy="70" r="7"/><text x="312" y="74">Houston</text><text class="fare" x="312" y="90">$76 · 19h 10m · bus</text></g>
-        <g class="opt"><circle cx="170" cy="150" r="7"/><text x="100" y="140">Mexico City</text><text class="fare" x="100" y="156">$66 · 19h 25m · bus</text></g>
-        <g class="opt"><circle cx="460" cy="60" r="7"/><text x="430" y="42">New Orleans</text><text class="fare" x="430" y="58" dx="-16">$53 · 15h 40m · bus</text></g>
+        <g class="spoke"><path d="M400 180 L 300 70" /><path d="M400 180 L 170 150" /><path d="M400 180 L 430 50" /></g>
+        <g class="opt"><circle cx="300" cy="70" r="7"/><text x="288" y="66" text-anchor="end">Houston</text><text class="fare" x="288" y="82" text-anchor="end">$76 · 19h 10m · bus</text></g>
+        <g class="opt"><circle cx="170" cy="150" r="7"/><text x="158" y="144" text-anchor="end">Mexico City</text><text class="fare" x="158" y="160" text-anchor="end">$66 · 19h 25m · bus</text></g>
+        <g class="opt"><circle cx="430" cy="50" r="7"/><text x="444" y="46">New Orleans</text><text class="fare" x="444" y="62">$53 · 15h 40m · bus</text></g>
         <g class="cur"><circle cx="400" cy="180" r="9"/><text x="412" y="196">Cancún · you are here</text></g>
-        <g class="pick"><path d="M400 180 L 300 70"/><text x="322" y="120">picked</text></g>
+        <g class="pick"><path d="M400 180 L 300 70"/><text x="364" y="118">picked</text></g>
         <g class="dec"><rect x="14" y="14" width="150" height="34" rx="4"/><text x="26" y="36">6 decisions left</text></g>
       </svg>
       <figcaption>Houston is the biggest step forward and sits on a charted route. New Orleans is the cheapest and fastest leg, but it is a detour: it leaves five decisions and needs four more of them to finish. Pick Houston and the counter drops to five with $76 gone from the budget.</figcaption>

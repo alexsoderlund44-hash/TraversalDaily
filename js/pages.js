@@ -81,7 +81,7 @@
     const f = (sel, v) => { const e = $(sel); if (e) e.textContent = v; };
     f('#st-played', runs.length); f('#st-streak', streak); f('#st-best', best ? best.toLocaleString() : '—'); f('#st-avg', avg ? avg.toLocaleString() : '—');
     f('#st-legs', legs); f('#st-spent', T.money(spent)); f('#st-hours', T.dur(hours)); f('#st-mode', favMode ? T.MODES[favMode[0]].icon + ' ' + T.MODES[favMode[0]].name : '—');
-    f('#st-par', S.parDays); f('#st-deals', S.dealsFound); f('#st-max', maxStreak); f('#st-km', S.km.toLocaleString() + ' km'); f('#st-countries', S.countries.size + ' / ' + T.COUNTRIES.length);
+    f('#st-par', S.parDays); f('#st-perfect', (S.tiers && S.tiers.Perfect) || 0); f('#st-deals', S.dealsFound); f('#st-max', maxStreak); f('#st-km', S.km.toLocaleString() + ' km'); f('#st-countries', S.countries.size + ' / ' + T.COUNTRIES.length);
     const lv = $('#st-level'); if (lv) lv.innerHTML = levelHTML();
     const hist = $('#st-history');
     if (hist) hist.innerHTML = runs.length ? days.slice().reverse().map(k => { const r = R[k]; const n = dayOf(k); const ch = T.challenge(n); return `<tr><td><a href="play.html${n === today ? '' : '?day=' + n}">#${n}</a><small>${k}</small></td><td>${T.esc(ch.from.name)} → ${T.esc(ch.to.name)}<small>${ch.twist.icon} ${T.esc(ch.twist.name)}</small></td><td>${r.route.map(l => T.MODES[l.mode].icon).join(' ')}</td><td class="r">${T.money(r.cost)}</td><td class="r">${T.dur(r.hours)}</td><td class="r">${T.secsF(r.secs)}</td><td class="r"><b>${r.score.toLocaleString()}</b><small>${r.tier || ''}${r.parMatch ? ' · 🎯' : ''}</small></td></tr>`; }).join('') : '<tr><td colspan="7" class="empty">No journeys yet. Play today\'s puzzle to start your log.</td></tr>';
@@ -103,7 +103,7 @@
     /* calendar: the last 20 weeks, one square per day, colored by rating */
     const cal = $('#pf-cal');
     if (cal) {
-      const WEEKS = 20, tierCls = { Perfect: 't5', Expert: 't4', Navigator: 't3', Wayfarer: 't2', Arrived: 't1' };
+      const weekEnd0 = today + (6 - new Date(T.dayKey(today)).getUTCDay()), WEEKS = Math.max(1, Math.min(20, Math.ceil(weekEnd0 / 7))), tierCls = { Perfect: 't5', Expert: 't4', Navigator: 't3', Wayfarer: 't2', Arrived: 't1' };
       const weekEnd = today + (6 - new Date(T.dayKey(today)).getUTCDay()); // fill to the end of this week (weeks run Sunday to Saturday)
       let h = '';
       for (let w = WEEKS - 1; w >= 0; w--) {
@@ -115,7 +115,8 @@
         }
         h += '</div>';
       }
-      cal.innerHTML = h;
+      cal.innerHTML = h; cal.style.gridTemplateColumns = `repeat(${WEEKS},1fr)`; cal.style.maxWidth = (WEEKS * 26) + 'px';
+      const ch2 = $('#pf-cal-h'); if (ch2 && WEEKS < 20) ch2.textContent = 'Every day so far';
     }
     /* passport: every country a submitted route passed through */
     const pp = $('#pf-passport');

@@ -942,3 +942,15 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 .hm-card .mi.diff b,.tv-mission .mi.diff b,.hm-card .mi:last-child b,.tv-mission .mi:last-child b{font-size:1.4rem;line-height:1.15;text-wrap:balance}
 @media(max-width:520px){.hm-card .mission{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.tv-mission{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* visual review 2026-10-09: no dark empty cells at the end of a tile grid; the grid draws itself from the tiles */
+.stat-tiles,.ach-grid{background:transparent;gap:1px}
+.stat-tiles .tile,.ach-grid .ach{outline:1px solid var(--line-2)}
+/* the secret-fare ticket sits above the choice cards on a phone instead of behind them, and taps pass through it */
+@media(max-width:900px){.tv-deal{top:auto;bottom:38%;z-index:9;pointer-events:none}}
+/* the report kicker keeps clear of the close button and never splits a date */
+.rs .kicker{padding-right:40px}.rs .kicker .nw{white-space:nowrap}
+/* the journey log scrolls sideways on a phone instead of breaking every city into pieces */
+@media(max-width:860px){.tbl table{min-width:560px}}
+.ach-grid{border:0;padding:1px}
+@media(max-width:860px){.two>.card{min-width:0}}

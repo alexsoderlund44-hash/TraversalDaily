@@ -46,45 +46,79 @@
 
   /* ---------- the legs you may take: the day's rule filters them, nothing else does ---------- */
   const allowed = (a, b) => T.legs(a, b, ch.seed).filter(l => tw.allow(l, twState(), b.id === ch.to.id));
-  /* one leg per destination: the planner's own leg where the planner went that way, otherwise the best balance of money and time,
-     with the day's rule tipping the choice (a ferry on Sea legs, a train on Rail pass, a new kind of transport on Mix it up) */
+  /* one leg per destination: the planner's own leg where the planner went that way, otherwise the best balance of money and time */
   function pickLeg(a, b, ls) {
     const onWay = (wayStops[a.id] || []).find(x => x.e.to === b.id); if (onWay) { const l = ls.find(x => x.mode === onWay.e.mode); if (l) return l; }
-    const s = twState(), used = new Set(route.map(r => r.leg.mode));
     const bal = l => l.cost / M.budget + l.hours / M.deadline;
-    const pref = l => (tw.id === 'ferry' && !tw.done(s) && l.mode === 'ferry') || (tw.id === 'rail' && !tw.done(s) && l.mode === 'train') || (tw.id === 'threemodes' && !used.has(l.mode) && used.size < 3) ? -0.35 : 0;
-    return ls.slice().sort((x, y) => (bal(x) + pref(x)) - (bal(y) + pref(y)))[0];
+    return ls.slice().sort((x, y) => bal(x) - bal(y))[0];
   }
-  /* the fewest legs from each city to the finish: along a way once you are on one, and first the legs it takes to
-     reach a way. Built once, used to keep every step honest about what can still finish within your decisions. */
-  let fin = null;
-  function finishTable() {
-    if (fin) return fin;
+  /* the fewest legs from each city to the finish, found backwards from the destination. One table per rule state
+     (One ticket changes which legs are allowed once you have flown). It keeps every card honest about how many
+     decisions the rest of the journey needs, and keeps you off any stop you could not finish from. */
+  const fins = {};
+  function finishTable(s) {
+    s = tw.id === 'oneflight' ? (s || 0) : 0;
+    if (fins[s]) return fins[s];
     const rev = {}; T.C.forEach(c => (rev[c.id] = []));
-    T.C.forEach(a => T.C.forEach(b => { if (a.id !== b.id && T.legs(a, b, ch.seed).some(l => tw.allow(l, 0, b.id === ch.to.id))) rev[b.id].push(a.id); }));
-    fin = { [ch.to.id]: 0 };
-    WAYS.forEach(w => w.path.forEach((e, i) => { const left = w.legs - i; if (fin[e.from] === undefined || left < fin[e.from]) fin[e.from] = left; }));
-    for (let round = 0; round < DEC; round++) { let moved = false; Object.keys(fin).forEach(x => rev[x].forEach(y => { if (fin[y] === undefined || fin[y] > fin[x] + 1) { fin[y] = fin[x] + 1; moved = true; } })); if (!moved) break; }
-    return fin;
+    T.C.forEach(a => T.C.forEach(b => { if (a.id !== b.id && T.legs(a, b, ch.seed).some(l => tw.allow(l, s, b.id === ch.to.id))) rev[b.id].push(a.id); }));
+    const fin = { [ch.to.id]: 0 }; let ring = [ch.to.id];
+    for (let d = 1; d <= DEC && ring.length; d++) { const nx = []; ring.forEach(x => rev[x].forEach(y => { if (fin[y] === undefined) { fin[y] = d; nx.push(y); } })); ring = nx; }
+    return (fins[s] = fin);
   }
-  /* two or three ways onward: the destination whenever a leg reaches it, every charted route that carries on from
-     here, then detours: first ones you could still recover from, closest to the finish, then the rest */
+  /* two or three ways onward, each a real trade: the destination whenever a leg reaches it, every charted route
+     that carries on from here, then the detours worth a look. A stop you could not finish from is never offered,
+     and a detour another card beats on fare, time and progress alike is dropped, so every card gives up something
+     and gets something. */
   function choicesFrom(cur) {
-    const F = finishTable(), on = onRouteIds(), left = decisions - 1, toGo = T.km(cur, ch.to);
+    const s0 = twState(), F = finishTable(s0), on = onRouteIds(), left = decisions - 1, toGo = T.km(cur, ch.to);
     const nexts = (wayStops[cur.id] || []).map(x => x.e.to).filter(id => !on.has(id));
     let cands = T.C.filter(c => !on.has(c.id) && c.id !== cur.id).map(c => { const ls = allowed(cur, c); if (!ls.length) return null; const leg = pickLeg(cur, c, ls); const f = F[c.id]; return { c, leg, fin: f === undefined ? 99 : f, safe: f !== undefined && f <= left, gain: toGo - T.km(c, ch.to) }; }).filter(Boolean);
     // never offer a dead end: a stop with no way onward to somewhere new (the destination is always fine)
-    const s0 = twState(), onward = x => x.c.id === ch.to.id || T.C.some(c => c.id !== x.c.id && c.id !== cur.id && !on.has(c.id) && T.legs(x.c, c, ch.seed).some(l => tw.allow(l, tw.state(s0, x.leg), c.id === ch.to.id)));
+    const onward = x => x.c.id === ch.to.id || T.C.some(c => c.id !== x.c.id && c.id !== cur.id && !on.has(c.id) && T.legs(x.c, c, ch.seed).some(l => tw.allow(l, tw.state(s0, x.leg), c.id === ch.to.id)));
     const live = cands.filter(onward); if (live.length) cands = live;
+    // never an unwinnable state: only stops the rest of the journey can still be finished from
+    const safe = cands.filter(x => x.safe); if (safe.length) cands = safe;
     const out = [], take = x => { if (x && !out.some(o => o.c.id === x.c.id) && out.length < 3) out.push(x); };
     take(cands.find(x => x.c.id === ch.to.id));
     nexts.forEach(id => take(cands.find(x => x.c.id === id)));
     // while you stand on a charted route, a detour never jumps straight onto another one's stops
     const rest = cands.filter(x => !out.includes(x) && (!nexts.length || !wayCity.has(x.c.id)));
-    const safe = rest.filter(x => x.safe).sort((p, q) => q.gain - p.gain), unsafe = rest.filter(x => !x.safe).sort((p, q) => q.gain - p.gain);
-    if (safe.length) { take(safe[0]); take(safe.slice().sort((p, q) => p.leg.cost - q.leg.cost)[0]); }
-    safe.forEach(take); unsafe.forEach(take);
+    const beats = (a, b) => a.leg.cost <= b.leg.cost && a.leg.hours <= b.leg.hours && a.gain >= b.gain && (a.leg.cost < b.leg.cost || a.leg.hours < b.leg.hours || a.gain > b.gain);
+    const worth = rest.filter(x => !out.some(o => beats(o, x)) && !rest.some(o => o !== x && beats(o, x)));
+    // a detour that blows the budget only turns up when nothing within it is left
+    const spent = totals().cost, within = worth.filter(x => spent + x.leg.cost <= M.budget), pool = within.length ? within : worth;
+    const by = f => pool.slice().sort((p, q) => f(p) - f(q));
+    take(by(x => -x.gain)[0]); take(by(x => x.leg.cost)[0]); take(by(x => x.leg.hours)[0]);
+    by(x => -x.gain).forEach(take); rest.sort((p, q) => q.gain - p.gain).forEach(take);
     return out;
+  }
+  /* what each card says about its trade: a label only where it is plainly true, then what it saves and what it costs
+     against the other cards, and what it leaves you to finish with */
+  function annotate(cs) {
+    const n = cs.length, left = decisions - 1, spent = totals().cost;
+    const minC = Math.min(...cs.map(x => x.leg.cost)), minH = Math.min(...cs.map(x => x.leg.hours)), maxG = Math.max(...cs.map(x => x.gain));
+    const beats = (a, b) => a.leg.cost <= b.leg.cost && a.leg.hours <= b.leg.hours && a.gain >= b.gain;
+    cs.forEach(x => {
+      const l = x.leg, fin = x.c.id === ch.to.id, isC = n > 1 && l.cost === minC, isH = n > 1 && l.hours === minH, isG = n > 1 && x.gain === maxG;
+      x.spare = x.fin === 99 ? -1 : left - x.fin;
+      const risky = !fin && x.spare <= 0;
+      x.label = fin ? 'Arrives' : n === 1 ? '' : isC && isH ? 'Cheapest and fastest' : isC ? 'Cheapest' : isH ? 'Fastest' : x.gain < 0 ? (risky ? 'Risky detour' : 'Detour') : isG ? 'Biggest step' : risky ? 'Risky' : cs.some(o => o !== x && beats(o, x)) ? '' : 'Balanced';
+      x.cls = fin ? 'fin' : isC && isH ? 'best' : isC ? 'cheap' : isH ? 'fast' : risky ? 'risk' : x.gain < 0 ? 'detour' : 'mid';
+      const others = cs.filter(o => o !== x), parts = [];
+      if (others.length) {
+        const dc = l.cost - Math.min(...others.map(o => o.leg.cost)), dh = l.hours - Math.min(...others.map(o => o.leg.hours));
+        if (dc < -0.5) parts.push(`Save ${T.money(-dc)}`); else if (dc > 0.5) parts.push(`${T.money(dc)} more`);
+        if (dh < -0.04) parts.push(`Arrive ${T.dur(-dh)} sooner`); else if (dh > 0.04) parts.push(`Arrive ${T.dur(dh)} later`);
+      }
+      x.trade = n === 1 ? 'The only way onward' : parts.join(' · ') || 'Same fare and time as the rest';
+      const leftAfter = M.budget - spent - l.cost;
+      x.budget = leftAfter >= 0 ? { cls: 'ok', t: `${T.money(leftAfter)} left` } : { cls: 'over', t: `${T.money(-leftAfter)} over budget` };
+      x.decs = fin ? { cls: 'ok', t: left ? `Finishes with ${left} to spare` : 'Finishes on the last decision' }
+        : x.spare < 0 ? { cls: 'bad', t: `Leaves ${left} · not enough to finish` }
+        : x.spare === 0 ? { cls: 'warn', t: `Leaves ${left} · needs ${left === 1 ? 'it' : 'all ' + left} to finish` }
+        : { cls: 'ok', t: `Leaves ${left} · needs ${x.fin} more` };
+    });
+    return cs;
   }
 
   function noteDeals(a, b, ls) {
@@ -93,7 +127,7 @@
   /* finding a secret fare should feel like finding something */
   function dealReveal(a, b, l) {
     const el = $('#tv-deal'), full = l.full || l.cost, saved = full - l.cost;
-    el.innerHTML = `<div class="ticket"><p class="k">🎟️ Secret fare</p><b><s>${T.money(full)}</s><i>→</i><span class="new">${T.money(l.cost)}</span></b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>Save ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em></div>`;
+    el.innerHTML = `<div class="ticket"><p class="k">🎟️ Secret fare</p><b><s>${T.money(full)}</s><i>→</i><span class="new">${T.money(l.cost)}</span></b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>Save ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em><span class="dots">Take it and ${T.money(M.budget - totals().cost - l.cost)} of your budget is left</span></div>`;
     el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     clearTimeout(dealT); dealT = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 350); }, 3000);
     markCity(b.id, 'pop', 1600); buzz([15, 40, 25]); emit('deal', { from: a, to: b, leg: l, found: found.size });
@@ -104,7 +138,13 @@
   const title = ch.n ? 'Puzzle #' + ch.n : 'Expedition ' + ch.seed.slice(1).toUpperCase();
   const resetIn = () => { const ms = T.untilReset(); return Math.floor(ms / 3600000) + 'h ' + Math.floor(ms % 3600000 / 60000) + 'm'; };
   const pips = () => Array.from({ length: DEC }, (_, j) => `<i class="${j < decisions ? 'on' : 'off'}"></i>`).join('');
-  /* the mission strip: where you are going, how many decisions are left, how far there is to go */
+  /* the mission strip: where you are going, how many decisions are left, how much of the budget is left, how far there is to go */
+  const budgetHtml = () => {
+    const tt = totals(), left = M.budget - tt.cost, pct = Math.max(0, Math.min(100, 100 * tt.cost / M.budget));
+    return `<div class="bud ${left < 0 ? 'over' : ''}" aria-label="${left < 0 ? T.money(-left) + ' over the ' + T.money(M.budget) + ' budget' : T.money(left) + ' of the ' + T.money(M.budget) + ' budget left'}">
+      <div class="row"><small>Budget</small><b>${left < 0 ? T.money(-left) + ' over' : T.money(left) + ' left'}</b><span>of ${T.money(M.budget)}</span>${route.length ? `<span class="tm">⏱ ${T.dur(tt.hours)}</span>` : ''}</div>
+      <div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  };
   function renderBrief() {
     const go = kmToGo();
     $('#tv-brief').innerHTML = `<p class="k">${title} · ${dayLabel}</p>
@@ -112,19 +152,20 @@
       <span class="ln"></span><span></span>
       <span class="pin d"></span><b>${T.flagImg(ch.to)} ${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></b></div>
       <div class="dec" aria-label="${decisions} of ${DEC} decisions left"><span class="pips">${pips()}</span><b>${decisions}</b><small>decision${decisions === 1 ? '' : 's'} left</small></div>
+      ${budgetHtml()}
       <p class="meta"><span class="diff ${M.difficulty.toLowerCase()}" title="${WAYS.length === 1 ? 'One charted route' : WAYS.length + ' charted routes'}">${M.difficulty}</span><span>${atDest() ? '<b>Arrived</b>' : playing && route.length ? `<b>${go.toLocaleString()} km</b> to go` : `<b>${go.toLocaleString()} km</b> apart`}</span>${tw.id !== 'open' ? `<span class="twist" title="${T.esc(tw.desc)}">${tw.icon} ${T.esc(tw.name)}</span>` : ''}${found.size ? `<span title="Secret fares found">🎟️ ${found.size}</span>` : ''}</p>`;
   }
   renderBrief();
   const rhythm = ch.n ? T.rhythmOf(ch.n) : null;
   $('#tv-gate-day').textContent = title + ' · ' + dayLabel + (rhythm && rhythm.twist.id === tw.id ? ' · ' + rhythm.label : '');
   $('#tv-gate-title').innerHTML = `<span class="city">${T.flagImg(ch.from, 40)} <span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></span><span class="arr" aria-hidden="true"></span><span class="city">${T.flagImg(ch.to, 40)} <span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></span>`;
-  $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km, no direct route. You have ${DEC} decisions to get there.${ch.blurb ? ' ' + ch.blurb : ''}`;
+  $('#tv-gate-sub').textContent = `${Math.round(T.km(ch.from, ch.to)).toLocaleString()} km, no direct route. You have ${DEC} decisions and ${T.money(M.budget)} to get there.${ch.blurb ? ' ' + ch.blurb : ''}`;
   $('#tv-gate-mission').innerHTML = `
     <div class="mi big"><span class="ic">🧭</span><b>${DEC}</b><span>decisions</span></div>
+    <div class="mi money"><span class="ic">💰</span><b>${T.money(M.budget)}</b><span>budget · ${M.deals} secret fare${M.deals === 1 ? '' : 's'} to find</span></div>
     <div class="mi diff ${M.difficulty.toLowerCase()}"><span class="ic lv" aria-hidden="true"><i></i><i></i><i></i></span><b>${M.difficulty}</b><span>${WAYS.length === 1 ? 'one charted route' : WAYS.length + ' charted routes'}</span></div>
-    <div class="mi"><span class="ic">${tw.icon}</span><b>${T.esc(tw.name)}</b><span>${T.esc(tw.desc)}</span></div>
-    <div class="mi"><span class="ic">🎟️</span><b>${M.deals}</b><span>secret fare${M.deals === 1 ? '' : 's'} · cheap legs, if you look</span></div>`;
-  $('#tv-gate-rules').innerHTML = `<li>Each step shows a few ways onward. Pick one and you travel there. Every pick costs a decision.</li><li>Reach ${T.esc(ch.to.name)} before the decisions run out. Spend less and arrive sooner than the planner for a better score.</li>`;
+    <div class="mi"><span class="ic">${tw.icon}</span><b>${T.esc(tw.name)}</b><span>${T.esc(tw.desc)}</span></div>`;
+  $('#tv-gate-rules').innerHTML = `<li>Each step offers a few ways onward. Every card shows its fare, its time and how many decisions the rest of the trip needs. Pick one and you travel there.</li><li>Reach ${T.esc(ch.to.name)} before the decisions run out. Money counts most, then time, then decisions. Going over budget costs you.</li>`;
   $('#tv-gate-note').textContent = mode === 'random' ? 'Random start and destination. Practice only, not scored.' : mode === 'archive' ? 'A past puzzle. Practice only, not scored.' : practice ? "You've already played today. This run is practice." : 'Everyone playing today gets this same route, and one scored attempt.';
   if (!Object.keys((T.load().results) || {}).length && mode === 'today' && !practice) $('#tv-gate-note').innerHTML += ' New here? <a href="how.html">How to play</a> takes two minutes, or press Begin and learn by doing.';
   if (resume) { $('#tv-start').textContent = 'Continue the journey'; $('#tv-gate-note').textContent = `You left with ${resume.route.length} leg${resume.route.length === 1 ? '' : 's'} in place and ${resume.decisions} decision${resume.decisions === 1 ? '' : 's'} left.`; }
@@ -294,16 +335,29 @@
     const cur = at();
     if (!playing || ended || atDest() || !choices.length) { dock.hidden = true; dock.innerHTML = ''; return; }
     dock.hidden = false;
-    dock.innerHTML = `<p class="tv-choices-h"><span>From <b>${T.esc(cur.name)}</b></span>${choices.length === 1 ? '<span>· the only way onward</span>' : ''}</p>
-      <div class="tv-cards">${choices.map((x, i) => { const l = x.leg, fin = x.c.id === ch.to.id, gain = Math.round(x.gain); return `<button class="tv-choice${sel === i ? ' sel' : ''}${fin ? ' fin' : ''}${l.deal ? ' deal' : ''}" data-i="${i}" aria-pressed="${sel === i}">
+    const coach = coachLine();
+    dock.innerHTML = `<p class="tv-choices-h"><span>From <b>${T.esc(cur.name)}</b></span>${choices.length === 1 ? '<span>· the only way onward</span>' : `<span>· ${choices.length} ways onward</span>`}</p>
+      ${coach ? `<p class="tv-coach" role="status"><span>${coach}</span><button type="button" class="x" aria-label="Got it">Got it</button></p>` : ''}
+      <div class="tv-cards">${choices.map((x, i) => { const l = x.leg, fin = x.c.id === ch.to.id, gain = Math.round(x.gain); return `<button class="tv-choice ${x.cls}${sel === i ? ' sel' : ''}${fin ? ' fin' : ''}${l.deal ? ' deal' : ''}" data-i="${i}" aria-pressed="${sel === i}">
         <span class="key">${i + 1}</span>
         <span class="city">${T.flagImg(x.c)} <b>${T.esc(x.c.name)}</b><small>${fin ? 'Destination' : T.esc(x.c.country)}</small></span>
-        <span class="leg"><i>${l.icon}</i> ${T.esc(l.name)}${l.deal ? ' <em>secret fare</em>' : ''}</span>
+        <span class="leg"><i>${l.icon}</i> <span class="nm">${T.esc(l.name)}</span>${l.deal ? ' <em>secret fare</em>' : l.fare ? ` <em class="rule">${l.fare < 1 ? 'half price' : 'double'}</em>` : ''}${x.label ? `<span class="tag">${x.label}</span>` : ''}</span>
         <span class="nums"><b>${l.deal ? `<s>${T.money(l.full)}</s> ` : ''}${T.money(l.cost)}</b><span>${T.dur(l.hours)}</span></span>
-        <span class="dist ${gain >= 0 ? 'closer' : 'farther'}">${fin ? 'arrives' : (gain >= 0 ? Math.abs(gain).toLocaleString() + ' km closer' : Math.abs(gain).toLocaleString() + ' km farther')}</span>
+        <span class="trade">${T.esc(x.trade)}</span>
+        <span class="fx"><span class="decs ${x.decs.cls}">${x.decs.t}</span><span class="bud ${x.budget.cls}">${x.budget.t}</span><span class="dist ${gain >= 0 ? 'closer' : 'farther'}">${fin ? '' : (gain >= 0 ? Math.abs(gain).toLocaleString() + ' km closer' : Math.abs(gain).toLocaleString() + ' km farther')}</span></span>
         <span class="go">${fin ? 'Arrive' : 'Travel'} →</span>
       </button>`; }).join('')}</div>`;
     dock.querySelectorAll('.tv-choice').forEach(b => { b.onclick = () => { const i = +b.dataset.i; if (sel === i) travel(i); else select(i); }; b.onmouseenter = () => { if (sel === null) preview(+b.dataset.i); }; b.onmouseleave = () => { if (sel === null) preview(null); }; });
+    const cx = dock.querySelector('.tv-coach .x'); if (cx) cx.onclick = e => { e.stopPropagation(); taught(); dock.querySelector('.tv-coach').remove(); };
+  }
+  /* the first game teaches itself: one line above the cards on the first two decisions, never again after that */
+  const TAUGHT = 'traverse.taught';
+  const newHere = mode === 'today' && !Object.keys((T.load().results) || {}).length && !localStorage.getItem(TAUGHT);
+  function taught() { try { localStorage.setItem(TAUGHT, '1'); } catch (e) {} }
+  function coachLine() {
+    if (!newHere || route.length > 1) return '';
+    if (route.length === 0) return `Each card is one leg onward: its fare, its time, and how many decisions the rest of the trip needs. Tap one, then tap <b>Travel</b>.`;
+    return `That spent a decision. You have <b>${decisions}</b> left, so keep enough to reach <b>${T.esc(ch.to.name)}</b>: every card says what it leaves you.`;
   }
   let hover = null, framed = false;
   function preview(i) { hover = i; gSpokes.selectAll('path').classed('hot', (d, j) => j === i); }
@@ -315,7 +369,7 @@
   function unselect() { if (sel === null) return; sel = null; renderChoices(); drawMap(); }
   /* a step: work out the ways onward, show them, bring the chart to them; a secret fare on one of them is found by looking */
   function step() {
-    choices = choicesFrom(at()); sel = null;
+    choices = annotate(choicesFrom(at())); sel = null;
     choices.forEach(x => noteDeals(at(), x.c, [x.leg]));
     renderBrief(); renderChoices(); drawMap(); fresh();
     if (!choices.length) { fail('No way onward from ' + at().name + '.'); return; }
@@ -327,8 +381,10 @@
     const x = choices[i]; if (!x || riding || ended) return;
     riding = true; sel = null; const from = at(); decisions--;
     route.push({ from: from.id, to: x.c.id, leg: x.leg }); choices = [];
+    if (route.length >= 2 && newHere) taught();
     renderBrief(); renderChoices(); saveRun(); buzz(12); hideTip();
     const burn = $('#tv-brief .pips i.on:last-of-type'); if (burn) burn.classList.add('burn');
+    const bud = $('#tv-brief .bud'); if (bud && !reducedMotion) { const sp = document.createElement('em'); sp.className = 'spend'; sp.textContent = '−' + T.money(x.leg.cost); bud.appendChild(sp); setTimeout(() => sp.remove(), 1300); }
     drawMap(); drawNewLeg(x.c.id);
     stage.classList.add('riding');
     const dur = reducedMotion ? 0 : 1000;
@@ -379,9 +435,9 @@
   }
   let sinceStart = 0, timer = null, justPlayed = false;
   function finish(secs, failed, reason) {
-    const tt = totals(); const sc = failed ? 0 : T.score(tt.cost, tt.hours, secs, M), tr = failed ? { name: 'Stranded', icon: '🧭' } : T.tier(sc, M);
+    const tt = totals(); const sc = failed ? 0 : T.score(tt.cost, tt.hours, route.length, M), tr = failed ? { name: 'Stranded', icon: '🧭' } : T.tier(sc, M);
     const res = { from: ch.from.id, score: sc, tier: tr.name, cost: Math.round(tt.cost), hours: tt.hours, secs: Math.round(secs * 10) / 10, route: route.map(r => ({ to: r.to, mode: r.leg.mode, cost: r.leg.cost, hours: r.leg.hours, deal: r.leg.deal || 0 })),
-      deals: { found: found.size, total: M.deals, used: route.filter(r => r.leg.deal).length }, decisions: DEC - decisions, decisionsTotal: DEC, par: { cost: M.par.cost, hours: M.par.hours, legs: M.par.legs }, parMatch: !failed && tt.cost <= M.par.cost + 1 && tt.hours <= M.par.hours + 0.05, twist: tw.id, at: Date.now() };
+      deals: { found: found.size, total: M.deals, used: route.filter(r => r.leg.deal).length }, decisions: DEC - decisions, decisionsTotal: DEC, budget: M.budget, par: { cost: M.par.cost, hours: M.par.hours, legs: M.par.legs }, parMatch: !failed && tt.cost <= M.par.cost + 1 && tt.hours <= M.par.hours + 0.05, twist: tw.id, at: Date.now() };
     if (failed) { res.failed = true; res.endedAt = at().id; res.kmShort = kmToGo(); res.reason = reason || null; }
     if (!practice) {
       st = T.load(); st.results = st.results || {};
@@ -415,14 +471,23 @@
   $('#tv-start').onclick = start;
 
   /* ---------- the expedition report: journey, performance, route vs planner, score breakdown ---------- */
-  const factors = res => {
-    const mF = Math.pow(Math.min(1, M.cheapest / res.cost), 1.1), tF = Math.pow(Math.min(1, M.fastest / res.hours), 1.1);
-    const decF = Math.exp(-Math.max(0, res.secs - 30) / 240), dF = M.deals ? (res.deals ? res.deals.found : 0) / M.deals : 1;
-    return { cost: Math.round(100 * mF), time: Math.round(100 * tF), deals: Math.round(100 * dF), eff: Math.round(100 * Math.sqrt(mF * tF)), speed: Math.round(20 * decF), mF, tF, dF };
-  };
+  const factors = res => T.breakdown(res.cost, res.hours, res.route.length, M);
   const parMatchOf = res => res.cost <= M.par.cost + 1 && res.hours <= M.par.hours + 0.05;
+  /* one sentence on what to do differently: the part of the score with the most left in it */
+  function coachOf(res, b) {
+    const found = res.deals ? res.deals.found : 0, legs = res.route.length;
+    if (b.overBy > 0) return `Going ${T.money(b.overBy)} over the ${T.money(M.budget)} budget scaled your score down by ${Math.round(100 - 100 * b.over)}%. ${found < M.deals ? `${M.deals - found} secret fare${M.deals - found === 1 ? '' : 's'} went unfound; they are the cheap way through.` : 'Slower ground legs would have kept you under it.'}`;
+    const gap = { money: b.max.money - b.pts.money, time: b.max.time - b.pts.time, decisions: b.max.decisions - b.pts.decisions };
+    const worst = Object.keys(gap).sort((p, q) => gap[q] - gap[p])[0];
+    const top = b.score >= 0.97 * M.par.score;
+    if (gap[worst] < 300) return `Hard to improve on: you were within a whisker of the best route on money, time and decisions alike.`;
+    if (top) return `A top run. The one part with room in it is ${worst}: ${worst === 'money' ? `the cheapest route that fits today is ${T.money(M.cheapest)} and you spent ${T.money(res.cost)}` : worst === 'time' ? `the fastest route that fits takes ${T.dur(M.fastest)} against your ${T.dur(res.hours)}` : `today can be done in ${M.minLegs} leg${M.minLegs === 1 ? '' : 's'} and you used ${legs}`}.`;
+    if (worst === 'money') return `Money cost you the most: the cheapest route that fits today is ${T.money(M.cheapest)} and you spent ${T.money(res.cost)}. ${found < M.deals ? `${M.deals - found} secret fare${M.deals - found === 1 ? '' : 's'} went unfound.` : 'A slower, cheaper leg or two would have scored higher.'}`;
+    if (worst === 'time') return `Time cost you the most: the fastest route that fits today takes ${T.dur(M.fastest)} against your ${T.dur(res.hours)}. One fast leg across the longest gap would have made it up.`;
+    return `Decisions cost you the most: today can be done in ${M.minLegs} leg${M.minLegs === 1 ? '' : 's'} and you used ${legs}. Fewer, longer legs score better.`;
+  }
   function verdict(res) {
-    const ps = T.score(res.cost, res.hours, 0, M), pp = M.par.score;
+    const ps = T.score(res.cost, res.hours, res.route.length, M), pp = M.par.score;
     const dc = res.cost - M.par.cost, dh = res.hours - M.par.hours;
     if (parMatchOf(res)) return { cls: 'tie', h: "🎯 You found the planner's route", t: "That's the best balance of money and time anyone could find today." };
     if (ps > pp + 5) return { cls: 'win', h: '🧠 You outsmarted the planner', t: dc < -0.5 ? `You saved ${T.money(-dc)}${dh < -0.05 ? ' and ' + T.dur(-dh) : ''}.` : `You got there ${T.dur(-dh)} faster.` };
@@ -436,7 +501,7 @@
     return `${nx ? `Tomorrow is <b>${T.esc(nx.label)}</b> · ` : ''}next puzzle in <b>${resetIn()}</b>${S.streak > 1 ? ` · <b>${S.streak}-day</b> streak` : ''}${y && t ? `<br>Yesterday you scored <b>${y.score.toLocaleString()}</b>${yd ? ` · today <b>${yd > 0 ? '+' : '−'}${Math.abs(yd).toLocaleString()}</b>` : ''}` : ''}`;
   }
   function buildSummary(res, isPractice, xpGain, earned, full) {
-    const tr = T.tier(res.score, M), ofPar = Math.round(100 * res.score / Math.max(1, M.par.score)), f = factors(res), v = verdict(res);
+    const tr = T.tier(res.score, M), ofPar = Math.round(100 * res.score / Math.max(1, M.par.score)), f = factors(res), v = verdict(res), budget = res.budget || M.budget, under = budget - res.cost;
     const prog = T.progression(T.load().results || {}), lvlPct = prog.next ? Math.round(100 * prog.into / prog.span) : 100;
     const parRoute = M.par.path.map(e => ({ to: e.to, mode: e.mode, cost: e.cost, hours: e.hours, deal: e.deal }));
     const found = res.deals ? res.deals.found : 0, parDeals = M.par.path.filter(e => e.deal).length;
@@ -444,8 +509,7 @@
     const stops = [ch.from, ...res.route.map(r => T.byId[r.to])];
     const chain = stops.map(c => `<span>${T.esc(c.name)}</span>`).join('<i>→</i>');
     const km = Math.round(stops.slice(1).reduce((a, c, i) => a + T.km(stops[i], c), 0)), nations = new Set(stops.map(c => c.country)).size;
-    const perf = (lab, you, best, ok, delta) => `<div class="prow ${ok ? 'good' : 'bad'}"><span class="l">${lab}</span><span class="y"><small>You</small><b>${you}</b></span><span class="b"><small>Best</small><b>${best}</b></span><i>${ok ? '✓' : delta}</i></div>`;
-    const bar = (lab, val, cls) => `<div class="brow ${cls || ''}"><span>${lab}</span><div class="bar"><i style="width:${val}%" data-w="${val}"></i></div><b><span data-count="${val}">${val}</span> <small>/ 100</small></b></div>`;
+    const bar = (lab, pts, max, you, best) => { const w = Math.round(100 * pts / max); return `<div class="brow"><span>${lab}<small>${you} · best ${best}</small></span><div class="bar"><i style="width:${w}%" data-w="${w}"></i></div><b><span data-count="${pts}">${pts.toLocaleString()}</span> <small>/ ${max.toLocaleString()}</small></b></div>`; };
     const tags = [res.cost < M.par.cost - 0.5 ? ['you', 'Cheaper'] : res.cost > M.par.cost + 0.5 ? ['par', 'Planner cheaper'] : ['tie', 'Same cost'], res.hours < M.par.hours - 0.05 ? ['you', 'Faster'] : res.hours > M.par.hours + 0.05 ? ['par', 'Planner faster'] : ['tie', 'Same time'], res.route.length < M.par.legs ? ['you', 'Fewer legs'] : res.route.length > M.par.legs ? ['par', 'Planner fewer legs'] : ['tie', 'Same legs'], [found >= parDeals ? 'you' : 'par', `Deals ${res.deals ? res.deals.used : 0} vs ${parDeals} used`]];
     return `
       <p class="kicker"><b>Journey complete</b> · ${isPractice ? (mode === 'today' ? 'practice run, not scored' : mode === 'archive' ? 'archive practice, not scored' : 'random expedition, not scored') : 'official result · ' + dayLabel}</p>
@@ -453,18 +517,14 @@
         <p class="lab">Your journey</p>
         <div class="chain">${chain}</div>
         <p class="rs-dist"><b data-count="${km}" data-fmt="km">${km.toLocaleString()} km</b> across <b>${nations} ${nations === 1 ? 'country' : 'countries'}</b></p>
-        <div class="rs-stats"><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.decisions || res.route.length}/${res.decisionsTotal || DEC}</b><span>decisions</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div><div><b>${found}/${M.deals}</b><span>secret fares</span></div></div>
+        <div class="rs-stats"><div class="${under < 0 ? 'over' : ''}"><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span><small>${under < 0 ? T.money(-under) + ' over the ' + T.money(budget) + ' budget' : T.money(under) + ' of ' + T.money(budget) + ' left'}</small></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div><div><b>${res.decisions || res.route.length}/${res.decisionsTotal || DEC}</b><span>decisions</span></div><div><b>${found}/${M.deals}</b><span>secret fares</span></div><div><b class="ic">${modesUsed}</b><span>modes</span></div></div>
       </section>
       <section class="rs-top">
         <div class="rs-rating ${tr.name.toLowerCase()}"><span class="ic">${tr.icon}</span><div><b>${tr.name}</b><small>${ofPar}% of the planner's score (${M.par.score.toLocaleString()})${isPractice ? ' · practice' : ''}</small></div></div>
         <div class="rs-big"><b data-count="${res.score}">${res.score.toLocaleString()}</b><small>score</small>${!isPractice && mode === 'today' ? `<span>${tomorrowLine()}</span>` : ''}</div>
+        <p class="rs-coach">${coachOf(res, f)}</p>
       </section>
       ${earned && earned.length ? `<section class="rs-badges"><p class="lab">New badge${earned.length === 1 ? '' : 's'}</p><div>${earned.map(a => `<a href="achievements.html" class="nb${a.tier ? ' t-' + a.tier.toLowerCase() : ''}"><span>${a.ic}</span><b>${T.esc(a.name)}</b><small>${a.tier || (a.secret ? 'Secret badge' : 'Unlocked')}</small></a>`).join('')}</div></section>` : ''}
-      <section class="rs-perf"><p class="lab">Your performance</p>
-        ${perf('Cost', T.money(res.cost), T.money(M.cheapest), res.cost <= M.cheapest + 1, '+' + T.money(res.cost - M.cheapest))}
-        ${perf('Time', T.dur(res.hours), T.dur(M.fastest), res.hours <= M.fastest + 0.05, '+' + T.dur(res.hours - M.fastest))}
-        ${perf('Deals', found + '/' + M.deals, M.deals + '/' + M.deals, found >= M.deals, (M.deals - found) + ' missed')}
-      </section>
       <section class="rs-vs"><p class="lab">You vs the planner</p>
         <div class="duel">
           <div class="side you"><h5>Your route</h5><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>${T.dur(res.hours)} · ${res.route.length} leg${res.route.length === 1 ? '' : 's'}</span></div>
@@ -480,9 +540,9 @@
       </section>
       <section class="rs-score"><p class="lab">Score breakdown</p>
         <div class="final"><b data-count="${res.score}">${res.score.toLocaleString()}</b><span>final score</span></div>
-        ${bar('Cost', f.cost)}${bar('Time', f.time)}${bar('Deals', f.deals)}${bar('Efficiency', f.eff)}
-        <div class="brow bonus"><span>Speed bonus</span><div class="bar"><i style="width:${f.speed * 5}%" data-w="${f.speed * 5}"></i></div><b>+${f.speed}%</b></div>
-        <p class="note">Cost and time are measured against the best routes that fit today's mission. Efficiency rewards doing well at both. Deciding quickly adds a bonus, up to 20%, and never takes anything away.</p>
+        ${bar('Money', f.pts.money, f.max.money, T.money(res.cost), T.money(M.cheapest))}${bar('Time', f.pts.time, f.max.time, T.dur(res.hours), T.dur(M.fastest))}${bar('Decisions', f.pts.decisions, f.max.decisions, res.route.length + ' leg' + (res.route.length === 1 ? '' : 's'), M.minLegs + ' leg' + (M.minLegs === 1 ? '' : 's'))}
+        ${f.overBy > 0 ? `<div class="brow over"><span>Over budget</span><div class="bar"><i style="width:${Math.round(100 * (1 - f.over))}%" data-w="${Math.round(100 * (1 - f.over))}"></i></div><b>−${Math.round(100 - 100 * f.over)}%</b></div>` : ''}
+        <p class="note">Money is half the score, time 30% and decisions 20%. Each part compares you with the best route that fits today: the cheapest, the fastest and the one with the fewest legs. Match it and that part is full. Going over budget scales the whole score down by budget ÷ spent. How fast you decide never counts.</p>
       </section>
       ${!isPractice ? `<div class="level"><span>Level ${prog.level} · ${prog.title}${xpGain ? ` · <b>+<span data-count="${xpGain}">${xpGain}</span> XP</b>` : ''}</span><div class="bar"><i style="width:${lvlPct}%" data-w="${lvlPct}"></i></div><small>${prog.next ? (prog.next - prog.xp) + ' XP to ' + prog.nextTitle : 'Top level'}</small></div>` : ''}
       <div class="actions"><button class="btn primary big tv-share">Share result</button><button class="btn ghost tv-map">See the map</button><button class="btn ghost tv-stats">Stats</button>${full ? `<button class="btn ghost tv-again">Practice again</button>${mode !== 'today' ? '<a class="btn ghost" href="play.html">Today\'s puzzle</a>' : `<a class="btn ghost" href="play.html?seed=${Math.random().toString(36).slice(2, 8)}">Random expedition</a>`}` : ''}</div>`;
@@ -514,11 +574,11 @@
   function shareText(res) {
     const tr = T.tier(res.score, M), f = factors(res);
     const bar = x => { const n = Math.round(Math.max(0, Math.min(1, x)) * 10); return '█'.repeat(n) + '░'.repeat(10 - n); };
-    const modes = Object.keys(T.MODES).filter(m => res.route.some(r => r.mode === m)).map(m => T.MODES[m].icon).join(' ');
+    const modes = Object.keys(T.MODES).filter(m => res.route.some(r => r.mode === m)).map(m => T.MODES[m].icon).join(' '), budget = res.budget || M.budget;
     const dc = res.cost - M.par.cost, dh = res.hours - M.par.hours, ps = res.score, pp = M.par.score;
     const vs = parMatchOf(res) ? "🎯 Matched the planner's route" : ps > pp + 5 ? `🧠 Beat the planner${dc < -0.5 ? ' · ' + T.money(-dc) + ' cheaper' : ''}${dh < -0.05 ? ' · ' + T.dur(-dh) + ' faster' : ''}` : `🧭 Planner wins${dc > 0.5 ? ' · ' + T.money(dc) + ' behind' : dh > 0.05 ? ' · ' + T.dur(dh) + ' slower' : ''}`;
     const S = mode === 'today' ? T.stats((st && st.results) || {}, today) : null, streak = S && S.streak > 1 ? `\n🔥 ${S.streak}-day streak` : '';
-    return `🌎 TRAVERSLE ${ch.n ? '#' + String(ch.n).padStart(3, '0') : 'EXPEDITION'} · ${M.difficulty}\n${ch.from.name} → ${ch.to.name}\n💰 ${T.money(res.cost)} · ⏱️ ${T.dur(res.hours)} · 🎟️ ${res.deals ? res.deals.found : 0}/${M.deals} deals\n${tr.icon} ${tr.name.toUpperCase()} · ${res.score.toLocaleString()}\n💰 ${bar(f.mF)}\n⏱️ ${bar(f.tF)}\n🎟️ ${bar(f.dF)}\n${vs}\n${res.decisions || res.route.length}/${res.decisionsTotal || DEC} decisions · ${modes}${streak}\ntraversledaily.com`;
+    return `🌎 TRAVERSLE ${ch.n ? '#' + String(ch.n).padStart(3, '0') : 'EXPEDITION'} · ${M.difficulty}\n${ch.from.name} → ${ch.to.name}\n${tr.icon} ${tr.name.toUpperCase()} · ${res.score.toLocaleString()}\n💰 ${bar(f.mF)} ${T.money(res.cost)} of ${T.money(budget)}\n⏱️ ${bar(f.tF)} ${T.dur(res.hours)}\n🧭 ${bar(f.dF)} ${res.decisions || res.route.length}/${res.decisionsTotal || DEC} decisions\n🎟️ ${res.deals ? res.deals.found : 0}/${M.deals} secret fares · ${modes}\n${vs}${streak}\ntraversledaily.com`;
   }
   function share(res) {
     const txt = shareText(res);
@@ -607,7 +667,7 @@
       <section class="rs-journey">
         <p class="lab">Where you got to</p>
         <div class="chain">${chain}<i>→</i><span class="x">✕ ${T.esc(ch.to.name)}</span></div>
-        <div class="rs-stats"><div><b data-count="${km}" data-fmt="km">${km.toLocaleString()} km</b><span>travelled</span></div><div><b>${res.decisions || res.route.length}/${res.decisionsTotal || DEC}</b><span>decisions</span></div><div><b>${T.esc(endAt.name)}</b><span>final stop</span></div><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div></div>
+        <div class="rs-stats"><div><b data-count="${km}" data-fmt="km">${km.toLocaleString()} km</b><span>travelled</span></div><div><b>${res.decisions || res.route.length}/${res.decisionsTotal || DEC}</b><span>decisions</span></div><div><b>${T.esc(endAt.name)}</b><span>final stop</span></div><div><b data-count="${Math.round(res.cost)}" data-fmt="money">${T.money(res.cost)}</b><span>spent</span><small>of ${T.money(res.budget || M.budget)}</small></div><div><b>${T.dur(res.hours)}</b><span>travel time</span></div></div>
       </section>
       <section class="rs-vs"><p class="lab">${WAYS.length === 1 ? 'The charted route' : 'The ' + WAYS.length + ' charted routes'}</p>
         <div class="rs-waylist">${WAYS.map((w, i) => `<div class="wl"><b>${wayName(i)}</b><span class="chain">${[ch.from, ...w.path.map(e => T.byId[e.to])].map(c => `<span>${T.esc(c.name)}</span>`).join('<i>→</i>')}</span><small>${T.money(w.cost)} · ${T.dur(w.hours)} · ${w.legs} legs</small></div>`).join('')}</div>

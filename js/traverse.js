@@ -53,13 +53,14 @@
 
   /* ---------- twists: one rule that changes the puzzle for the day ---------- */
   const TWISTS = [
-    { id: 'open', icon: '🧭', name: 'Open road', desc: 'No extra rule today. Beat the budget and the clock.', state: () => 0, allow: () => true, done: () => true, status: () => '' },
+    { id: 'open', icon: '🧭', name: 'Open road', desc: 'No extra rule today. Spend less, arrive sooner.', state: () => 0, allow: () => true, done: () => true, status: () => '' },
     { id: 'nofly', icon: '🚫', name: 'Grounded', desc: 'No flights today. Ground and sea only.', state: () => 0, allow: l => l.mode !== 'plane', done: () => true, status: () => 'no flights allowed' },
     { id: 'oneflight', icon: '🎫', name: 'One ticket', desc: 'One flight, no more.', state: (s, l) => Math.min(2, s + (l.mode === 'plane' ? 1 : 0)), allow: (l, s) => !(l.mode === 'plane' && s >= 1), done: () => true, status: s => s >= 1 ? 'your one flight is used' : 'one flight still available' },
-    { id: 'ferry', icon: '🚢', name: 'Sea legs', desc: 'Take a ferry somewhere along the way.', state: (s, l) => s | (l.mode === 'ferry' ? 1 : 0), allow: () => true, done: s => s === 1, status: s => s ? 'ferry taken ✓' : 'still needs a ferry' },
-    { id: 'rail', icon: '🚆', name: 'Rail pass', desc: 'Take the train at least twice.', state: (s, l) => Math.min(2, s + (l.mode === 'train' ? 1 : 0)), allow: () => true, done: s => s >= 2, status: s => s >= 2 ? 'two trains ✓' : (2 - s) + ' more train leg' + (s === 1 ? '' : 's') + ' needed' },
+    // fare rules: nothing is removed, a kind of transport is repriced, so every card shows the rule's effect
+    { id: 'ferry', icon: '🚢', name: 'Sea legs', desc: 'Ferries are half price today.', fare: { ferry: 0.5 }, state: () => 0, allow: () => true, done: () => true, status: () => 'ferries half price' },
+    { id: 'rail', icon: '🚆', name: 'Rail pass', desc: 'Trains are half price today.', fare: { train: 0.5 }, state: () => 0, allow: () => true, done: () => true, status: () => 'trains half price' },
     { id: 'overland', icon: '🛬', name: 'Overland arrival', desc: "You can't fly into the destination.", state: () => 0, allow: (l, s, toDest) => !(toDest && l.mode === 'plane'), done: () => true, status: () => 'no flying into the destination' },
-    { id: 'threemodes', icon: '🎲', name: 'Mix it up', desc: 'Use three different kinds of transport.', state: (s, l) => s | MODE_BIT[l.mode], allow: () => true, done: s => pop(s) >= 3, status: s => pop(s) >= 3 ? 'three modes ✓' : (3 - pop(s)) + ' more mode' + (pop(s) === 2 ? '' : 's') + ' needed' },
+    { id: 'threemodes', icon: '🎲', name: 'Mix it up', desc: 'Flights cost double today. Mix your transport.', fare: { plane: 2 }, state: () => 0, allow: () => true, done: () => true, status: () => 'flights cost double' },
   ];
   const pop = x => { let n = 0; while (x) { n += x & 1; x >>= 1; } return n; };
   const twistById = {}; TWISTS.forEach(t => (twistById[t.id] = t));
@@ -128,6 +129,9 @@
     if (a.coastal && b.coastal && d < 1100 && (!land || d < 500 || crossesMed(a, b))) {
       const m = MODES.ferry; add('ferry', (m.fixed + d * m.perKm) * jitter(), m.over + d / m.speed);
     }
+    // the day's fare rule (half-price ferries, double-price flights): applied before the deals, so a secret fare discounts the day's price
+    const ft = twistById[TWIST[seed]] && twistById[TWIST[seed]].fare;
+    if (ft) out.forEach(l => { const f = ft[l.mode]; if (f) { l.cost = Math.max(1, Math.round(l.cost * f)); l.fare = f; } });
     // the day's hidden deals: a discounted fare on a few specific legs
     const D = DEALS[seed];
     if (D) out.forEach(l => { const p = D[lk + '|' + l.mode]; if (p) { l.full = l.cost; l.cost = Math.max(1, Math.round(l.cost * (1 - p))); l.deal = p; } });
@@ -152,10 +156,10 @@
     { twist: 'oneflight', name: 'Grand Tour', region: null, minKm: 2600, desc: 'A long way to go and one flight at most.' },
     { twist: 'open', name: 'Open Road', region: null, desc: 'No extra rule. Anywhere in the world.' },
     { twist: 'overland', name: 'Southern Crossing', region: ['South America', 'Africa'], desc: 'South America or Africa, and no flying into the destination.' },
-    { twist: 'ferry', name: 'Island Hopper', region: ['Asia', 'Europe', 'North America'], coastal: true, desc: 'Coast to coast, with at least one ferry.' },
+    { twist: 'ferry', name: 'Island Hopper', region: ['Asia', 'Europe', 'North America'], coastal: true, desc: 'Coast to coast, with ferries at half price.' },
     { twist: 'nofly', name: 'Road Trip', region: ['North America', 'South America'], desc: 'The Americas with no flights at all.' },
-    { twist: 'threemodes', name: 'Mix It Up', region: ['Asia'], desc: 'Asia, with three kinds of transport.' },
-    { twist: 'rail', name: 'Eurorail', region: ['Europe'], desc: 'Europe by train, at least twice.' },
+    { twist: 'threemodes', name: 'Mix It Up', region: ['Asia'], desc: 'Asia, with flights at double the price.' },
+    { twist: 'rail', name: 'Eurorail', region: ['Europe'], desc: 'Europe, with trains at half price.' },
   ];
   const DAYNAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const rhythmOf = n => { const wd = new Date(dayKey(n)).getUTCDay(), r = RHYTHM[wd]; return { twist: twistById[r.twist], day: DAYNAMES[wd], name: r.name, label: r.name + ' ' + DAYNAMES[wd], desc: r.desc, rule: r }; };
@@ -273,7 +277,7 @@
     };
     let routes = search();
     if (routes.length < 3) { cities = C; g = null; routes = search(); }
-    if (routes.length < 2 && ch.twistId !== 'open') { ch.twist = twistById.open; ch.twistId = 'open'; TWIST[ch.seed] = 'open'; cities = corridor(ch); g = null; routes = search(); if (routes.length < 3) { cities = C; g = null; routes = search(); } }
+    if (routes.length < 2 && ch.twistId !== 'open') { ch.twist = twistById.open; ch.twistId = 'open'; TWIST[ch.seed] = 'open'; delete LEGC[ch.seed]; cities = corridor(ch); g = null; routes = search(); if (routes.length < 3) { cities = C; g = null; routes = search(); } }
     const sc0 = (x, cheap, fast) => routeScore(x.cost, x.hours, cheap, fast);
     const cheap = Math.min(...routes.map(x => x.cost)), fast = Math.min(...routes.map(x => x.hours));
     const sorted = routes.slice().sort((x, y) => sc0(y, cheap, fast) - sc0(x, cheap, fast));
@@ -342,24 +346,32 @@
     const quick = by(x => x.hours), cheap0 = by(x => x.cost);
     if (want >= 2) add(quick && cheap0 && quick !== cheap0 && (pick.par.hours - quick.x.hours) / pick.par.hours < (pick.par.cost - cheap0.x.cost) / pick.par.cost ? cheap0 : quick);
     if (want >= 3) add(by(x => x.cost) || by(x => x.hours));
-    const way = o => ({ cost: o.x.cost, hours: o.x.hours, legs: o.x.legs, path: o.x.path, score: Math.round(10000 * Math.min(1, o.s)) });
-    const M = { budget: pick.B, deadline: pick.D, cheapest: pick.cheapest, fastest: pick.fastest, twist: ch.twist, deals: Object.keys(deals).length, dealKeys: Object.keys(deals),
+    const way = o => ({ cost: o.x.cost, hours: o.x.hours, legs: o.x.legs, path: o.x.path, score: 0 });
+    const M = { budget: pick.B, deadline: pick.D, cheapest: pick.cheapest, fastest: pick.fastest, minLegs: Math.min(...pick.feas.map(x => x.legs)), twist: ch.twist, deals: Object.keys(deals).length, dealKeys: Object.keys(deals),
       par: way(ways[0]), ways: ways.map(way), routes: pick.feas.length };
     M.difficulty = M.ways.length === 1 ? 'Hard' : M.ways.length === 2 ? 'Medium' : 'Easy';
+    // every charted route is scored the way a player's route is, so "x% of the planner's score" means what it says
+    M.ways.forEach(w => (w.score = score(w.cost, w.hours, w.legs, M))); M.par.score = M.ways[0].score;
     return (MIS[ch.seed] = M);
   }
 
   /* the decisions a mission allows: one more than the longest way to win needs, never fewer than four */
   const decisionsFor = M => Math.max(4, Math.max(...M.ways.map(w => w.legs)) + 1);
 
-  /* ---------- scoring ---------- */
-  function score(cost, hours, secs, M) {
-    if (!(cost > 0) || !(hours > 0)) return 0;
-    const mF = Math.pow(Math.min(1, M.cheapest / cost), 1.1), tF = Math.pow(Math.min(1, M.fastest / hours), 1.1);
-    const decF = Math.exp(-Math.max(0, secs - 30) / 240);
-    const blend = 0.4 * mF + 0.4 * tF + 0.2 * decF;
-    return Math.round(10000 * Math.min(1, blend * (0.85 + 0.15 * Math.sqrt(mF * tF))));
+  /* ---------- scoring: money first (half the score), then time, then decisions ----------
+     Each part compares you with the best route that fits the day: the cheapest for money, the fastest for time,
+     the fewest legs for decisions. Match it and that part is full. Going over budget scales the whole score down by
+     budget / spent. How fast you clicked never counts. */
+  const WEIGHTS = { money: 0.5, time: 0.3, decisions: 0.2 };
+  function breakdown(cost, hours, legs, M) {
+    const ok = cost > 0 && hours > 0;
+    const mF = ok ? Math.min(1, M.cheapest / cost) : 0, tF = ok ? Math.min(1, M.fastest / hours) : 0, dF = ok ? Math.min(1, (M.minLegs || 1) / Math.max(1, legs || 1)) : 0;
+    const over = ok && cost > M.budget ? M.budget / cost : 1;
+    const pts = { money: Math.round(10000 * WEIGHTS.money * mF * over), time: Math.round(10000 * WEIGHTS.time * tF * over), decisions: Math.round(10000 * WEIGHTS.decisions * dF * over) };
+    const max = { money: 10000 * WEIGHTS.money, time: 10000 * WEIGHTS.time, decisions: 10000 * WEIGHTS.decisions };
+    return { mF, tF, dF, over, overBy: ok ? Math.max(0, cost - M.budget) : 0, pts, max, score: ok ? Math.round(10000 * (WEIGHTS.money * mF + WEIGHTS.time * tF + WEIGHTS.decisions * dF) * over) : 0 };
   }
+  const score = (cost, hours, legs, M) => breakdown(cost, hours, legs, M).score;
   const TIERS = [[0.97, 'Perfect', '🏆'], [0.9, 'Expert', '🧭'], [0.8, 'Navigator', '🗺️'], [0.65, 'Wayfarer', '🎒'], [0, 'Arrived', '🏁']];
   const tier = (s, M) => { const q = s / Math.max(1, M.par.score); const t = TIERS.find(x => q >= x[0]); return { name: t[1], icon: t[2], q }; };
 
@@ -480,5 +492,5 @@
   const secsF = s => s < 60 ? Math.round(s) + 's' : Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's';
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, untilReset, EPOCH, challenge, challengeRandom, mission, decisionsFor, benchmarks: mission, score, tier, TIERS, progression, LEVELS, stats, achievements, newlyEarned, COUNTRIES, CONTINENTS, continentOf, rhythmOf, forget, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
+  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, untilReset, EPOCH, challenge, challengeRandom, mission, decisionsFor, benchmarks: mission, score, breakdown, WEIGHTS, tier, TIERS, progression, LEVELS, stats, achievements, newlyEarned, COUNTRIES, CONTINENTS, continentOf, rhythmOf, forget, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
 })();

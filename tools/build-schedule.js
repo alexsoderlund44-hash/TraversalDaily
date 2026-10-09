@@ -43,17 +43,17 @@ function note(n, a, b) { lastPair[pairKey(a, b)] = n; lastCity[a] = n; lastCity[
 /* Hand-made days: [start, destination, twist, title, blurb]. Each must still pass the checks below. */
 const HANDMADE = {
   1: ['sea', 'den', 'nofly', 'Coast to the Rockies', 'Seattle to Denver with no flights at all. Trains, buses and a long way round through California.'],
-  2: ['tok', 'sel', 'threemodes', 'Across the Sea of Japan', 'Tokyo to Seoul with three kinds of transport. The bullet train is only the start.'],
-  3: ['sto', 'mil', 'rail', 'North to South', 'Stockholm to Milan with at least two trains. A classic rail crossing of Europe.'],
+  2: ['tok', 'sel', 'threemodes', 'Across the Sea of Japan', 'Tokyo to Seoul with flights at double the price. The bullet train is only the start.'],
+  3: ['sto', 'mil', 'rail', 'North to South', 'Stockholm to Milan with trains at half price. A classic rail crossing of Europe.'],
   4: ['cai', 'mad', 'oneflight', 'Nile to the Tagus', 'Cairo to Madrid with one flight at most. Pick the hop that makes the rest cheap.'],
   5: ['cpt', 'dar', 'open', 'Cape to the Swahili Coast', 'Cape Town to Dar es Salaam, no extra rule. The direct flight never fits the budget, so look for a stop along the way.'],
   6: ['rio', 'bue', 'overland', 'Tango by Land', 'Rio de Janeiro to Buenos Aires, but you cannot fly into the city. Find the last overland leg.'],
-  7: ['ath', 'bcn', 'ferry', 'The Mediterranean', 'Athens to Barcelona with at least one ferry. Somewhere along the coast there is a boat worth taking.'],
+  7: ['ath', 'bcn', 'ferry', 'The Mediterranean', 'Athens to Barcelona with ferries at half price. Somewhere along the coast there is a boat worth taking.'],
 };
 const days = {}; let imperfect = 0; const t0 = Date.now();
 for (let n = 1; n <= N; n++) {
   const want = T.rhythmOf(n).twist.id; let pick = null;
-  if (FROZEN[n] && !HANDMADE[n]) { days[n] = FROZEN[n]; note(n, FROZEN[n][0], FROZEN[n][1]); continue; }
+  if (FROZEN[n]) { days[n] = FROZEN[n]; note(n, FROZEN[n][0], FROZEN[n][1]); continue; } // published days stay as they were, hand-made ones included
   if (HANDMADE[n]) {
     const h = HANDMADE[n]; window.TRAVERSE_SCHEDULE.days[n] = h; T.forget('d' + n);
     if (h[2] !== want) { console.error('hand-made day ' + n + ' (' + h[3] + ') is a ' + h[2] + ' day but ' + T.rhythmOf(n).label + ' needs ' + want); process.exit(1); }

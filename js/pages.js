@@ -27,7 +27,7 @@
     g('hm-day').textContent = 'Puzzle #' + ch.n + ' · ' + new Date(ch.key).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
     g('hm-route').innerHTML = `<span class="pin s"></span><b>${T.flagImg(ch.from, 40)}<span>${T.esc(ch.from.name)}<small class="cty">${T.esc(ch.from.country)}</small></span></b><span class="ln"></span><span></span><span class="pin d"></span><b>${T.flagImg(ch.to, 40)}<span>${T.esc(ch.to.name)}<small class="cty">${T.esc(ch.to.country)}</small></span></b>`;
     g('hm-h1').innerHTML = `Can you get from <em>${T.esc(ch.from.name)}</em> to <em>${T.esc(ch.to.name)}</em> in a handful of decisions?`; g('hm-h1').classList.add('live');
-    const mis = M => `<div class="mi"><span class="ic">🧭</span><b>${M ? T.decisionsFor(M) : '…'}</b><span>decisions</span></div><div class="mi diff ${M ? M.difficulty.toLowerCase() : ''}"><span class="ic lv" aria-hidden="true"><i></i><i></i><i></i></span><b>${M ? M.difficulty : '…'}</b><span>${M ? (M.ways.length === 1 ? 'one charted route' : M.ways.length + ' charted routes') : 'difficulty'}</span></div><div class="mi" title="${T.esc(ch.twist.desc)}"><span class="ic">${ch.twist.icon}</span><b>${T.esc(ch.twist.name)}</b><span>twist</span></div><div class="mi"><span class="ic">🎟️</span><b>${M ? M.deals : 3}</b><span>secret fares</span></div>`;
+    const mis = M => `<div class="mi"><span class="ic">🧭</span><b>${M ? T.decisionsFor(M) : '…'}</b><span>decisions</span></div><div class="mi money"><span class="ic">💰</span><b>${M ? T.money(M.budget) : '…'}</b><span>budget</span></div><div class="mi diff ${M ? M.difficulty.toLowerCase() : ''}"><span class="ic lv" aria-hidden="true"><i></i><i></i><i></i></span><b>${M ? M.difficulty : '…'}</b><span>${M ? (M.ways.length === 1 ? 'one charted route' : M.ways.length + ' charted routes') : 'difficulty'}</span></div><div class="mi" title="${T.esc(ch.twist.desc)}"><span class="ic">${ch.twist.icon}</span><b>${T.esc(ch.twist.name)}</b><span>twist</span></div>`;
     g('hm-mission').innerHTML = mis(null);
     const rh = T.rhythmOf(ch.n); if (rh.twist.id === ch.twistId) g('hm-day').textContent += ' · ' + rh.label;
     if (ch.title) { g('hm-theme').innerHTML = `<b>${T.esc(ch.title)}.</b> ${T.esc(ch.blurb)}`; g('hm-theme').hidden = false; }
@@ -45,24 +45,24 @@
   if (page === 'how') {
     const KIND = { open: 'none', nofly: 'hard', oneflight: 'hard', overland: 'hard', ferry: 'soft', rail: 'soft', threemodes: 'soft' };
     const WHAT = {
-      open: 'Nothing is removed and nothing is tilted. Every leg the chart has is on the table.',
-      nofly: 'No flight is ever offered. Every leg is a bus, train, ferry, rideshare or car.',
+      open: 'Nothing is removed and nothing is repriced. Every leg the chart has is on the table at its usual fare.',
+      nofly: 'No flight is ever offered. Every leg is a bus, train, ferry, rideshare or car, so the trip takes longer and the decisions run tighter.',
       oneflight: 'Once you have flown, no more flights are offered for the rest of the journey.',
       overland: 'No flight into the destination is offered. You can fly earlier, but the last leg is on the ground or at sea.',
-      ferry: 'Where a ferry runs, it is the fare you are shown until you have taken one. The charted routes all take a ferry somewhere.',
-      rail: 'Where a train runs, it is the fare you are shown until you have taken two. The charted routes all ride the train at least twice.',
-      threemodes: 'A kind of transport you have not used yet is the fare you are shown, until you have used three. The charted routes all mix three.'
+      ferry: 'Every ferry is half its usual fare. Nothing is removed; the sea is just the cheap way today.',
+      rail: 'Every train is half its usual fare. Nothing is removed; the rails are just the cheap way today.',
+      threemodes: 'Every flight costs double. Nothing is removed; flying is still fast, it just eats the budget.'
     };
     const PLAY = {
       open: 'Pure money against time. Look for the secret fares and judge each detour on how much closer it gets you.',
-      nofly: 'Long legs get slow. Favour the big hops that keep moving forward, and count your decisions before a scenic detour.',
+      nofly: 'Long legs get slow. Favour the big hops that keep moving forward, and read the decisions line before a scenic detour.',
       oneflight: 'Save the flight for the longest gap. One well-placed flight can buy you two decisions.',
       overland: 'Fly early if you fly at all, then line up a city with a road, rail or sea leg into the finish.',
-      ferry: 'Coast to coast. A ferry is usually slow but cheap, so take it where it carries you a long way.',
-      rail: 'Europe by train. Trains are fast between big cities, so string two of them along the way.',
-      threemodes: 'Three kinds of transport. Mix a bus, a train and a ferry early so you are not forced into an odd leg at the end.'
+      ferry: 'A half-price ferry is usually the cheapest card on the table and often the slowest. Take it where it carries you a long way.',
+      rail: 'A half-price train is cheap and quick between big cities. String a few along the way and the money score takes care of itself.',
+      threemodes: 'A double-price flight still saves hours, so one flight across the longest gap can be worth it. Two will wreck the budget.'
     };
-    const tw = $('#how-twists'); if (tw) tw.innerHTML = T.TWISTS.map(t => `<div class="how-twist"><span class="ic">${t.icon}</span><b>${T.esc(t.name)}</b><p class="what"><em class="${KIND[t.id] || 'hard'}">${KIND[t.id] === 'none' ? 'No rule' : KIND[t.id] === 'soft' ? 'Tilts the fares' : 'Removes legs'}</em>${T.esc(WHAT[t.id] || t.desc)}</p><p class="how"><b>Play it:</b> ${T.esc(PLAY[t.id] || '')}</p></div>`).join('');
+    const tw = $('#how-twists'); if (tw) tw.innerHTML = T.TWISTS.map(t => `<div class="how-twist"><span class="ic">${t.icon}</span><b>${T.esc(t.name)}</b><p class="what"><em class="${KIND[t.id] || 'hard'}">${KIND[t.id] === 'none' ? 'No rule' : KIND[t.id] === 'soft' ? 'Changes the fares' : 'Removes legs'}</em>${T.esc(WHAT[t.id] || t.desc)}</p><p class="how"><b>Play it:</b> ${T.esc(PLAY[t.id] || '')}</p></div>`).join('');
     const wk = $('#how-week'); if (wk) { const wd = new Date(T.dayKey(today)).getUTCDay(); wk.innerHTML = [1, 2, 3, 4, 5, 6, 0].map(d => { const rh = T.rhythmOf(today + ((d - wd + 7) % 7)); return `<li class="${d === wd ? 'now' : ''}"><span class="ic">${rh.twist.icon}</span><b>${T.esc(rh.label)}</b><span>${T.esc(rh.desc)}${d === wd ? ' · today' : ''}</span></li>`; }).join(''); }
   }
   if (page === 'achievements') {

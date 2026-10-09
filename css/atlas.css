@@ -921,3 +921,12 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 .hm-card .mi span:last-child{font:700 .66rem var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);line-height:1.3}
 .tv-mission .mi b,.tv-mission .mi.big b,.tv-mission .mi.money b,.tv-mission .mi.diff b,.tv-mission .mi.diff.easy b,.tv-mission .mi.diff.medium b,.tv-mission .mi.diff.hard b{font:500 1.35rem var(--disp);color:var(--ink);line-height:1.1}
 .tv-mission .mi span:last-child{font:400 .74rem var(--ui);color:var(--ink-2);line-height:1.35}
+
+/* mission tiles, bigger: the category sits small on top, the value is the thing you read */
+.hm-card .mi,.tv-mission .mi{padding:16px 10px 14px;gap:4px;align-content:start}
+.hm-card .mi span:first-child,.tv-mission .mi span:first-child{font:700 .64rem var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);line-height:1.2}
+.hm-card .mi b,.tv-mission .mi b,.hm-card .mi.money b,.tv-mission .mi.money b,.hm-card .mi.diff b,.tv-mission .mi.diff b,.hm-card .mi.diff.easy b,.hm-card .mi.diff.medium b,.hm-card .mi.diff.hard b,.tv-mission .mi.diff.easy b,.tv-mission .mi.diff.medium b,.tv-mission .mi.diff.hard b,.tv-mission .mi.big b{font:500 1.7rem var(--disp);color:var(--ink);line-height:1.05}
+.hm-card .mi small,.tv-mission .mi small{display:block;font:400 .74rem var(--ui);color:var(--ink-2);line-height:1.35;text-transform:none;letter-spacing:0}
+.hm-card .mi{text-align:center}.tv-mission .mi{text-align:left}
+@media(max-width:520px){.hm-card .mi b{font-size:1.5rem}.hm-card .mi{padding:14px 8px 12px}}
+@media(max-width:900px){.tv-mission .mi b{font-size:1.45rem}.tv-mission .mi{padding:12px 10px}}

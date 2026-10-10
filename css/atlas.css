@@ -994,3 +994,29 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
   .tv-stage.docked .tv-brief .bud .bar{display:none}.tv-stage.docked .tv-brief .bud .row .tm{margin-left:0}
   .tv-stage.docked .tv-brief .dec .pips{display:none}
 }
+
+/* ===================== the ride, the arrival, the find, the finale ===================== */
+/* the vehicle lays its line down as it goes */
+.tv-link.lay{animation:none}
+.tv-rider.go circle{r:9;filter:drop-shadow(1px 2px 0 rgba(43,29,18,.35))}
+.tv-rider.go text{font-size:11px;y:4}
+/* pulling in: a small card names the stop and what the leg cost */
+.tv-sum{position:absolute;left:50%;top:24px;transform:translate(-50%,-8px);z-index:6;pointer-events:none;background:var(--panel-2);border:2px solid var(--ink);border-radius:4px;box-shadow:3px 3px 0 var(--ink);padding:8px 14px 9px;display:grid;gap:1px;text-align:center;opacity:0;transition:opacity .22s,transform .3s cubic-bezier(.2,.8,.2,1)}
+.tv-sum.show{opacity:1;transform:translate(-50%,0)}
+.tv-sum.out{opacity:0;transform:translate(-50%,-6px);transition:opacity .25s,transform .25s ease-in}
+.tv-sum b{font:500 1.15rem var(--disp);color:var(--ink);display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.tv-sum span{font-size:.84rem;color:var(--ink-2)}
+.tv-sum small{font:700 .64rem var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+@media(max-width:900px){.tv-sum{top:100px;left:12px;right:68px;transform:translateY(-6px);padding:7px 10px;gap:0}.tv-sum.show{transform:none}.tv-sum.out{transform:translateY(-6px)}.tv-sum b{font-size:1rem}.tv-sum span{font-size:.8rem}}
+/* the find: a stamp slams onto the ticket once the new fare is in */
+.tv-deal .ticket{position:relative}
+.tv-deal .stamp{position:absolute;right:10px;top:8px;font:800 .78rem var(--ui);letter-spacing:.22em;text-transform:uppercase;color:var(--red);border:2.5px solid var(--red);border-radius:4px;padding:3px 7px;transform:rotate(-12deg) scale(2.4);opacity:0;mix-blend-mode:multiply}
+.tv-deal.show .stamp{animation:tvslam .32s cubic-bezier(.2,.9,.3,1.2) 1.05s both}
+@keyframes tvslam{from{opacity:0;transform:rotate(-12deg) scale(2.4)}70%{opacity:.95}to{opacity:.9;transform:rotate(-12deg) scale(1)}}
+/* the finale: a bright trace runs the whole route, and the pin bursts when it lands */
+.tv-trace{fill:none;stroke:var(--brass-2);stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:.95;animation:tvdraw .4s ease-out both;filter:drop-shadow(0 0 2px rgba(240,200,90,.8));pointer-events:none;transition:opacity .6s}
+.tv-trace.fade{opacity:0}
+.tv-burst{fill:none;stroke:var(--red);stroke-width:2;animation:tvburst .9s cubic-bezier(.2,.8,.2,1) both;pointer-events:none}
+@keyframes tvburst{from{r:2;opacity:1;stroke-width:3}to{r:34;opacity:0;stroke-width:.5}}
+.tv-stage.landed-dest .tv-city.dest{animation:tvreach .9s cubic-bezier(.2,.8,.2,1) 2}
+@media(prefers-reduced-motion:reduce){.tv-sum,.tv-deal.show .stamp,.tv-trace,.tv-burst,.tv-stage.landed-dest .tv-city.dest{animation:none;transition:none}.tv-deal .stamp{opacity:.9;transform:rotate(-12deg)}}

@@ -128,7 +128,8 @@
   /* finding a secret fare should feel like finding something */
   function dealReveal(a, b, l) {
     const el = $('#tv-deal'), full = l.full || l.cost, saved = full - l.cost;
-    el.innerHTML = `<div class="ticket"><p class="k">🎟️ Secret fare</p><b><s>${T.money(full)}</s><i>→</i><span class="new">${T.money(l.cost)}</span></b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>Save ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em><span class="dots">Take it and ${T.money(M.budget - totals().cost - l.cost)} of your budget is left</span></div>`;
+    const note = $('#tv-sum'); if (note && !note.hidden && !reducedMotion) { setTimeout(() => dealReveal(a, b, l), 1300); return; }
+    el.innerHTML = `<div class="ticket"><span class="stamp" aria-hidden="true">Found</span><p class="k">🎟️ Secret fare</p><b><s>${T.money(full)}</s><i>→</i><span class="new">${T.money(l.cost)}</span></b><small>${l.icon} ${T.esc(l.name)} · ${T.esc(a.name)} → ${T.esc(b.name)}</small><em>Save ${T.money(saved)} · ${Math.round(l.deal * 100)}% off</em><span class="dots">Take it and ${T.money(M.budget - totals().cost - l.cost)} of your budget is left</span></div>`;
     el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     clearTimeout(dealT); dealT = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 350); }, 3000);
     markCity(b.id, 'pop', 1600); buzz([15, 40, 25]); emit('deal', { from: a, to: b, leg: l, found: found.size });
@@ -205,7 +206,7 @@
   const gCountry = gc.append('g');
   gCountry.selectAll('text').data(feats.filter(f => path.area(f) > 60)).join('text').attr('class', 'tv-cname')
     .attr('transform', f => { const c = path.centroid(f); return `translate(${c[0]},${c[1]})`; }).text(f => (f.properties.name || '').toUpperCase()).style('display', 'none');
-  const gSpokes = g.append('g'), gCourse = g.append('g'), gPar = g.append('g'), gLinks = g.append('g'), gBadges = g.append('g'), gHits = g.append('g'), gCities = g.append('g'), gLabels = g.append('g');
+  const gSpokes = g.append('g'), gCourse = g.append('g'), gPar = g.append('g'), gLinks = g.append('g'), gTrace = g.append('g'), gBadges = g.append('g'), gHits = g.append('g'), gCities = g.append('g'), gLabels = g.append('g');
   const pos = c => proj([c.lon, c.lat]);
   const tip = $('#tv-tip'), stage = $('#tv-stage');
   g.append('g').attr('class', 'tv-pulse-g').attr('transform', `translate(${pos(ch.to)[0]},${pos(ch.to)[1]})`).append('circle').attr('class', 'tv-pulse');
@@ -411,7 +412,7 @@
     const burn = $('#tv-brief .pips i.on:last-of-type'); if (burn) burn.classList.add('burn');
     const cnt = $('#tv-brief .dec b'); if (cnt && !reducedMotion) cnt.classList.add('tick');
     const bud = $('#tv-brief .bud'); if (bud && !reducedMotion) { const sp = document.createElement('em'); sp.className = 'spend'; sp.textContent = '−' + T.money(x.leg.cost); bud.appendChild(sp); setTimeout(() => sp.remove(), 1300); }
-    drawMap(); drawNewLeg(x.c.id);
+    drawMap();
     stage.classList.add('riding');
     const dur = reducedMotion ? 0 : 1000;
     // the camera makes one move per decision: it follows the ride and lands with the next choices already in frame
@@ -420,7 +421,7 @@
     ride(from, x.c, x.leg, dur, () => {
       stage.classList.remove('riding'); riding = false; markCity(x.c.id, 'born', 700);
       emit('travel', { to: x.c, legs: route.length, decisions });
-      if (atDest()) arrive(); else if (decisions <= 0) fail(); else setTimeout(step, reducedMotion ? 0 : 150);
+      if (atDest()) arrive(); else if (decisions <= 0) fail(); else { arrivalNote(x.c, x.leg); setTimeout(step, reducedMotion ? 0 : 150); }
     });
   }
   /* the rider: a small marker that runs along the new leg */
@@ -429,15 +430,31 @@
   function ride(a, b, leg, dur, done) {
     if (!dur) { done(); return; }
     const p = gCourse.append('path').attr('d', arc(a, b)).style('display', 'none').node(), L = p.getTotalLength();
-    gRider.style('display', null).select('text').text(leg.icon);
-    const t0r = performance.now();
-    const f = now => { const t = Math.min(1, (now - t0r) / dur), e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2, pt = p.getPointAtLength(L * e); gRider.attr('transform', `translate(${pt.x},${pt.y}) scale(${1 / k})`); if (t < 1) requestAnimationFrame(f); else { gRider.style('display', 'none'); p.remove(); done(); } };
+    // the vehicle sets off and the line is laid down behind it, so the leg is drawn by the time it pulls in
+    const ps = gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), leg$ = ps[ps.length - 1];
+    if (leg$) { stage.classList.add('drawing'); leg$.setAttribute('pathLength', '1'); leg$.style.strokeDasharray = '1'; leg$.style.strokeDashoffset = '1'; leg$.classList.add('draw', 'lay'); }
+    gRider.style('display', null).classed('go', true).select('text').text(leg.icon);
+    const t0r = performance.now(); let last = null;
+    const f = now => {
+      const t = Math.min(1, (now - t0r) / dur), e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2, pt = p.getPointAtLength(L * e);
+      const lean = last ? Math.max(-12, Math.min(12, (pt.x - last.x) * 2.5)) : 0; last = pt;
+      gRider.attr('transform', `translate(${pt.x},${pt.y}) scale(${1 / k}) rotate(${lean})`);
+      if (leg$) leg$.style.strokeDashoffset = String(1 - e);
+      if (t < 1) requestAnimationFrame(f);
+      else { gRider.style('display', 'none').classed('go', false); p.remove(); if (leg$) { leg$.classList.remove('draw', 'lay'); leg$.removeAttribute('pathLength'); leg$.style.strokeDashoffset = ''; } stage.classList.remove('drawing'); drawMap(); done(); }
+    };
     requestAnimationFrame(f);
   }
-  function drawNewLeg(toId) {
-    const ps = gLinks.selectAll('path').filter(d => d.cls !== 'flow' && d.cls !== 'ghost').nodes(), p = ps[ps.length - 1]; if (!p || reducedMotion) return;
-    stage.classList.add('drawing'); p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; p.classList.add('draw');
-    setTimeout(() => { p.classList.remove('draw'); p.removeAttribute('pathLength'); stage.classList.remove('drawing'); drawMap(); }, 620);
+  /* pulling in: the stop lights up and a small line says what the leg cost */
+  let sumT = null;
+  function arrivalNote(c, leg) {
+    if (reducedMotion) return;
+    let el = $('#tv-sum'); if (!el) { el = document.createElement('div'); el.id = 'tv-sum'; el.className = 'tv-sum'; el.setAttribute('aria-live', 'polite'); stage.appendChild(el); }
+    el.innerHTML = `<b>${T.flagImg(c)} ${T.esc(c.name)}</b><span>${leg.icon} ${T.esc(leg.name)} · ${T.money(leg.cost)} · ${T.dur(leg.hours)}</span><small>${decisions} decision${decisions === 1 ? '' : 's'} left · ${T.money(M.budget - totals().cost)} left</small>`;
+    // on a phone it sits in the strip of chart between the brief and the cards
+    if (window.innerWidth <= 900) { const br = $('#tv-brief').getBoundingClientRect(), st = stage.getBoundingClientRect(); el.style.top = Math.round(br.bottom - st.top + 10) + 'px'; } else el.style.top = '';
+    el.hidden = false; el.classList.remove('show', 'out'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(sumT); sumT = setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.hidden = true; el.classList.remove('show', 'out'); }, 260); }, 1900);
   }
   let freshT = null; function fresh() { if (reducedMotion) return; stage.classList.remove('fresh'); void stage.offsetWidth; stage.classList.add('fresh'); clearTimeout(freshT); freshT = setTimeout(() => stage.classList.remove('fresh'), 900); }
   let toastT; function toast(m, kind) { let t = $('.tv-toast'); if (!t) { t = document.createElement('div'); t.className = 'tv-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.classList.toggle('no', kind === 'no'); if (kind === 'no') buzz(30); t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), kind === 'no' ? 2600 : 2200); }
@@ -448,9 +465,23 @@
   function arrive() {
     ended = true; playing = false; clearRun(); clearInterval(timer);
     const secs = sinceStart; stage.classList.add('arrived'); buzz([10, 30, 10]); justPlayed = true; hideTip();
-    stamp('Expedition complete', 'You made it', `${ch.to.name} in ${DEC - decisions} decision${DEC - decisions === 1 ? '' : 's'}`, 'won'); renderBrief(); renderChoices();
-    fitRoute(); emit('arrive', at());
-    setTimeout(() => finish(secs, false), reducedMotion ? 300 : 1700);
+    renderBrief(); renderChoices(); fitRoute(); emit('arrive', at());
+    const plaque = () => stamp('Expedition complete', 'You made it', `${ch.to.name} in ${DEC - decisions} decision${DEC - decisions === 1 ? '' : 's'}`, 'won');
+    if (reducedMotion) { plaque(); setTimeout(() => finish(secs, false), 300); return; }
+    const wait = finale();
+    setTimeout(plaque, wait); setTimeout(() => finish(secs, false), wait + 1500);
+  }
+  /* the finale: a bright trace runs the whole route from the start to the pin, which bursts when it lands */
+  function finale() {
+    const legs = route.map(r => ({ a: T.byId[r.from], b: T.byId[r.to] })), each = Math.max(260, Math.min(420, 1300 / legs.length));
+    gTrace.selectAll('path').remove();
+    legs.forEach((l, i) => {
+      gTrace.append('path').attr('class', 'tv-trace').attr('d', arc(l.a, l.b)).attr('pathLength', 1).style('stroke-width', 3 / k).style('animation-delay', (0.25 + i * each / 1000) + 's');
+    });
+    const total = 250 + legs.length * each;
+    setTimeout(() => { stage.classList.add('landed-dest'); markCity(ch.to.id, 'pop', 1600); buzz([20, 40, 20]); g.select('.tv-pulse-g').append('circle').attr('class', 'tv-burst'); }, total);
+    setTimeout(() => { gTrace.selectAll('path').classed('fade', true); setTimeout(() => gTrace.selectAll('path').remove(), 700); g.selectAll('.tv-burst').remove(); }, total + 1800);
+    return total + 350;
   }
   function fail(reason) {
     ended = true; playing = false; clearRun(); clearInterval(timer);
@@ -482,7 +513,7 @@
     stage.classList.remove('arrived', 'lost', 'intro'); $('#tv-stamp').hidden = true; hideTip();
     $('#tv-result').hidden = true; $('#tv-board').hidden = true; dock.hidden = true; $('#tv-ways').hidden = true; stage.classList.remove('gated');
     const gate = $('#tv-gate'); gate.classList.add('off'); stage.classList.add('zooming');
-    gCourse.selectAll('path').remove();
+    gCourse.selectAll('path').remove(); gTrace.selectAll('path').remove(); g.selectAll('.tv-burst').remove(); stage.classList.remove('landed-dest'); const sn = $('#tv-sum'); if (sn) sn.hidden = true;
     const dur = reducedMotion ? 0 : 1100;
     fitTo([ch.from, ch.to], 1.8, dur, d3.easeCubicOut).on('end interrupt', () => {
       gate.hidden = true; gate.classList.remove('off'); stage.classList.remove('zooming'); relayout();

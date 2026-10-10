@@ -29,7 +29,7 @@ def shell(design, page, body, scripts, prefix, css):
 <link rel="icon" href="{prefix}favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="{FONTS[design]}" rel="stylesheet">
-<link rel="stylesheet" href="{css}">{'<link rel="stylesheet" href="'+prefix+'css/archive.css">' if page=='archive' else ''}
+<link rel="stylesheet" href="{css}">{'<link rel="stylesheet" href="'+prefix+'css/archive.css">' if page=='archive' else ''}{'' if page=='play' else PREFETCH.replace('@/',prefix)}
 </head><body class="p-{page}" data-page="{page}">
 <header class="td-head"><div class="td-wrap">
   <a class="td-brand" href="index.html" aria-label="TraversleDaily home">{MARK}<span>Traversle<b>Daily</b></span></a>
@@ -77,7 +77,8 @@ HOME_JS = '<script src="@/data/live/latest.js"></script><script src="@/data/sche
 
 PLAY = '''
 <main class="tv">
-  <section class="tv-stage" id="tv-stage">
+  <section class="tv-stage intro" id="tv-stage">
+    <p class="tv-loading" id="tv-loading">Charting today's expedition…</p>
     <svg id="tv-chart" class="tv-chart" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
     <svg id="tv-svg" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid slice" aria-label="World map"></svg>
     <div class="tv-brief" id="tv-brief"></div>
@@ -103,6 +104,7 @@ PLAY = '''
   <p class="tv-source" id="tv-source"></p>
   @HOW@
 </main>'''
+PREFETCH = ''.join(f'<link rel="prefetch" href="@/{f}" as="script">' for f in ['vendor/d3.min.js','vendor/topojson-client.min.js','data/world.js','data/world-lite.js','js/traverse.js','js/traverse-ui.js'])
 PLAY_JS = '<script src="@/vendor/d3.min.js"></script><script src="@/vendor/topojson-client.min.js"></script><script src="@/data/world.js"></script><script src="@/data/world-lite.js"></script><script src="@/data/live/latest.js"></script><script src="@/data/schedule.js"></script><script src="@/js/traverse.js"></script><script src="@/js/traverse-ui.js"></script>'
 
 ACH = '''

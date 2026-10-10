@@ -603,7 +603,7 @@ body.p-index:before{background:radial-gradient(70% 60% at 50% 42%,rgba(223,201,1
 .hm-how li b{color:var(--ink)}
 @media(max-width:520px){.hm-card{padding:22px 18px 20px}.hm-card .mission{grid-template-columns:repeat(2,1fr)}.hm-card .route b{font-size:1.7rem}.hm-brand{padding-right:1.1em}.hm-card .meta{flex-direction:column;gap:4px}}
 /* the swoop into today's region */
-.tv-gate{transition:opacity .7s ease}
+.tv-gate{transition:opacity .45s ease}
 .tv-gate.off{opacity:0;pointer-events:none}
 
 @media(prefers-reduced-motion:reduce){.tv-gate{transition:none}}
@@ -646,7 +646,7 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 @keyframes tdfadein{from{opacity:0}to{opacity:1}}
 /* the mission card reads itself out line by line */
 .tv-stage.landed .tv-gate-card > *{animation:tdrise .5s cubic-bezier(.2,.8,.2,1) both}
-.tv-stage.landed .tv-gate-card > *:nth-child(1){animation-delay:0.30s}.tv-stage.landed .tv-gate-card > *:nth-child(2){animation-delay:0.42s}.tv-stage.landed .tv-gate-card > *:nth-child(3){animation-delay:0.54s}.tv-stage.landed .tv-gate-card > *:nth-child(4){animation-delay:0.66s}.tv-stage.landed .tv-gate-card > *:nth-child(5){animation-delay:0.78s}.tv-stage.landed .tv-gate-card > *:nth-child(6){animation-delay:0.90s}.tv-stage.landed .tv-gate-card > *:nth-child(7){animation-delay:1.02s}.tv-stage.landed .tv-gate-card > *:nth-child(8){animation-delay:1.14s}
+.tv-stage.landed .tv-gate-card > *:nth-child(1){animation-delay:0.12s}.tv-stage.landed .tv-gate-card > *:nth-child(2){animation-delay:0.20s}.tv-stage.landed .tv-gate-card > *:nth-child(3){animation-delay:0.28s}.tv-stage.landed .tv-gate-card > *:nth-child(4){animation-delay:0.36s}.tv-stage.landed .tv-gate-card > *:nth-child(5){animation-delay:0.44s}.tv-stage.landed .tv-gate-card > *:nth-child(6){animation-delay:0.52s}.tv-stage.landed .tv-gate-card > *:nth-child(7){animation-delay:0.60s}.tv-stage.landed .tv-gate-card > *:nth-child(8){animation-delay:0.68s}
 /* a new stop springs up; a stop you cannot take flinches */
 .tv-city.born{animation:tvmark .5s cubic-bezier(.2,1.4,.3,1) both}
 .tv-city.no{animation:tvno .5s ease}
@@ -672,7 +672,7 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 /* ===================== game feel, pass two: every action answers back ===================== */
 /* the mission card waits until the chart has landed, then reads itself out; Begin asks for the tap once the lines are in */
 .tv-stage.intro:not(.landed) .tv-gate{opacity:0;pointer-events:none}
-.tv-stage.landed .tv-gate-card > .btn.primary{animation:tdrise .5s cubic-bezier(.2,.8,.2,1) .9s both,tvready 1.3s ease-in-out 1.9s 2}
+.tv-stage.landed .tv-gate-card > .btn.primary{animation:tdrise .5s cubic-bezier(.2,.8,.2,1) .55s both,tvready 1.3s ease-in-out 1.3s 2}
 /* cities answer the pointer, and the places you can reach next pulse once when they become available */
 .tv-city{transition:transform .18s cubic-bezier(.2,.8,.2,1),fill .18s}
 .tv-city.reach:hover,.tv-city.start:hover{transform:scale(1.4)}
@@ -973,3 +973,24 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 /* zoom tools top right on every width so the choice cards never cover them */
 .tv-maptools{left:auto;right:24px;top:24px;bottom:auto;flex-direction:column}
 @media(max-width:900px){.tv-maptools{right:12px;top:12px}}
+
+/* while the chart scripts load, one line says what is coming; the course and markers wait for the swoop */
+.tv-loading{position:absolute;left:0;right:0;top:46%;margin:0;text-align:center;font:700 .72rem var(--ui);letter-spacing:.2em;text-transform:uppercase;color:var(--brass);animation:tdfadein .6s ease .4s both;pointer-events:none}
+.tv-stage.intro:not(.landed) .tv-course{opacity:0}
+/* the ways onward read clearly against the parchment: darker dashes, a brass ring on each stop you can pick */
+.tv-spoke{stroke:rgba(43,29,18,.6)}
+.tv-spoke.fin{stroke:rgba(161,58,42,.85)}
+.tv-city.opt{stroke:var(--ink);stroke-width:1.5;filter:drop-shadow(0 0 1.5px rgba(255,248,230,.9))}
+/* on a phone the brief folds into one strip across the top while you choose, so the chart has room between it and the cards */
+@media(max-width:900px){
+  .tv-stage.docked .tv-brief{left:12px;right:68px;max-width:none;padding:8px 12px 9px}
+  .tv-stage.docked .tv-brief .k{display:none}
+  .tv-stage.docked .tv-brief .route{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .tv-stage.docked .tv-brief .route b{font-size:1.05rem;display:inline-flex;align-items:center;gap:5px;line-height:1.2}
+  .tv-stage.docked .tv-brief .route b small.cty{display:none}
+  .tv-stage.docked .tv-brief .route .ln{width:14px;height:1px}.tv-stage.docked .tv-brief .route>span:empty:not(.pin):not(.ln){display:none}
+  .tv-stage.docked .tv-brief .dec,.tv-stage.docked .tv-brief .bud{display:inline-flex;align-items:center;gap:6px;margin:6px 14px 0 0;padding:0;border:0;vertical-align:middle}
+  .tv-stage.docked .tv-brief .dec b{font-size:1.1rem}.tv-stage.docked .tv-brief .bud b{font-size:1rem}
+  .tv-stage.docked .tv-brief .bud .bar{display:none}.tv-stage.docked .tv-brief .bud .row .tm{margin-left:0}
+  .tv-stage.docked .tv-brief .dec .pips{display:none}
+}

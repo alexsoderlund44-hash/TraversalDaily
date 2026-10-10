@@ -224,7 +224,7 @@
   let k = 1;
   const strokeW = d => (d.cls === 'ghost' ? 1.4 : d.cls === 'flow' ? 1.2 : d.cls === 'par' ? 1.6 : 2.2) / k;
   // dash patterns in screen pixels, whatever the zoom
-  const DASH = { spoke: [2, 3], ghost: [3, 4], par: [6, 4], train: [7, 4], bus: [3, 3], ferry: [1, 4], car: [10, 3, 2, 3], ride: [10, 3, 2, 3] };
+  const DASH = { spoke: [4, 3], ghost: [3, 4], par: [6, 4], train: [7, 4], bus: [3, 3], ferry: [1, 4], car: [10, 3, 2, 3], ride: [10, 3, 2, 3] };
   const dashFor = cls => { const d = DASH[cls]; return d ? d.map(x => x / k).join(' ') : null; };
   // while the chart swoops in on start, only the transform moves; labels and routes are relaid at the end
   const relayout = () => {
@@ -269,18 +269,33 @@
   $('#tv-zout').onclick = () => svg.transition().call(zoom.scaleBy, 1 / 1.6);
   $('#tv-zfit').onclick = () => fitRoute();
   document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === '+' || e.key === '=') $('#tv-zin').click(); else if (e.key === '-') $('#tv-zout').click(); else if (e.key === 'Escape') { if (!$('#tv-modal').hidden) closeModal(); else unselect(); } else if (/^[1-3]$/.test(e.key) && playing && !riding && choices[+e.key - 1]) { if (sel === +e.key - 1) travel(sel); else select(+e.key - 1); } else if (e.key === 'Enter' && sel !== null && playing && !riding) travel(sel); });
+  let dockTop = 0; // where the choice dock's top edge last was
   function fitTo(points, pad, dur, ease, delay, offset, dockUp) {
     const xs = points.map(p => pos(p)[0]), ys = points.map(p => pos(p)[1]);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-    const r = stage.getBoundingClientRect(); const aspect = r.width / r.height;
-    const vw = aspect > 960 / 500 ? 960 : 500 * aspect, vh = aspect > 960 / 500 ? 960 / aspect : 500;
+    const r = stage.getBoundingClientRect(), W = r.width, H = r.height;
+    const s = Math.max(W / 960, H / 500); // the chart is sliced to cover the stage, so this many screen pixels per chart unit
+    const toVB = (px, py) => [480 + (px - W / 2) / s, 250 + (py - H / 2) / s];
+    // the part of the stage nothing sits on: the brief takes the left (desktop) or the top (phone), the zoom tools the top right,
+    // and the choice dock or the ways bar the bottom while they show; the picture lands inside that
+    const phone = window.innerWidth <= 900, bx = $('#tv-brief').getBoundingClientRect();
+    const dk = $('#tv-choices'), ways = $('#tv-ways');
+    const docked = dockUp != null ? dockUp : (dk && !dk.hidden);
+    if (dk && !dk.hidden) dockTop = dk.getBoundingClientRect().top - r.top;
+    const bottom = docked ? (dockTop || H - (phone ? H * 0.55 : 240)) : ways && !ways.hidden ? ways.getBoundingClientRect().top - r.top : H;
+    let sx0, sy0, sx1, sy1;
+    if (offset != null) { // the intro: the mission card sits to the right on wide screens, so the picture keeps to the left
+      sx0 = 24; sx1 = W - (window.innerWidth >= 1100 ? Math.min(W * 0.5, 640) : 24); sy0 = 24; sy1 = H - 24;
+    } else if (phone) { // the brief is a slim strip across the top while you choose, so the picture sits between it and the cards
+      sx0 = 12; sx1 = W - 12; sy0 = bx.height ? bx.bottom - r.top + 10 : 70; sy1 = Math.min(bottom, H) - 10;
+      if (sy1 - sy0 < 110) { sy0 = 70; sy1 = Math.max(sy0 + 110, sy1); } }
+    else { sx0 = bx.width ? bx.right - r.left + 24 : 24; sx1 = W - 84; sy0 = 24; sy1 = Math.min(bottom, H) - 20; }
+    if (sx1 - sx0 < 160) { sx0 = 12; sx1 = W - 12; } if (sy1 - sy0 < 90) { sy0 = 12; sy1 = H - 12; }
+    const [vx0, vy0] = toVB(sx0, sy0), [vx1, vy1] = toVB(sx1, sy1);
     const w = Math.max(60, (x1 - x0) * (pad || 1.6)), h = Math.max(40, (y1 - y0) * (pad || 1.6));
-    const kk = Math.min(12, Math.max(1, Math.min(vw / w, vh / h) * 0.9));
-    const cx = (x0 + x1) / 2 + (window.innerWidth > 900 ? (offset == null ? 120 : offset) / kk : 0);
-    // on a phone the planning sheet covers the lower part of the chart, so the route lands in the strip above it
-    // the choice dock covers the lower part of the chart while you decide, so the picture lands in the strip above it
-    const dk = $('#tv-choices'), docked = dockUp != null ? dockUp : dk && !dk.hidden, cy = docked ? (window.innerWidth <= 900 ? 150 : 205) : (window.innerWidth <= 900 ? 300 : 250); // on a phone the brief covers the top of the chart, so the picture sits lower
-    return svg.transition().delay(delay || 0).duration(dur == null ? 750 : dur).ease(ease || d3.easeCubicOut).call(zoom.transform, d3.zoomIdentity.translate(480 - kk * cx, cy - kk * (y0 + y1) / 2).scale(kk));
+    const kk = Math.min(12, Math.max(1, Math.min((vx1 - vx0) / w, (vy1 - vy0) / h) * 0.9));
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    return svg.transition().delay(delay || 0).duration(dur == null ? 750 : dur).ease(ease || d3.easeCubicOut).call(zoom.transform, d3.zoomIdentity.translate((vx0 + vx1) / 2 - kk * cx, (vy0 + vy1) / 2 - kk * cy).scale(kk));
   }
   function fitRoute() { fitTo([ch.from, ch.to, ...route.map(r => T.byId[r.to]), ...(showPar ? wayPath().map(e => T.byId[e.to]) : [])], 1.8); }
   const arc = (a, b) => path({ type: 'LineString', coordinates: [[a.lon, a.lat], [b.lon, b.lat]] });
@@ -293,13 +308,13 @@
     const live = playing && !atDest() && !ended;
     // spokes: the ways onward from where you stand; the one you are looking at stays bright
     const spokes = live ? choices.map((x, i) => ({ cls: 'spoke' + (sel !== null && sel !== i ? ' dim' : '') + (x.leg.deal ? ' deal' : '') + (x.c.id === ch.to.id ? ' fin' : ''), d: arc(cur, x.c) })) : [];
-    gSpokes.selectAll('path').data(spokes).join('path').attr('class', d => 'tv-spoke ' + d.cls).attr('d', d => d.d).style('stroke-width', 1.1 / k).style('stroke-dasharray', dashFor('spoke'));
+    gSpokes.selectAll('path').data(spokes).join('path').attr('class', d => 'tv-spoke ' + d.cls).attr('d', d => d.d).style('stroke-width', 1.6 / k).style('stroke-dasharray', dashFor('spoke'));
     const picked = sel !== null && choices[sel] ? choices[sel].c.id : null;
     gCities.selectAll('circle').attr('class', function (c) { return 'tv-city'
       + (c.id === cur.id && live ? ' cur' : c.id === ch.from.id ? ' start' : c.id === ch.to.id ? ' dest' : on.has(c.id) ? ' on' : c.id === picked ? ' pend' : live && opts.has(c.id) ? ' opt' : par.has(c.id) ? ' par' : live ? ' far' : '')
       + KEEP.filter(k => this.classList.contains(k)).map(k => ' ' + k).join(''); });
     gLabels.selectAll('text').classed('far', c => live && !opts.has(c.id) && c.id !== ch.to.id && c.id !== ch.from.id && !on.has(c.id));
-    gCities.selectAll('circle').attr('r', c => (2 + c.hub * 0.5 + (c.id === cur.id && live ? 1.5 : live && opts.has(c.id) ? 1.2 : c.id === ch.from.id || c.id === ch.to.id || on.has(c.id) || par.has(c.id) ? 1 : 0)) / k).style('stroke-width', c => ((c.id === cur.id && live) ? 8 : c.id === picked ? 6 : 1) / k);
+    gCities.selectAll('circle').attr('r', c => (2 + c.hub * 0.5 + (c.id === cur.id && live ? 1.5 : live && opts.has(c.id) ? 2 : c.id === ch.from.id || c.id === ch.to.id || on.has(c.id) || par.has(c.id) ? 1 : 0)) / k).style('stroke-width', c => ((c.id === cur.id && live) ? 8 : c.id === picked ? 6 : 1) / k);
     const plinks = showPar ? wayPath().map(e => ({ cls: 'par', d: arc(T.byId[e.from], T.byId[e.to]) })) : [];
     gPar.selectAll('path').data(plinks).join('path').attr('class', function () { return 'tv-link par' + (this.classList.contains('draw') ? ' draw' : ''); }).attr('d', d => d.d).style('stroke-width', strokeW).style('stroke-dasharray', function () { return this.classList.contains('draw') ? '1' : dashFor('par'); });
     const links = [];
@@ -339,11 +354,12 @@
   function renderChoices() {
     const cur = at();
     if (!playing || ended || atDest() || !choices.length) {
+      if (!playing || ended || atDest()) stage.classList.remove('docked');
       if (!dock.hidden && !reducedMotion && !dock.classList.contains('out')) { dock.classList.add('out'); setTimeout(() => { if (dock.classList.contains('out')) { dock.hidden = true; dock.innerHTML = ''; dock.classList.remove('out'); } }, 200); }
       else { dock.hidden = true; dock.innerHTML = ''; dock.classList.remove('out'); }
       return;
     }
-    dock.classList.remove('out'); dock.hidden = false;
+    dock.classList.remove('out'); dock.hidden = false; stage.classList.add('docked');
     const coach = coachLine();
     dock.innerHTML = `<p class="tv-choices-h"><span>From <b>${T.esc(cur.name)}</b></span>${choices.length === 1 ? '<span>· the only way onward</span>' : `<span>· ${choices.length} ways onward</span>`}</p>
       ${coach ? `<p class="tv-coach" role="status"><span>${coach}</span><button type="button" class="x" aria-label="Got it">Got it</button></p>` : ''}
@@ -733,11 +749,12 @@
 
   /* ---------- initial ---------- */
   drawMap();
-  if (official) { $('#tv-gate').hidden = true; stage.classList.add('landed'); showResult(official, false, 0, true); }
+  const loading = $('#tv-loading'); if (loading) loading.remove();
+  if (official) { $('#tv-gate').hidden = true; stage.classList.remove('intro'); stage.classList.add('landed'); showResult(official, false, 0, true); }
   else {
     // the chart opens on the whole world, then carries you to today's region; the course line draws once it lands
     gCourse.append('path').attr('class', 'tv-course').attr('d', arc(ch.from, ch.to)).attr('pathLength', 1);
     stage.classList.add('zooming'); stage.classList.add('intro'); stage.classList.add('gated');
-    setTimeout(() => fitTo([ch.from, ch.to], 3.2, reducedMotion ? 0 : 2300, d3.easeCubicInOut, reducedMotion ? 0 : 450, window.innerWidth >= 1100 ? 250 : 120).on('end interrupt', () => { stage.classList.remove('zooming'); relayout(); stage.classList.add('landed'); }), 50);
+    setTimeout(() => fitTo([ch.from, ch.to], 3.2, reducedMotion ? 0 : 1500, d3.easeCubicInOut, reducedMotion ? 0 : 120, window.innerWidth >= 1100 ? 250 : 120).on('end interrupt', () => { stage.classList.remove('zooming'); relayout(); stage.classList.add('landed'); }), 30);
   }
 })();

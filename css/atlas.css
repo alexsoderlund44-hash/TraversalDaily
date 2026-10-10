@@ -969,3 +969,7 @@ body.leaving .hm-bg{transform:translate(-50%,-50%) scale(1.12)}
 .td-page{animation:tdrise .4s cubic-bezier(.2,.8,.2,1) both}
 .tv-deal.show{transition:none}.tv-deal .ticket{transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.2,1)}
 @media(prefers-reduced-motion:reduce){.tv-choices.out,.tv-brief .dec b.tick,.tv-modal,.tv-modal.closing,.tv-modal.closing .tv-modal-card,.tv-result:not([hidden]) .rs,.tv-board:not([hidden]) .card,.tv-ways:not([hidden]),.td-page{animation:none}}
+
+/* zoom tools top right on every width so the choice cards never cover them */
+.tv-maptools{left:auto;right:24px;top:24px;bottom:auto;flex-direction:column}
+@media(max-width:900px){.tv-maptools{right:12px;top:12px}}

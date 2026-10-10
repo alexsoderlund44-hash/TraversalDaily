@@ -2,59 +2,54 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Play today's puzzle – TraversleDaily</title>
-<meta name="description" content="The daily travel puzzle. One start city, one destination, one budget. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world.">
-<meta property="og:title" content="Play today's puzzle – TraversleDaily"><meta property="og:type" content="website"><meta property="og:site_name" content="TraversleDaily"><meta property="og:description" content="The daily travel puzzle. One start city, one destination, one budget. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world."><meta name="twitter:card" content="summary">
-<meta name="theme-color" content="#0A1220">
+<meta name="description" content="A daily travel puzzle. Everyone gets the same start, destination and budget. Pick your way across trains, buses, ferries and flights, one decision at a time, and see if you can beat the planner.">
+<meta property="og:title" content="Play today's puzzle – TraversleDaily"><meta property="og:type" content="website"><meta property="og:site_name" content="TraversleDaily"><meta property="og:description" content="A daily travel puzzle. Everyone gets the same start, destination and budget. Pick your way across trains, buses, ferries and flights, one decision at a time, and see if you can beat the planner."><meta property="og:image" content="https://traversledaily.com/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="TraversleDaily: a route drawn across a map of Europe"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://traversledaily.com/og.png">
+<meta name="theme-color" content="#E8D9B5">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Alegreya:ital,wght@0,400..900;1,400..900&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/atlas.css">
 </head><body class="p-play" data-page="play">
 <header class="td-head"><div class="td-wrap">
   <a class="td-brand" href="index.html" aria-label="TraversleDaily home"><svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg><span>Traversle<b>Daily</b></span></a>
   <div class="td-icons"><button id="td-help" aria-label="How to play" title="How to play">?</button><button id="td-stats" aria-label="Your stats" title="Your stats"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2" y="10" width="4" height="8" fill="currentColor"/><rect x="8" y="4" width="4" height="14" fill="currentColor"/><rect x="14" y="7" width="4" height="11" fill="currentColor"/></svg></button></div><button class="td-burger" id="td-burger" aria-label="Menu" aria-expanded="false" aria-controls="td-menu"><span></span><span></span><span></span></button>
-  <nav class="td-menu" id="td-menu" aria-label="Sections" hidden><a href="index.html" class="">Home</a><a href="archive.html" class="">Archive</a><a href="achievements.html" class="">Achievements</a><a href="stats.html" class="">Stats</a><a href="profile.html" class="">Profile</a><a href="plus.html" class="plus">✦ Traversle +</a><a href="index.html#how">How to play</a></nav>
+  <nav class="td-menu" id="td-menu" aria-label="Sections" hidden><a href="index.html" class="">Home</a><a href="play.html" class="on ">Play</a><a href="how.html" class="">How to play</a><a href="archive.html" class="">Archive</a><a href="achievements.html" class="">Achievements</a><a href="stats.html" class="">Stats</a><a href="profile.html" class="">Profile</a><a href="plus.html" class="plus">✦ Traversle +</a></nav>
 </div></header>
 
 <main class="tv">
-  <section class="tv-stage" id="tv-stage">
+  <section class="tv-stage intro" id="tv-stage">
+    <p class="tv-loading" id="tv-loading">Charting today's expedition…</p>
+    <svg id="tv-chart" class="tv-chart" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
     <svg id="tv-svg" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid slice" aria-label="World map"></svg>
     <div class="tv-brief" id="tv-brief"></div>
     <div class="tv-maptools"><button id="tv-zin" aria-label="Zoom in">+</button><button id="tv-zout" aria-label="Zoom out">−</button><button id="tv-zfit" aria-label="Fit route" title="Fit the route">⤢</button></div>
     <div class="tv-tip" id="tv-tip" hidden></div>
-    <div class="tv-deal" id="tv-deal" hidden></div>
+    <div class="tv-deal" id="tv-deal" hidden aria-live="polite"></div>
+    <div class="tv-stamp" id="tv-stamp" hidden></div>
+    <div class="tv-choices" id="tv-choices" hidden aria-live="polite"></div>
+    <div class="tv-ways" id="tv-ways" hidden></div>
     <div class="tv-gate" id="tv-gate"><div class="tv-gate-card">
       <p class="tv-gate-kicker" id="tv-gate-day"></p>
       <h1 id="tv-gate-title"></h1>
       <p class="tv-gate-sub" id="tv-gate-sub"></p>
       <div class="tv-mission" id="tv-gate-mission"></div>
       <ul class="tv-gate-rules" id="tv-gate-rules"></ul>
-      <button class="btn primary big" id="tv-start">Start the clock</button>
+      <button class="btn primary big" id="tv-start">Begin the journey</button>
       <p class="tv-gate-note" id="tv-gate-note"></p>
     </div></div>
   </section>
-  <aside class="tv-plan" id="tv-plan" hidden>
-    <header class="tv-plan-head"><div><h2>Your journey</h2><p class="tv-plan-sub" id="tv-plan-sub"></p></div><button class="tv-plan-collapse" id="tv-plan-toggle" aria-label="Collapse">▾</button></header>
-    <div class="tv-gauges">
-      <div class="tv-gauge" id="tv-g-cost"><span class="lab">Budget</span><b>$0</b><small></small><div class="bar"><i></i></div></div>
-      <div class="tv-gauge" id="tv-g-time"><span class="lab">Deadline</span><b>0h</b><small></small><div class="bar"><i></i></div></div>
-      <div class="tv-gauge clock"><span class="lab">Deciding</span><b id="tv-timer">0s</b><small id="tv-pace"></small></div>
-    </div>
-    <div class="tv-twist" id="tv-twist"></div>
-    <div class="tv-counts" id="tv-counts"></div>
-    <div class="tv-estimate" id="tv-est" hidden><span>Score estimate</span><b>—</b><div class="bar"><i style="width:0"></i></div></div>
-    <ol class="tv-stops" id="tv-stops"></ol>
-    <div class="tv-picker" id="tv-picker"></div>
-    <footer class="tv-plan-foot"><button class="btn ghost" id="tv-undo" title="Remove the last leg">Undo</button><button class="btn ghost" id="tv-hint" title="Reveal a hidden deal. Adds 45 seconds to your clock.">Hint</button><button class="btn primary" id="tv-submit" disabled>Submit journey</button></footer>
-  </aside>
   <div class="tv-modal" id="tv-modal" hidden></div>
   <section id="tv-result" class="tv-result" hidden></section>
   <section id="tv-board" class="tv-board" hidden></section>
   <p class="tv-source" id="tv-source"></p>
-  <div class="td-modal" id="hm-howmodal" hidden></div>
+  <div class="td-modal" id="hm-howmodal" hidden><div class="td-modal-card how" role="dialog" aria-modal="true" aria-label="How to play"><button class="td-modal-x" onclick="tdHow(false)" aria-label="Close">✕</button>
+  <p class="kicker">How to play</p>
+  <ol class="hm-how"><li><b>Get from A to B.</b> Every day has one start, one destination and one budget, the same for everyone.</li><li><b>Each step shows a few ways onward.</b> Every card says its fare, its time and how many decisions the rest of the trip needs. Pick one and you travel there; every pick spends a decision.</li><li><b>Reach the destination before the decisions run out.</b> Money is half the score, time 30% and decisions 20%. Stay under budget.</li></ol>
+  <p class="sub">Some legs are secretly cheap. You find them by looking. <a href="how.html">The full guide</a> has the rules, the twists and a worked example.</p>
+</div></div>
 </main>
-<footer class="td-foot"><div class="td-wrap"><span>TraversleDaily · a new travel puzzle every day</span><span>Map data: Natural Earth. Your runs stay in this browser.</span></div></footer>
-<script src="data/cities.js"></script><script src="vendor/d3.min.js"></script><script src="vendor/topojson-client.min.js"></script><script src="data/world.js"></script><script src="data/live/latest.js"></script><script src="js/traverse.js"></script><script src="js/tutorial.js"></script><script src="js/traverse-ui.js"></script>
+<footer class="td-foot"><div class="td-wrap"><span>© 2026 TraversleDaily. A new travel puzzle every day.</span><span>Map data from Natural Earth. Your progress is saved in this browser.</span></div></footer>
+<script src="data/cities.js"></script><script src="vendor/d3.min.js"></script><script src="vendor/topojson-client.min.js"></script><script src="data/world.js"></script><script src="data/world-lite.js"></script><script src="data/live/latest.js"></script><script src="data/schedule.js"></script><script src="js/traverse.js"></script><script src="js/traverse-ui.js"></script>
 <script>(function(){var b=document.getElementById('td-burger'),m=document.getElementById('td-menu');function set(o){m.hidden=!o;b.setAttribute('aria-expanded',o);b.classList.toggle('open',o);document.body.classList.toggle('td-menu-open',o);}b.onclick=function(e){e.stopPropagation();set(m.hidden);};m.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});document.addEventListener('click',function(e){if(!m.hidden&&!m.contains(e.target))set(false);});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!m.hidden)set(false);});
 var how=document.getElementById('hm-howmodal');if(how){window.tdHow=function(o){if(window.tdTutorial)return window.tdTutorial(o);how.hidden=!o;};['hm-how','td-help'].forEach(function(id){var el=document.getElementById(id);if(el)el.onclick=function(){tdHow(true);};});window.addEventListener('hashchange',function(){if(location.hash==='#how')tdHow(true);});if(location.hash==='#how')tdHow(true);}})();</script>
 </body></html>

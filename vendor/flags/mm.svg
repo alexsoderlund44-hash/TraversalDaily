@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="flag-icons-mm" viewBox="0 0 640 480">
+  <path fill="#fecb00" d="M0 0h640v160H0z"/>
+  <path fill="#34b233" d="M0 160h640v160H0z"/>
+  <path fill="#ea2839" d="M0 320h640v160H0z"/>
+  <polygon fill="#fff" points="320.0,90.0 353.7,193.6 462.7,193.6 374.5,257.7 408.2,361.4 320.0,297.3 231.8,361.4 265.5,257.7 177.3,193.6 286.3,193.6"/>
+</svg>

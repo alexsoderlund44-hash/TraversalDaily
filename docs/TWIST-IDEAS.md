@@ -1,8 +1,8 @@
 # Twist ideas (parked, to refine later)
 
 A twist is a rule the route search can verify, so every day still has a guaranteed planner's route that fits the budget.
-Shipped so far: Open road, Grounded (no flights), One ticket (one flight max), Sea legs (ferry required), Rail pass (two trains),
-Overland arrival (no flying into the destination), Mix it up (three modes).
+Shipped so far: Open Road, Grounded (no flights), One Ticket (one flight max), Sea Legs (ferries half price), Rail Pass (trains half price),
+Overland Arrival (no flying into the destination), Mix It Up (flights cost double).
 
 ## Transport passes
 - **Eurail Day.** Rail only. Trains cost a flat pass fare ($49 pass, $0 per leg). Pure routing puzzle. Only on days where both cities are in rail countries.
@@ -28,9 +28,9 @@ Overland arrival (no flying into the destination), Mix it up (three modes).
 - **Fog of war.** Fares hidden until you hover; suggested stops turned off. Closest to MapTap.
 - **Mystery destination.** Destination shown only as a region until you reach a city within 500 km. Needs new UI.
 
-## Weekly rhythm (Krillion-style)
-Monday Open road · Tuesday a pass day · Wednesday a restriction · Thursday a discovery day · Friday Grand Tour (cross-continent) · weekends bigger and harder.
-"It's Rail Pass Tuesday" is the habit we want.
+## Weekly rhythm (shipped)
+Open Road Monday · Southern Crossing Tuesday · Island Hopper Wednesday · Road Trip Thursday · Mix It Up Friday · Eurorail Saturday · Grand Tour Sunday.
+Each theme fixes the twist and the part of the world (`RHYTHM` in `js/traverse.js`); new twists above could replace a weekday's rule or run as occasional specials.
 
 ## Quickest to build
 Eurail Day, Interrail Flex, Night Owl, Carry-on only, Strike day: a pricing hook per twist, no new search logic.

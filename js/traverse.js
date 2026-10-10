@@ -2,11 +2,11 @@
    (budget, deadline, twist, hidden deals), the planner's route and scoring. No backend. */
 (function () {
   'use strict';
-  const C = window.TRAVERSE_CITIES.map(a => ({ id: a[0], name: a[1], country: a[2], flag: a[3], lat: a[4], lon: a[5], hub: a[6], coastal: a[7], rail: a[8], iata: a[9] }));
+  const C = window.TRAVERSE_CITIES.map(a => ({ id: a[0], name: a[1], country: a[2], flag: a[3], lat: a[4], lon: a[5], hub: a[6], coastal: a[7], rail: a[8], land: a[10] || 'eu', iata: a[9] }));
   const byId = {}; C.forEach(c => (byId[c.id] = c));
   const STORE = 'traverse.v1';
   const DAY_MS = 86400000;
-  const EPOCH = Date.UTC(2026, 9, 7); // day #1 = 7 Oct 2026 UTC (launch day)
+  const EPOCH = Date.UTC(2026, 9, 1); // day #1 = 1 Oct 2026 UTC; launch day (7 Oct) is puzzle #7 so the archive opens with a week
 
   // a new puzzle at midnight on the player's own clock (like Wordle), numbered by calendar date
   const dayNumber = (t = Date.now()) => { const d = new Date(t); return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - EPOCH) / DAY_MS) + 1; };
@@ -24,26 +24,19 @@
     const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(x));
   }
-  const sameLand = (a, b) => { // crude: can you drive/rail between them?
+  /* can you drive or rail between them? Cities carry a land code (data/cities.js): the same code means yes, within 2,600 km.
+     Europe and the Middle East join over Anatolia within 2,200 km; Singapore joins the Malay peninsula over the causeway. */
+  const sameLand = (a, b) => {
     const d = km(a, b);
     if (d > 2600) return false;
-    const water = [['rey'], ['dub'], ['hnl'], ['akl'], ['bal'], ['mnl'], ['cmb'], ['hav'], ['pal'], ['jkt'], ['tpe'], ['sin','kul','bkk','sgn','han'], ['tok','osa'], ['syd','mel','per'], ['cpt','jnb','dar','nbo','adb'], ['lag','acc','dak'], ['sao','rio','bue','scl','lim','bog','pty'], ['mex','can'], ['nyc','bos','wdc','chi','mia','lax','sfo','sea','den','dal','atl','tor','mtl','van','anc'], ['dxb','doh','ryh','mct','teh','amm','bei','tel','cai','alx','kar','del','bom','blr'], ['pek','sha','sel','hkg']];
-    const isle = ['rey','dub','hnl','akl','bal','mnl','cmb','hav','pal','jkt','tpe','tok','osa','sin'];
-    if (isle.includes(a.id) || isle.includes(b.id)) {
-      if ((a.id === 'tok' && b.id === 'osa') || (a.id === 'osa' && b.id === 'tok')) return true;
-      if ((a.id === 'sin' && b.id === 'kul') || (a.id === 'kul' && b.id === 'sin')) return true;
-      return false;
-    }
-    const grp = id => water.findIndex(g => g.includes(id));
-    const ga = grp(a.id), gb = grp(b.id);
-    if (ga === -1 && gb === -1) return true; // Europe/N. Africa/Middle east mainland
-    if (ga === gb) return true;
-    const eu = x => x === -1, me = x => x === 19;
-    if ((eu(ga) && me(gb)) || (eu(gb) && me(ga))) return d < 2200;
+    if (a.land === b.land) return true;
+    const pair = [a.land, b.land].sort().join('+');
+    if (pair === 'eu+me') return d < 2200;
+    if (pair === 'sea+sg') return true;
     return false;
   };
-  const MED_S = ['tun','alg','cas','mar','tan','cai','alx','tel','bei'];
-  const crossesMed = (a, b) => MED_S.includes(a.id) !== MED_S.includes(b.id);
+  const MED_SOUTH = new Set(['Tunisia', 'Algeria', 'Morocco', 'Egypt', 'Israel', 'Lebanon']);
+  const crossesMed = (a, b) => MED_SOUTH.has(a.country) !== MED_SOUTH.has(b.country);
 
   /* ---------- transport modes ---------- */
   const MODES = {
@@ -60,13 +53,14 @@
 
   /* ---------- twists: one rule that changes the puzzle for the day ---------- */
   const TWISTS = [
-    { id: 'open', icon: '🧭', name: 'Open road', desc: 'No extra rule today. Beat the budget and the clock.', state: () => 0, allow: () => true, done: () => true, status: () => '' },
+    { id: 'open', icon: '🧭', name: 'Open Road', desc: 'No extra rule today. Spend less, arrive sooner.', state: () => 0, allow: () => true, done: () => true, status: () => '' },
     { id: 'nofly', icon: '🚫', name: 'Grounded', desc: 'No flights today. Ground and sea only.', state: () => 0, allow: l => l.mode !== 'plane', done: () => true, status: () => 'no flights allowed' },
-    { id: 'oneflight', icon: '🎫', name: 'One ticket', desc: 'One flight, no more.', state: (s, l) => Math.min(2, s + (l.mode === 'plane' ? 1 : 0)), allow: (l, s) => !(l.mode === 'plane' && s >= 1), done: () => true, status: s => s >= 1 ? 'your one flight is used' : 'one flight still available' },
-    { id: 'ferry', icon: '🚢', name: 'Sea legs', desc: 'Take a ferry somewhere along the way.', state: (s, l) => s | (l.mode === 'ferry' ? 1 : 0), allow: () => true, done: s => s === 1, status: s => s ? 'ferry taken ✓' : 'still needs a ferry' },
-    { id: 'rail', icon: '🚆', name: 'Rail pass', desc: 'Take the train at least twice.', state: (s, l) => Math.min(2, s + (l.mode === 'train' ? 1 : 0)), allow: () => true, done: s => s >= 2, status: s => s >= 2 ? 'two trains ✓' : (2 - s) + ' more train leg' + (s === 1 ? '' : 's') + ' needed' },
-    { id: 'overland', icon: '🛬', name: 'Overland arrival', desc: "You can't fly into the destination.", state: () => 0, allow: (l, s, toDest) => !(toDest && l.mode === 'plane'), done: () => true, status: () => 'no flying into the destination' },
-    { id: 'threemodes', icon: '🎲', name: 'Mix it up', desc: 'Use three different kinds of transport.', state: (s, l) => s | MODE_BIT[l.mode], allow: () => true, done: s => pop(s) >= 3, status: s => pop(s) >= 3 ? 'three modes ✓' : (3 - pop(s)) + ' more mode' + (pop(s) === 2 ? '' : 's') + ' needed' },
+    { id: 'oneflight', icon: '🎫', name: 'One Ticket', desc: 'One flight, no more.', state: (s, l) => Math.min(2, s + (l.mode === 'plane' ? 1 : 0)), allow: (l, s) => !(l.mode === 'plane' && s >= 1), done: () => true, status: s => s >= 1 ? 'your one flight is used' : 'one flight still available' },
+    // fare rules: nothing is removed, a kind of transport is repriced, so every card shows the rule's effect
+    { id: 'ferry', icon: '🚢', name: 'Sea Legs', desc: 'Ferries are half price today.', fare: { ferry: 0.5 }, state: () => 0, allow: () => true, done: () => true, status: () => 'ferries half price' },
+    { id: 'rail', icon: '🚆', name: 'Rail Pass', desc: 'Trains are half price today.', fare: { train: 0.5 }, state: () => 0, allow: () => true, done: () => true, status: () => 'trains half price' },
+    { id: 'overland', icon: '🛬', name: 'Overland Arrival', desc: "You can't fly into the destination.", state: () => 0, allow: (l, s, toDest) => !(toDest && l.mode === 'plane'), done: () => true, status: () => 'no flying into the destination' },
+    { id: 'threemodes', icon: '🎲', name: 'Mix It Up', desc: 'Flights cost double today. Mix your transport.', fare: { plane: 2 }, state: () => 0, allow: () => true, done: () => true, status: () => 'flights cost double' },
   ];
   const pop = x => { let n = 0; while (x) { n += x & 1; x >>= 1; } return n; };
   const twistById = {}; TWISTS.forEach(t => (twistById[t.id] = t));
@@ -103,14 +97,20 @@
   const BLOCKED = {}; // seed -> 'x-y' pair with no direct link at all (every day needs at least one stop)
   const DEALS = {};   // seed -> { 'a-b|mode': pct }
   const TWIST = {};   // seed -> twist id (edge-level rules are applied inside legs())
+  const LEGC = {}; // seed -> 'a-b' -> legs, cleared when a day's deals are set
   function legs(a, b, seed) {
     if (a.id === b.id) return [];
+    const cache = LEGC[seed] || (LEGC[seed] = {}), ck = a.id + '-' + b.id;
+    if (cache[ck]) return cache[ck];
+    return (cache[ck] = legsOf(a, b, seed));
+  }
+  function legsOf(a, b, seed) {
     if (BLOCKED[seed] === [a.id, b.id].sort().join('-')) return []; // never a direct link between start and destination
     const d = km(a, b), r = rng(hash(seed + '|' + [a.id, b.id].sort().join('-')));
     const out = [];
     const jitter = () => 0.8 + r() * 0.45;
     const land = sameLand(a, b) && !crossesMed(a, b);
-    const add = (m, cost, hours, note, extra) => out.push(Object.assign({ mode: m, icon: MODES[m].icon, name: MODES[m].name, cost: Math.round(cost), hours: Math.round(hours * 12) / 12, note }, extra));
+    const add = (m, cost, hours, note, extra) => out.push(Object.assign({ mode: m, icon: MODES[m].icon, name: MODES[m].name, cost: Math.max(1, Math.round(cost)), hours: Math.round(hours * 12) / 12, note }, extra));
 
     const L = liveFor(seed), lk = a.id + '-' + b.id, live = L && L.routes[lk];
     if (live) add('plane', live.cost, live.hours, 'avg of ' + live.n + ' live fares', { live: true, nonstop: live.nonstop, min: live.min });
@@ -129,6 +129,9 @@
     if (a.coastal && b.coastal && d < 1100 && (!land || d < 500 || crossesMed(a, b))) {
       const m = MODES.ferry; add('ferry', (m.fixed + d * m.perKm) * jitter(), m.over + d / m.speed);
     }
+    // the day's fare rule (half-price ferries, double-price flights): applied before the deals, so a secret fare discounts the day's price
+    const ft = twistById[TWIST[seed]] && twistById[TWIST[seed]].fare;
+    if (ft) out.forEach(l => { const f = ft[l.mode]; if (f) { l.cost = Math.max(1, Math.round(l.cost * f)); l.fare = f; } });
     // the day's hidden deals: a discounted fare on a few specific legs
     const D = DEALS[seed];
     if (D) out.forEach(l => { const p = D[lk + '|' + l.mode]; if (p) { l.full = l.cost; l.cost = Math.max(1, Math.round(l.cost * (1 - p))); l.deal = p; } });
@@ -138,21 +141,72 @@
   }
 
   /* ---------- the day's challenge ---------- */
-  function challenge(n) { return build('d' + n, 'traverse-day-' + n, n); }
-  function challengeRandom(tag) { const t = String(tag || Math.random().toString(36).slice(2, 8)); return build('r' + t, 'traverse-random-' + t, 0, t); }
-  const CH = {};
-  function build(seed, hashKey, n, tag) {
+  const CONTINENT = {};
+  [['Africa', 'Egypt Tunisia Algeria Morocco Nigeria Ghana Senegal Kenya Ethiopia Tanzania'], ['North America', 'USA Canada Mexico Cuba Panama'],
+   ['South America', 'Colombia Peru Chile Argentina Brazil'], ['Oceania', 'Australia New Zealand'],
+   ['Asia', 'Georgia Azerbaijan Armenia Israel Jordan Lebanon UAE Qatar Iran Oman India Pakistan Thailand Vietnam Malaysia Singapore Indonesia Philippines China Japan Taiwan']
+  ].forEach(([k, v]) => v.split(' ').forEach(c => (CONTINENT[c] = k)));
+  Object.assign(CONTINENT, { 'South Africa': 'Africa', 'Saudi Arabia': 'Asia', 'Sri Lanka': 'Asia', 'Hong Kong': 'Asia', 'South Korea': 'Asia', Laos: 'Asia', Myanmar: 'Asia', Bangladesh: 'Asia', Jamaica: 'North America', Bahamas: 'North America', 'Costa Rica': 'North America', Honduras: 'North America', Ecuador: 'South America', Bolivia: 'South America', Uruguay: 'South America' });
+  const continentOf = c => CONTINENT[c.country] || 'Europe';
+  const COUNTRIES = Array.from(new Set(C.map(c => c.country)));
+  const CONTINENTS = ['Europe', 'Asia', 'Africa', 'North America', 'South America', 'Oceania'];
+  /* weekly rhythm: each weekday has a named theme, a twist and a part of the world, so "Eurorail Saturday" becomes a habit.
+     Sunday first, like getUTCDay(). region: continents both cities must be in (null = anywhere); minKm: a long-haul floor. */
+  const RHYTHM = [
+    { twist: 'oneflight', name: 'Grand Tour', region: null, minKm: 2600, desc: 'A long way to go and one flight at most.' },
+    { twist: 'open', name: 'Open Road', region: null, desc: 'No extra rule. Anywhere in the world.' },
+    { twist: 'overland', name: 'Southern Crossing', region: ['South America', 'Africa'], desc: 'South America or Africa, and no flying into the destination.' },
+    { twist: 'ferry', name: 'Island Hopper', region: ['Asia', 'Europe', 'North America'], coastal: true, desc: 'Coast to coast, with ferries at half price.' },
+    { twist: 'nofly', name: 'Road Trip', region: ['North America', 'South America'], desc: 'The Americas with no flights at all.' },
+    { twist: 'threemodes', name: 'Mix It Up', region: ['Asia'], desc: 'Asia, with flights at double the price.' },
+    { twist: 'rail', name: 'Eurorail', region: ['Europe'], desc: 'Europe, with trains at half price.' },
+  ];
+  const DAYNAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const rhythmOf = n => { const wd = new Date(dayKey(n)).getUTCDay(), r = RHYTHM[wd]; return { twist: twistById[r.twist], day: DAYNAMES[wd], name: r.name, label: r.name + ' ' + DAYNAMES[wd], desc: r.desc, rule: r }; };
+  // a quick check that a city pair can host a twist at all (the mission search has the final say)
+  const fits = (tw, a, b) => tw === 'nofly' ? (sameLand(a, b) && !crossesMed(a, b)) || (a.coastal && b.coastal)
+    : tw === 'rail' ? a.rail && b.rail && sameLand(a, b) : tw === 'ferry' ? a.coastal || b.coastal : true;
+  /* daily schedule (data/schedule.js, written by tools/build-schedule.js): a start, destination and twist per day,
+     each checked ahead of time to have a planner's route of three or more legs that keeps the day's twist */
+  // in Node (the schedule builder, the live-fares routine) pick the schedule up from disk so every tool sees the same days
+  if (!window.TRAVERSE_SCHEDULE && typeof require === 'function' && typeof __dirname === 'string') { try { require(__dirname + '/../data/schedule.js'); } catch (e) {} }
+  const scheduled = n => { const S = window.TRAVERSE_SCHEDULE; return S && S.epoch === dayKey(1) && S.days[n] ? S.days[n] : null; };
+  function challenge(n, salt) {
+    const s = salt === undefined ? scheduled(n) : null;
+    if (s) return build('d' + n, '', n, null, { from: byId[s[0]], to: byId[s[1]], twist: twistById[s[2]], title: s[3] || '', blurb: s[4] || '' });
+    const rh = rhythmOf(n);
+    return build('d' + n, 'traverse-day-' + n + (salt ? '-' + salt : ''), n, null, { twist: rh.twist, rule: rh.rule });
+  }
+  // random expeditions: try a few city pairs (deterministic from the tag) until one has a real multi-leg puzzle
+  function challengeRandom(tag) {
+    const t = String(tag || Math.random().toString(36).slice(2, 8)), seed = 'r' + t;
     if (CH[seed]) return CH[seed];
-    const r = rng(hash(hashKey));
-    let a, b, tries = 0;
-    do { a = C[Math.floor(r() * C.length)]; b = C[Math.floor(r() * C.length)]; tries++; }
-    while ((a.id === b.id || km(a, b) < 1000 || km(a, b) > 4200 || a.hub + b.hub < 2) && tries < 400);
+    for (let k = 0; k < 4; k++) {
+      const ch = build(seed, 'traverse-random-' + t + (k ? '-' + k : ''), 0, t);
+      if (k === 3 || mission(ch).par.legs >= 3) return ch;
+      forget(seed);
+    }
+  }
+  const CH = {};
+  function build(seed, hashKey, n, tag, fixed) {
+    if (CH[seed]) return CH[seed];
+    fixed = fixed || {};
+    const r = rng(hash(hashKey || seed));
+    let a = fixed.from, b = fixed.to, tries = 0;
+    if (!a || !b) {
+      const rule = fixed.rule || {}, pool = rule.region ? C.filter(c => rule.region.includes(continentOf(c)) && (!rule.coastal || c.coastal)) : C;
+      const minKm = rule.minKm || 1000;
+      do { a = pool[Math.floor(r() * pool.length)]; b = pool[Math.floor(r() * pool.length)]; tries++; }
+      while ((a.id === b.id || km(a, b) < minKm || km(a, b) > 4200 || a.hub + b.hub < 2 || (fixed.twist && tries < 300 && !fits(fixed.twist.id, a, b))) && tries < 400);
+    }
     BLOCKED[seed] = [a.id, b.id].sort().join('-');
-    const twist = TWISTS[Math.floor(r() * TWISTS.length)];
+    const twist = fixed.twist || TWISTS[Math.floor(r() * TWISTS.length)];
     TWIST[seed] = twist.id;
-    const ch = { n, key: n ? dayKey(n) : 'random-' + tag, seed, from: a, to: b, twistId: twist.id, twist, random: !n };
+    const ch = { n, key: n ? dayKey(n) : 'random-' + tag, seed, from: a, to: b, twistId: twist.id, twist, random: !n, title: fixed.title || '', blurb: fixed.blurb || '' };
     return (CH[seed] = ch);
   }
+
+  function forget(seed) { [CH, BLOCKED, DEALS, TWIST, MIS, CAL].forEach(o => delete o[seed]); }
 
   /* ---------- route search: every sensible route, kept as a Pareto frontier of (cost, hours) ---------- */
   function corridor(ch) { // cities worth considering: not a huge detour off the straight line
@@ -223,7 +277,7 @@
     };
     let routes = search();
     if (routes.length < 3) { cities = C; g = null; routes = search(); }
-    if (routes.length < 2 && ch.twistId !== 'open') { ch.twist = twistById.open; ch.twistId = 'open'; TWIST[ch.seed] = 'open'; cities = corridor(ch); g = null; routes = search(); }
+    if (routes.length < 2 && ch.twistId !== 'open') { ch.twist = twistById.open; ch.twistId = 'open'; TWIST[ch.seed] = 'open'; delete LEGC[ch.seed]; cities = corridor(ch); g = null; routes = search(); if (routes.length < 3) { cities = C; g = null; routes = search(); } }
     const sc0 = (x, cheap, fast) => routeScore(x.cost, x.hours, cheap, fast);
     const cheap = Math.min(...routes.map(x => x.cost)), fast = Math.min(...routes.map(x => x.hours));
     const sorted = routes.slice().sort((x, y) => sc0(y, cheap, fast) - sc0(x, cheap, fast));
@@ -255,7 +309,7 @@
     decoys.sort((x, y) => (x.mode === 'plane') - (y.mode === 'plane'));
     if (!decoys.length) cities.forEach(a => { if (a.id === ch.from.id || a.id === ch.to.id) return; g[a.id].forEach(e => { if (!endLeg(e) && e.mode !== 'plane' && !seen.has(key(e))) { seen.add(key(e)); decoys.push(e); } }); });
     while (Object.keys(deals).length < 3 && decoys.length) { const e = decoys.splice(Math.floor(r() * Math.min(decoys.length, 8)), 1)[0]; deals[key(e)] = Math.round((0.3 + r() * 0.25) * 20) / 20; }
-    DEALS[ch.seed] = deals;
+    DEALS[ch.seed] = deals; delete LEGC[ch.seed];
     for (const k in deals) { const [pair, mode] = k.split('|'), [fa, tb] = pair.split('-'); g[fa].forEach(e => { if (e.to === tb && e.mode === mode) { e.cost = Math.max(1, Math.round(e.cost * (1 - deals[k]))); e.deal = deals[k]; } }); }
     routes = search();
     const short2 = routes.filter(x => x.legs <= 2), bestShort2 = short2.length ? Math.min(...short2.map(x => x.cost)) : Infinity;
@@ -279,20 +333,45 @@
     if (!pick) for (const c of cands) { const m = evalC(c.mb, c.md); if (ok(m, 3)) { pick = m; break; } }
     if (!pick) for (const c of cands) { const m = evalC(c.mb, c.md); if (m && m.feas.length >= 2) { pick = m; break; } }
     if (!pick) { const m = evalC(1.9, 2.6); pick = m || { B: Math.ceil(icost * 2), D: Math.ceil(ihours * 3), feas: routes, par: routes[0] || intended, cheapest: cheap, fastest: fast, parScore: 1 }; }
-    const M = { budget: pick.B, deadline: pick.D, cheapest: pick.cheapest, fastest: pick.fastest, twist: ch.twist, deals: Object.keys(deals).length, dealKeys: Object.keys(deals),
-      par: { cost: pick.par.cost, hours: pick.par.hours, legs: pick.par.legs, path: pick.par.path, score: Math.round(10000 * Math.min(1, pick.parScore)) },
-      routes: pick.feas.length };
+    /* the ways to win: the planner's route and up to two routes that share none of its stops. How many a day gets
+       is the day's luck (about 3 in 10 days have one way, 3 in 10 two, 4 in 10 three), and that is its difficulty. */
+    const luck = rng(hash('ways-' + ch.seed))(), want = luck < 0.3 ? 1 : luck < 0.6 ? 2 : 3;
+    const inner = x => x.path.slice(0, -1).map(e => e.to);
+    const good = routes.filter(x => x !== pick.par).map(x => ({ x, s: sc0(x, pick.cheapest, pick.fastest) })).filter(o => o.s >= 0.5 * pick.parScore);
+    const ways = [{ x: pick.par, s: pick.parScore }], used = new Set(inner(pick.par));
+    const distinct = o => { const mids = inner(o.x); return mids.length && !mids.some(c => used.has(c)); };
+    const add = o => { if (o) { ways.push(o); inner(o.x).forEach(c => used.add(c)); } };
+    // the second way is the fastest different route, the third the cheapest: money against time, not fewer legs
+    const by = f => good.filter(distinct).sort((p, q) => f(p.x) - f(q.x) || q.s - p.s)[0];
+    const quick = by(x => x.hours), cheap0 = by(x => x.cost);
+    if (want >= 2) add(quick && cheap0 && quick !== cheap0 && (pick.par.hours - quick.x.hours) / pick.par.hours < (pick.par.cost - cheap0.x.cost) / pick.par.cost ? cheap0 : quick);
+    if (want >= 3) add(by(x => x.cost) || by(x => x.hours));
+    const way = o => ({ cost: o.x.cost, hours: o.x.hours, legs: o.x.legs, path: o.x.path, score: 0 });
+    const M = { budget: pick.B, deadline: pick.D, cheapest: pick.cheapest, fastest: pick.fastest, minLegs: Math.min(...pick.feas.map(x => x.legs)), twist: ch.twist, deals: Object.keys(deals).length, dealKeys: Object.keys(deals),
+      par: way(ways[0]), ways: ways.map(way), routes: pick.feas.length };
+    M.difficulty = M.ways.length === 1 ? 'Hard' : M.ways.length === 2 ? 'Medium' : 'Easy';
+    // every charted route is scored the way a player's route is, so "x% of the planner's score" means what it says
+    M.ways.forEach(w => (w.score = score(w.cost, w.hours, w.legs, M))); M.par.score = M.ways[0].score;
     return (MIS[ch.seed] = M);
   }
 
-  /* ---------- scoring ---------- */
-  function score(cost, hours, secs, M) {
-    if (!(cost > 0) || !(hours > 0)) return 0;
-    const mF = Math.pow(Math.min(1, M.cheapest / cost), 1.1), tF = Math.pow(Math.min(1, M.fastest / hours), 1.1);
-    const decF = Math.exp(-Math.max(0, secs - 30) / 240);
-    const blend = 0.4 * mF + 0.4 * tF + 0.2 * decF;
-    return Math.round(10000 * Math.min(1, blend * (0.85 + 0.15 * Math.sqrt(mF * tF))));
+  /* the decisions a mission allows: one more than the longest way to win needs, never fewer than four */
+  const decisionsFor = M => Math.max(4, Math.max(...M.ways.map(w => w.legs)) + 1);
+
+  /* ---------- scoring: money first (half the score), then time, then decisions ----------
+     Each part compares you with the best route that fits the day: the cheapest for money, the fastest for time,
+     the fewest legs for decisions. Match it and that part is full. Going over budget scales the whole score down by
+     budget / spent. How fast you clicked never counts. */
+  const WEIGHTS = { money: 0.5, time: 0.3, decisions: 0.2 };
+  function breakdown(cost, hours, legs, M) {
+    const ok = cost > 0 && hours > 0;
+    const mF = ok ? Math.min(1, M.cheapest / cost) : 0, tF = ok ? Math.min(1, M.fastest / hours) : 0, dF = ok ? Math.min(1, (M.minLegs || 1) / Math.max(1, legs || 1)) : 0;
+    const over = ok && cost > M.budget ? M.budget / cost : 1;
+    const pts = { money: Math.round(10000 * WEIGHTS.money * mF * over), time: Math.round(10000 * WEIGHTS.time * tF * over), decisions: Math.round(10000 * WEIGHTS.decisions * dF * over) };
+    const max = { money: 10000 * WEIGHTS.money, time: 10000 * WEIGHTS.time, decisions: 10000 * WEIGHTS.decisions };
+    return { mF, tF, dF, over, overBy: ok ? Math.max(0, cost - M.budget) : 0, pts, max, score: ok ? Math.round(10000 * (WEIGHTS.money * mF + WEIGHTS.time * tF + WEIGHTS.decisions * dF) * over) : 0 };
   }
+  const score = (cost, hours, legs, M) => breakdown(cost, hours, legs, M).score;
   const TIERS = [[0.97, 'Perfect', '🏆'], [0.9, 'Expert', '🧭'], [0.8, 'Navigator', '🗺️'], [0.65, 'Wayfarer', '🎒'], [0, 'Arrived', '🏁']];
   const tier = (s, M) => { const q = s / Math.max(1, M.par.score); const t = TIERS.find(x => q >= x[0]); return { name: t[1], icon: t[2], q }; };
 
@@ -307,20 +386,80 @@
     return { xp, level: li + 1, title: LEVELS[li][1], next: next ? next[0] : null, nextTitle: next ? next[1] : null, into: xp - LEVELS[li][0], span: next ? next[0] - LEVELS[li][0] : 1 };
   }
 
-  /* ---------- simulated global field (no backend) ---------- */
-  function field(ch, M) {
-    const r = rng(hash('field-' + ch.seed)); const n = 1800 + Math.floor(r() * 2400);
-    const scores = [];
-    for (let i = 0; i < n; i++) {
-      const skill = r();
-      const cost = M.cheapest * (1.02 + (1 - skill) * (0.15 + r() * 1.4));
-      const hrs = M.fastest * (1.02 + (1 - skill) * (0.1 + r() * 1.6));
-      const secs = 25 + (1 - skill) * 220 * r() + r() * 60;
-      scores.push(score(cost, hrs, secs, M));
-    }
-    return scores.sort((x, y) => y - x);
+  /* ---------- player stats: one source for the profile, stats page, achievements and the stats pop-up ---------- */
+  const dayOfKey = k => Math.round((Date.parse(k) - EPOCH) / DAY_MS) + 1;
+  function stats(results, now) {
+    results = results || {}; const today = now || dayNumber();
+    const keys = Object.keys(results).filter(k => /^\d{4}-/.test(k)).sort(), runs = keys.map(k => results[k]);
+    let maxStreak = 0, run = 0, prev = null, gapReturn = false;
+    keys.forEach(k => { const d = dayOfKey(k); if (prev !== null && d - prev > 7) gapReturn = true; run = (prev !== null && d === prev + 1) ? run + 1 : 1; prev = d; maxStreak = Math.max(maxStreak, run); });
+    let streak = 0; { let d = today; if (!results[dayKey(d)]) d--; while (d >= 1 && results[dayKey(d)]) { streak++; d--; } }
+    const countries = new Set(), continents = new Set(), modeCount = {}; let kmTot = 0, legs = 0, spent = 0, hours = 0, best = null;
+    keys.forEach(k => {
+      const r = results[k], start = byId[r.from] || challenge(dayOfKey(k)).from; let at = start;
+      countries.add(start.country); continents.add(continentOf(start));
+      r.route.forEach(l => { const c = byId[l.to]; if (!c) return; kmTot += km(at, c); at = c; countries.add(c.country); continents.add(continentOf(c)); modeCount[l.mode] = (modeCount[l.mode] || 0) + 1; });
+      legs += r.route.length; spent += r.cost; hours += r.hours;
+      if (!best || r.score > best.score) best = { score: r.score, key: k, n: dayOfKey(k), tier: r.tier };
+    });
+    const tiers = {}; TIERS.forEach(t => (tiers[t[1]] = 0)); runs.forEach(r => (tiers[r.tier || 'Arrived'] = (tiers[r.tier || 'Arrived'] || 0) + 1));
+    const hourOf = r => r.at ? new Date(r.at).getHours() : 12;
+    return {
+      keys, runs, played: runs.length, streak, maxStreak, best, avg: runs.length ? Math.round(runs.reduce((a, r) => a + r.score, 0) / runs.length) : 0,
+      tiers, expert: tiers.Perfect + tiers.Expert, perfect: tiers.Perfect,
+      parDays: runs.filter(r => r.parMatch).length, dealDays: runs.filter(r => r.deals && r.deals.total && r.deals.found === r.deals.total).length,
+      dealsFound: runs.reduce((a, r) => a + (r.deals ? r.deals.found : 0), 0),
+      countries, continents, km: Math.round(kmTot), legs, spent, hours, modeCount,
+      twists: new Set(runs.map(r => r.twist).filter(Boolean)), noFly: runs.filter(r => !r.route.some(l => l.mode === 'plane')).length,
+      ferryLegs: modeCount.ferry || 0, quick: runs.filter(r => r.secs < 45).length, maxLegs: runs.reduce((a, r) => Math.max(a, r.route.length), 0),
+      thrifty: runs.filter(r => r.cost < 100).length, level: progression(results).level,
+      early: runs.some(r => hourOf(r) < 7), late: runs.some(r => hourOf(r) >= 23),
+      flawless: runs.some(r => r.tier === 'Perfect' && r.deals && r.deals.total > 0 && r.deals.found >= r.deals.total), quickPar: runs.some(r => r.parMatch && r.secs < 60), gapReturn,
+    };
   }
-  const rankOf = (s, fld) => { let i = 0; while (i < fld.length && fld[i] > s) i++; return { rank: i + 1, of: fld.length + 1 }; };
+
+  /* ---------- achievements: tiered (bronze, silver, gold) so there is always a next goal, plus a few secret ones ---------- */
+  const TIER_NAMES = ['Bronze', 'Silver', 'Gold'];
+  const ACH = [
+    { id: 'first', ic: '🧭', name: 'First Departure', what: 'Finish your first journey', v: s => s.played, t: [1] },
+    { id: 'streak', ic: '🔥', name: 'On a Roll', what: 'Play {n} days in a row', v: s => s.maxStreak, t: [7, 30, 100] },
+    { id: 'played', ic: '🎒', name: 'Seasoned', what: 'Play {n} days', v: s => s.played, t: [10, 50, 200] },
+    { id: 'par', ic: '🎯', name: "Planner's Match", what: "Find the planner's route {n}", v: s => s.parDays, t: [1, 10, 50], times: true },
+    { id: 'deals', ic: '🏷️', name: 'Deal Hunter', what: 'Find every secret fare in a day {n}', v: s => s.dealDays, t: [1, 10, 50], times: true },
+    { id: 'perfect', ic: '🏆', name: 'Perfect Day', what: 'Earn a Perfect rating {n}', v: s => s.perfect, t: [1, 5, 25], times: true },
+    { id: 'expert', ic: '🥇', name: 'Consistent', what: 'Rate Expert or better on {n} days', v: s => s.expert, t: [3, 15, 60] },
+    { id: 'passport', ic: '🛂', name: 'Passport', what: 'Pass through {n} countries', v: s => s.countries.size, t: [10, 25, 50] },
+    { id: 'continents', ic: '🌍', name: 'Continental', what: 'Travel on {n} continents', v: s => s.continents.size, t: [2, 4, 6] },
+    { id: 'distance', ic: '🛰️', name: 'Long Haul', what: 'Travel {n} km in total', v: s => s.km, t: [10000, 40075, 384400], note: ['', 'once around the Earth', 'as far as the Moon'] },
+    { id: 'twists', ic: '🎲', name: 'Rule Bender', what: 'Play {n} different twists', v: s => s.twists.size, t: [3, 5, 7] },
+    { id: 'modes', ic: '🚆', name: 'Mixed Company', what: 'Use {n} kinds of transport', v: s => Object.keys(s.modeCount).length, t: [3, 5, 7] },
+    { id: 'noplane', ic: '🚌', name: 'Grounded', what: 'Finish {n} without flying', v: s => s.noFly, t: [1, 10, 30], journeys: true },
+    { id: 'ferry', ic: '🚢', name: 'Sea Legs', what: 'Take {n} ferries', v: s => s.ferryLegs, t: [1, 10, 30] },
+    { id: 'quick', ic: '⚡', name: 'Snap Decision', what: 'Finish in under 45 seconds {n}', v: s => s.quick, t: [1, 10, 30], times: true },
+    { id: 'scenic', ic: '🗺️', name: 'The Scenic Route', what: 'Finish a journey with {n} legs', v: s => s.maxLegs, t: [4, 5, 6] },
+    { id: 'thrifty', ic: '💰', name: 'Thrifty', what: 'Finish {n} for under $100', v: s => s.thrifty, t: [1, 10, 30], journeys: true },
+    { id: 'level', ic: '🧳', name: 'Climbing', what: 'Reach level {n}', v: s => s.level, t: [3, 5, 8] },
+    { id: 'flawless', ic: '💎', name: 'Flawless', what: 'A Perfect rating with every secret fare of the day found', v: s => +s.flawless, t: [1], secret: true },
+    { id: 'quickpar', ic: '🚀', name: 'Back of an Envelope', what: "Find the planner's route in under a minute", v: s => +s.quickPar, t: [1], secret: true },
+    { id: 'early', ic: '🌅', name: 'Early Bird', what: 'Finish a journey before 7 am', v: s => +s.early, t: [1], secret: true },
+    { id: 'late', ic: '🌙', name: 'Last Train', what: 'Finish a journey after 11 pm', v: s => +s.late, t: [1], secret: true },
+    { id: 'return', ic: '🔁', name: 'Back on the Road', what: 'Come back after more than a week away', v: s => +s.gapReturn, t: [1], secret: true },
+  ];
+  const goalText = (a, n) => { const num = n.toLocaleString('en-US'); return a.what.replace('{n}', a.times ? (n === 1 ? 'once' : num + ' times') : a.journeys ? (n === 1 ? 'a journey' : num + ' journeys') : num); };
+  function achievements(results, now) {
+    const s = stats(results, now);
+    return ACH.map(a => {
+      const v = a.v(s), level = a.t.filter(x => v >= x).length, next = a.t[level];
+      return { id: a.id, ic: a.ic, name: a.name, secret: !!a.secret, value: v, level, max: a.t.length, done: level === a.t.length,
+        tier: a.t.length > 1 && level ? TIER_NAMES[level - 1] : '', goal: next !== undefined ? goalText(a, next) : goalText(a, a.t[a.t.length - 1]),
+        target: next !== undefined ? next : a.t[a.t.length - 1], note: a.note && next !== undefined ? a.note[level] : '' };
+    });
+  }
+  /* badges or tiers earned by a new result (for the "unlocked" line on the expedition report) */
+  function newlyEarned(before, after) {
+    const b = {}; achievements(before).forEach(a => (b[a.id] = a.level));
+    return achievements(after).filter(a => a.level > (b[a.id] || 0));
+  }
 
   /* ---------- storage ---------- */
   const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } };
@@ -331,17 +470,19 @@
 
   /* ---------- TraversleDaily Plus: the paid archive ----------
      The last FREE_DAYS puzzles are free to replay; older ones need Plus. Membership is stored in this browser.
-     Plans: $2.99 a month or $20 once for lifetime. Checkout is wired in plus.html once a payment provider is connected. */
+     Plan: $2.99 once for lifetime access, no subscription. Checkout is wired in plus.html once a payment provider is connected. */
   const FREE_DAYS = 7;
   const PLUS_STORE = 'traverse.plus';
-  const PLANS = { month: { name: 'Monthly', price: '$2.99', per: 'per month' }, life: { name: 'Lifetime', price: '$20', per: 'once, forever' } };
+  const PLANS = { life: { name: 'Traversle +', price: '$2.99', per: 'once, for life' } };
   const plus = () => { try { const p = JSON.parse(localStorage.getItem(PLUS_STORE)); return p && p.active ? p : { active: false }; } catch (e) { return { active: false }; } };
   const setPlus = p => { try { localStorage.setItem(PLUS_STORE, JSON.stringify(p)); } catch (e) {} };
   const dayLocked = n => n < dayNumber() - FREE_DAYS && !plus().active;
 
   /* ---------- names & flags (flag emoji → ISO code → image, so it works on every device) ---------- */
   const iso = c => { const cp = Array.from(c.flag).map(ch => ch.codePointAt(0) - 0x1F1E6 + 65); return cp.length === 2 ? String.fromCharCode(cp[0], cp[1]).toLowerCase() : ''; };
-  const flagImg = (c, h) => { const code = iso(c); return code ? `<img class="fl" src="https://flagcdn.com/h${h >= 40 ? 40 : 20}/${code}.png" alt="" onerror="this.style.display='none'" width="${Math.round((h || 20) * 1.4)}" height="${h || 20}" loading="lazy">` : ''; };
+  // flags ship with the site (vendor/flags, from flag-icons, MIT) so they work offline; paths resolve from this script's folder
+  const BASE = typeof document !== 'undefined' && document.currentScript ? document.currentScript.src.replace(/js\/traverse\.js(\?.*)?$/, '') : '';
+  const flagImg = (c, h) => { const code = c && iso(c); h = h || 20; return code ? `<img class="fl" src="${BASE}vendor/flags/${code}.svg" alt="" onerror="this.style.display='none'" width="${Math.round(h * 4 / 3)}" height="${h}" loading="lazy">` : ''; };
   const place = c => `${flagImg(c)}<span>${esc(c.name)}, ${esc(c.country)}</span>`;
   const placeText = c => `${c.name}, ${c.country}`;
 
@@ -351,5 +492,5 @@
   const secsF = s => s < 60 ? Math.round(s) + 's' : Math.floor(s / 60) + 'm ' + Math.round(s % 60) + 's';
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, untilReset, EPOCH, challenge, challengeRandom, mission, score, tier, TIERS, progression, LEVELS, field, rankOf, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
+  window.Traverse = { live: () => window.TRAVERSE_LIVE || null, liveFor, iso, flagImg, place, placeText, C, byId, km, legs, MODES, TWISTS, twistById, dayNumber, dayKey, untilReset, EPOCH, challenge, challengeRandom, mission, decisionsFor, benchmarks: mission, score, breakdown, WEIGHTS, tier, TIERS, progression, LEVELS, stats, achievements, newlyEarned, COUNTRIES, CONTINENTS, continentOf, rhythmOf, forget, load, save, FREE_DAYS, PLANS, plus, setPlus, dayLocked, money, dur, secsF, esc, rng, hash };
 })();

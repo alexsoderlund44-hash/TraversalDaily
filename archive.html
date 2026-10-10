@@ -1,29 +1,28 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Past puzzles – TraversleDaily</title>
-<meta name="description" content="The daily travel puzzle. One start city, one destination, one budget. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world.">
-<meta property="og:title" content="Past puzzles – TraversleDaily"><meta property="og:type" content="website"><meta property="og:site_name" content="TraversleDaily"><meta property="og:description" content="The daily travel puzzle. One start city, one destination, one budget. Chain trains, buses, ferries and flights, beat the deadline, and out-plan the world."><meta name="twitter:card" content="summary">
-<meta name="theme-color" content="#0A1220">
+<title>Archive – TraversleDaily</title>
+<meta name="description" content="A daily travel puzzle. Everyone gets the same start, destination and budget. Pick your way across trains, buses, ferries and flights, one decision at a time, and see if you can beat the planner.">
+<meta property="og:title" content="Archive – TraversleDaily"><meta property="og:type" content="website"><meta property="og:site_name" content="TraversleDaily"><meta property="og:description" content="A daily travel puzzle. Everyone gets the same start, destination and budget. Pick your way across trains, buses, ferries and flights, one decision at a time, and see if you can beat the planner."><meta property="og:image" content="https://traversledaily.com/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="TraversleDaily: a route drawn across a map of Europe"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://traversledaily.com/og.png">
+<meta name="theme-color" content="#E8D9B5">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/atlas.css">
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Alegreya:ital,wght@0,400..900;1,400..900&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/atlas.css"><link rel="stylesheet" href="css/archive.css"><link rel="prefetch" href="vendor/d3.min.js" as="script"><link rel="prefetch" href="vendor/topojson-client.min.js" as="script"><link rel="prefetch" href="data/world.js" as="script"><link rel="prefetch" href="data/world-lite.js" as="script"><link rel="prefetch" href="js/traverse.js" as="script"><link rel="prefetch" href="js/traverse-ui.js" as="script">
 </head><body class="p-archive" data-page="archive">
 <header class="td-head"><div class="td-wrap">
   <a class="td-brand" href="index.html" aria-label="TraversleDaily home"><svg class="td-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="20" r="2" fill="currentColor"/><path d="M20 4 L23 20 L20 36 L17 20 Z" fill="currentColor" opacity=".9"/><path d="M4 20 L20 17 L36 20 L20 23 Z" fill="currentColor" opacity=".5"/></svg><span>Traversle<b>Daily</b></span></a>
   <button class="td-burger" id="td-burger" aria-label="Menu" aria-expanded="false" aria-controls="td-menu"><span></span><span></span><span></span></button>
-  <nav class="td-menu" id="td-menu" aria-label="Sections" hidden><a href="index.html" class="">Home</a><a href="archive.html" class="on ">Archive</a><a href="achievements.html" class="">Achievements</a><a href="stats.html" class="">Stats</a><a href="profile.html" class="">Profile</a><a href="plus.html" class="plus">✦ Traversle +</a><a href="index.html#how">How to play</a></nav>
+  <nav class="td-menu" id="td-menu" aria-label="Sections" hidden><a href="index.html" class="">Home</a><a href="play.html" class="">Play</a><a href="how.html" class="">How to play</a><a href="archive.html" class="on ">Archive</a><a href="achievements.html" class="">Achievements</a><a href="stats.html" class="">Stats</a><a href="profile.html" class="">Profile</a><a href="plus.html" class="plus">✦ Traversle +</a></nav>
 </div></header>
 
 <main class="td-page">
-  <header class="page-head"><h1>Past puzzles</h1><p id="ar-summary"></p></header>
-  <div class="ar-tools"><input type="search" id="ar-q" placeholder="Search a city, country or twist…" autocomplete="off"><a class="btn ghost" href="play.html">Today's puzzle</a></div>
-  <div id="ar-list"></div>
-  <section class="plus-strip"><div><h2>Missed a day?</h2><p>Replay the last seven free. Traversle + opens every puzzle since day one.</p></div><a class="btn primary" href="plus.html">See Traversle +</a></section>
+  <header class="page-head"><h1>Archive</h1><p id="ar-summary"></p></header>
+  <div class="ar-cal" id="ar-cal"></div>
+  <section class="plus-strip" id="ar-plus"><div><h2>Missed a day?</h2><p>The last seven days are free to replay. Traversle + opens every puzzle since day one for one payment of $2.99.</p></div><a class="btn primary" href="plus.html">Get Traversle +</a></section>
 </main>
-<footer class="td-foot"><div class="td-wrap"><span>TraversleDaily · a new travel puzzle every day</span><span>Map data: Natural Earth. Your runs stay in this browser.</span></div></footer>
-<script src="data/cities.js"></script><script src="data/live/latest.js"></script><script src="js/traverse.js"></script><script src="js/pages.js"></script>
+<footer class="td-foot"><div class="td-wrap"><span>© 2026 TraversleDaily. A new travel puzzle every day.</span><span>Map data from Natural Earth. Your progress is saved in this browser.</span></div></footer>
+<script src="data/cities.js"></script><script src="data/live/latest.js"></script><script src="data/schedule.js"></script><script src="js/traverse.js"></script><script src="js/pages.js"></script><script src="js/archive.js"></script>
 <script>(function(){var b=document.getElementById('td-burger'),m=document.getElementById('td-menu');function set(o){m.hidden=!o;b.setAttribute('aria-expanded',o);b.classList.toggle('open',o);document.body.classList.toggle('td-menu-open',o);}b.onclick=function(e){e.stopPropagation();set(m.hidden);};m.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});document.addEventListener('click',function(e){if(!m.hidden&&!m.contains(e.target))set(false);});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!m.hidden)set(false);});
 var how=document.getElementById('hm-howmodal');if(how){window.tdHow=function(o){if(window.tdTutorial)return window.tdTutorial(o);how.hidden=!o;};['hm-how','td-help'].forEach(function(id){var el=document.getElementById(id);if(el)el.onclick=function(){tdHow(true);};});window.addEventListener('hashchange',function(){if(location.hash==='#how')tdHow(true);});if(location.hash==='#how')tdHow(true);}})();</script>
 </body></html>
